@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+배포 URL: (Vercel 연결 후 여기 채움)
 
-## Getting Started
+# ONE SHOT 개별 프로젝트
 
-First, run the development server:
+숭실대학교 컴퓨터공학 멘토링 · 서비스개발(엔지니어) 트랙 개별 프로젝트.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 작성자: 장준용 (숭실대 AI소프트웨어학부 3학년)
+- 주멘토: 임종한 · 멘토: 김원
+- 주제: **선정 중**
+
+## 실행
+
+```
+npm run dev        # localhost:3000
+npm run build      # 프로덕션 빌드
+npm run typecheck  # 타입 에러 0 확인
+npm run lint       # 린트
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 일정
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 일자 | 단계 |
+|---|---|
+| 8/22 (1차) | 기획 & 환경 설정 — PRD/WBS, CLAUDE.md, **첫 배포** |
+| 8/23 (2차) | 핵심 기능 구현 — UI/UX, 기본 로직, 에이전트 |
+| 8/29 (3차) | 연동 & 배포 — API 연동, 최종 배포 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 문서
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| 파일 | 내용 |
+|---|---|
+| `PRD.md` | 왜 · 누구 · 안 만들 것 |
+| `CLAUDE.md` | 이 저장소의 규칙과 암묵지 |
+| `docs/FLOW.md` | 흐름 · 실패 경로 · 도구 선택 |
+| `evals/cases.md` | 믿을 근거 10줄 |
+| `PLAN.md` | 2주를 자른 결과 |
