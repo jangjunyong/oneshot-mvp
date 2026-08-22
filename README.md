@@ -1,4 +1,4 @@
-배포 URL: (Vercel 연결 후 여기 채움)
+배포 URL: https://oneshot-mvp.vercel.app
 
 # 공시 근거로 보유 종목 관계를 캐는 에이전트
 
