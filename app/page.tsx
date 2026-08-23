@@ -91,8 +91,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       {/* 저장이 안 된 이유. 입력이 틀렸거나 저장 자체가 실패했거나 */}
       {입력오류 && (
-        <p role="alert">
-          <strong>{입력오류}</strong>
+        <p className="alert" data-level="심각" role="alert">
+          {입력오류}
         </p>
       )}
 
@@ -167,8 +167,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           const g = grade(result);
 
           return (
-            <li key={e.id}>
-              <p>
+            <li key={e.id} className="entry">
+              <p className="num">
                 {e.sido} {e.sigungu} · {e.month}월 ·{" "}
                 {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만 · 접근성{" "}
                 {e.accessibility} · {한국시각(e.savedAt)}
@@ -178,8 +178,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}
               {result.invalid ? (
                 <>
-                  <p>
-                    <strong>입력을 확인해 주세요</strong>
+                  <p className="alert" data-level="심각">
+                    입력을 확인해 주세요
                   </p>
                   <ul>
                     {result.invalid.map((p) => (
@@ -190,16 +190,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               ) : (
                 <>
                   {/* 결론이 먼저 */}
-                  <p>
-                    <strong>
-                      {g.level === "심각" || g.level === "주의"
-                        ? `⚠ 경보: ${g.level}`
-                        : g.level === "근거없음"
-                          ? "위험 근거 못 찾음"
-                          : "비교 대상 없음"}
-                    </strong>
+                  <p className="alert" data-level={g.level}>
+                    {g.level === "심각" || g.level === "주의"
+                      ? `⚠ 경보: ${g.level}`
+                      : g.level === "근거없음"
+                        ? "위험 근거 못 찾음"
+                        : "비교 대상 없음"}
                   </p>
-                  <p>{g.headline}</p>
+                  <p className="headline">{g.headline}</p>
                 </>
               )}
 
@@ -228,7 +226,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <summary>그들이 겪은 것</summary>
                     <ul>
                       {result.matched.map((m) => (
-                        <li key={m.festival.id}>
+                        <li key={m.festival.id} className="num">
                           {m.festival.name} ({m.festival.sido} {m.festival.sigungu}) ·{" "}
                           {m.year}년 · 평소 대비{" "}
                           {m.festival.actualVisitSurge.toFixed(2)}배

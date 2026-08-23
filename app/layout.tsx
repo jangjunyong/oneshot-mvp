@@ -22,9 +22,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Tailwind 를 쓰지 않으므로 h-full·antialiased·flex 같은 클래스는
+          아무 효과가 없다. 남겨두면 다음 사람이 있다고 착각한다. */}
+      <body>{children}</body>
     </html>
   );
 }
