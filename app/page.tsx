@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { list, save, storageMode } from "@/lib/store";
+import { list, save, storageMode, type Entry } from "@/lib/store";
 import { findSimilar, validatePlanInput } from "@/lib/match";
 import { grade } from "@/lib/grade";
 import { DATA_SOURCE, THEME_NAME } from "@/lib/types";
@@ -34,14 +35,37 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       accessibility: Number(raw.accessibility),
     });
     if (problems.length > 0) {
-      redirect("/?err=" + encodeURIComponent(problems.join(" · ")));
+      redirect(
+        "/?err=" + encodeURIComponent("입력을 확인해 주세요 — " + problems.join(" · ")),
+      );
     }
 
-    await save(raw);
+    // 저장이 실패해도 화면 전체가 죽으면 안 된다. 담당자는 왜 안 됐는지
+    // 알아야 하고 다시 누를 수 있어야 한다.
+    let 저장실패 = false;
+    try {
+      await save(raw);
+    } catch {
+      저장실패 = true;
+    }
+    if (저장실패) {
+      redirect(
+        "/?err=" +
+          encodeURIComponent("저장에 실패했습니다. 잠시 후 저장을 다시 눌러 주세요."),
+      );
+    }
+
     revalidatePath("/");
   }
 
-  const entries = await list();
+  // 목록을 못 읽어도 입력 화면은 살아 있어야 한다.
+  let entries: Entry[] = [];
+  let 조회실패 = false;
+  try {
+    entries = await list();
+  } catch {
+    조회실패 = true;
+  }
 
   return (
     <main>
@@ -49,10 +73,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <h2>축제 조건 입력</h2>
 
-      {/* 서버가 저장을 막은 이유. 브라우저 제약을 우회해 들어온 경우에만 뜬다 */}
+      {/* 저장이 안 된 이유. 입력이 틀렸거나 저장 자체가 실패했거나 */}
       {입력오류 && (
         <p role="alert">
-          <strong>저장하지 않았습니다 — {입력오류}</strong>
+          <strong>{입력오류}</strong>
         </p>
       )}
 
@@ -101,8 +125,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </p>
       </form>
 
-      <h2>조회 이력 ({entries.length}건)</h2>
-      {entries.length === 0 && (
+      <h2>조회 이력 {조회실패 ? "" : `(${entries.length}건)`}</h2>
+      {조회실패 && (
+        <p role="alert">
+          <strong>조회 이력을 불러오지 못했습니다.</strong> 저장은 그대로 남아
+          있습니다. <Link href="/">다시 불러오기</Link>
+        </p>
+      )}
+      {!조회실패 && entries.length === 0 && (
         <p>
           아직 조회한 기획안이 없습니다. 위에 축제 조건을 넣고 저장을 누르면
           닮은 과거 축제와 경보 등급이 여기에 쌓입니다.
