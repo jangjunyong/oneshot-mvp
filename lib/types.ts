@@ -95,3 +95,69 @@ export const THEME_NAME: Record<number, string> = {
   7: "청년·청소년",
   8: "빛·계절",
 };
+
+/**
+ * 접근성은 담당자가 "3등급"으로 못 고른다. 데이터(619건)는 1~5 숫자를 그대로
+ * 쓰되 화면과 모델은 라벨로만 다룬다. 숫자는 안쪽에만 남는다.
+ */
+export const ACCESSIBILITY_LABEL: Record<number, string> = {
+  1: "매우 나쁨",
+  2: "나쁨",
+  3: "보통",
+  4: "좋음",
+  5: "매우 좋음",
+};
+
+/**
+ * 기획서 한 건의 최대 길이. 1건당 모델 비용의 상한이 여기서 고정된다.
+ * 서버 액션 본문 제한(1MB)보다 훨씬 먼저 걸리게 두는 것이 요점이다.
+ */
+export const MAX_PLAN_TEXT = 8000;
+
+/**
+ * 하루 추출 호출 상한.
+ *
+ * 무료 모델은 크레딧을 안 넣으면 하루 50건에서 막힌다. 그 벽에 부딪히면
+ * 오픈라우터가 거절하고 사용자는 이유를 모른다. 45 에서 우리가 먼저 끊어
+ * "오늘 한도 소진"이라고 말한다 — 남은 5건은 확인용 여유다.
+ *
+ * 상한 자체가 더 중요한 이유는 따로 있다. 배포본은 로그인이 없어 주소를
+ * 아는 사람은 누구나 누를 수 있다. 유료 모델로 바꿔 끼우는 순간
+ * 이 숫자가 하루 손실 금액의 상한이 된다.
+ */
+export const DAILY_EXTRACT_LIMIT = 45;
+
+/** 추출값이 어디서 왔는지. 화면에 그대로 표시해 사람이 구분하게 한다 */
+export type ExtractSource = "llm" | "sample";
+
+/** 모델이 값을 채우는 항목. 인구는 여기 없다 — 문서가 아니라 데이터에서 온다 */
+export type ExtractedKey =
+  | "sido"
+  | "sigungu"
+  | "month"
+  | "themeCode"
+  | "accessibility";
+
+/**
+ * 기획서에서 뽑아낸 초안. 확정값이 아니라 사람이 고칠 초안이다.
+ *
+ * 값만 받으면 잘못 뽑힌 것이 근거인 척한다. 항목마다 원문 근거를 같이 받아
+ * 화면에 붙인다 — 암묵지 2번("왜 닮았는지를 항상 같이 낸다")과 같은 이유다.
+ */
+export interface Extraction {
+  sido: string | null;
+  sigungu: string | null;
+  /** 개최 월 1~12 */
+  month: number | null;
+  /** THEME_NAME 의 키 1~8 */
+  themeCode: number | null;
+  /** ACCESSIBILITY_LABEL 의 키 1~5 */
+  accessibility: number | null;
+  /** 지역 인구(만 명). 모델이 아니라 festivals.json 에서 채운다 */
+  populationManMyeong: number | null;
+  /** 항목별 근거 — 원문에서 그대로 옮긴 문장. 못 찾은 항목은 키가 없다 */
+  evidence: Partial<Record<ExtractedKey, string>>;
+  /** 문서에서 못 찾은 항목의 한국어 이름. 화면에서 무엇이 없는지 짚는다 */
+  missing: string[];
+  source: ExtractSource;
+}
