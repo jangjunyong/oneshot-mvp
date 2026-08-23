@@ -42,6 +42,7 @@ npm run build      # 프로덕션 빌드
 | [`evals/cases.md`](evals/cases.md) | 믿을 근거 열 줄 |
 | [`PLAN.md`](PLAN.md) | 오늘 만들 것 · 안 만들 것 |
 | [`docs/slices/`](docs/slices/) | 기능별 스펙 |
+| [`docs/참고사이트.md`](docs/참고사이트.md) | 레퍼런스 · 대체재 (확인된 URL) |
 
 ## CI/CD
 
