@@ -130,3 +130,43 @@ summary {
   color: #666;
   font-size: 0.92rem;
 }
+
+/* 기획서를 통째로 붙여넣는 칸. 폼의 다른 칸과 달리 한 줄을 다 쓴다 */
+textarea {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  line-height: 1.6;
+  padding: 0.6rem;
+  border: 1px solid #9a9a9a;
+  border-radius: 3px;
+  resize: vertical;
+}
+
+/* 고르는 칸도 입력칸과 같은 폭·같은 높이여야 줄이 흔들리지 않는다 */
+select {
+  flex: 1 1 7rem;
+  min-width: 0;
+  max-width: 13rem;
+  font: inherit;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid #9a9a9a;
+  border-radius: 3px;
+  background: #fff;
+}
+
+/* 값이 어디서 나왔는지. 값보다 약해야 하지만 읽을 수는 있어야 한다.
+   라벨 폭(9.5rem)만큼 들여써서 어느 칸의 근거인지 눈으로 붙는다 */
+.evidence {
+  margin: -0.35rem 0 0.7rem 9.5rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid #d8d8d8;
+  color: #666;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+@media (max-width: 30rem) {
+  .evidence {
+    margin-left: 0;
+  }
+}
