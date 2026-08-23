@@ -9,6 +9,22 @@ import { DATA_SOURCE, THEME_NAME } from "@/lib/types";
 // 저장한 것이 바로 보여야 하므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
 
+/**
+ * 서버는 UTC 로 돈다. 그대로 찍으면 담당자에게 9시간 틀린 시각이 보이고,
+ * 390px 한 줄의 절반을 기계 형식이 잡아먹는다. 시간대를 못 박아 옮긴다.
+ */
+function 한국시각(iso: string): string {
+  return new Date(iso).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export default async function Home({ searchParams }: PageProps<"/">) {
   const 입력오류 = (await searchParams).err;
 
@@ -155,7 +171,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <p>
                 {e.sido} {e.sigungu} · {e.month}월 ·{" "}
                 {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만 · 접근성{" "}
-                {e.accessibility} · {e.savedAt}
+                {e.accessibility} · {한국시각(e.savedAt)}
               </p>
 
               {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
