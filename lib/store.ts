@@ -94,3 +94,88 @@ export async function list(): Promise<Entry[]> {
 export function storageMode(): string {
   return sql ? "Postgres" : "메모리 (DATABASE_URL 없음)";
 }
+
+// ─────────────────────────────────────────────────────────────
+// 추출 초안 — 붙여넣기와 확인·수정 화면 사이를 잇는다.
+//
+// 초안 한 건 = 모델 호출 한 번이다. 그래서 이 테이블이 호출 기록을 겸하고,
+// 하루 상한도 여기서 센다. 세는 곳과 만드는 곳이 갈리면 언젠가 어긋난다.
+// ─────────────────────────────────────────────────────────────
+
+import type { Extraction } from "@/lib/types";
+
+export interface Draft extends Extraction {
+  id: string;
+}
+
+interface DraftRow extends Draft {
+  createdAt: string;
+}
+
+const gd = globalThis as unknown as {
+  __oneshotDrafts?: DraftRow[];
+  __oneshotDraftReady?: Promise<void>;
+};
+gd.__oneshotDrafts ??= [];
+
+function draftReady(): Promise<void> {
+  if (!sql) return Promise.resolve();
+  gd.__oneshotDraftReady ??= sql`
+    CREATE TABLE IF NOT EXISTS drafts (
+      id         BIGSERIAL PRIMARY KEY,
+      payload    JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `
+    .then(() => undefined)
+    .catch((e) => {
+      gd.__oneshotDraftReady = undefined;
+      throw e;
+    });
+  return gd.__oneshotDraftReady;
+}
+
+const isToday = (iso: string) =>
+  new Date(iso).toDateString() === new Date().toDateString();
+
+/**
+ * 오늘 만들어진 초안 수 = 오늘 모델을 부른 횟수.
+ *
+ * 실패하면 던진다. 부르는 쪽은 이것을 "한도 초과"로 처리해야 한다 —
+ * 셀 수 없을 때 통과시키면 상한이 상한이 아니게 된다.
+ */
+export async function countExtractsToday(): Promise<number> {
+  if (!sql) return gd.__oneshotDrafts!.filter((d) => isToday(d.createdAt)).length;
+  await draftReady();
+  const rows = await sql`
+    SELECT count(*)::int AS n FROM drafts WHERE created_at >= current_date
+  `;
+  return rows[0]?.n as number;
+}
+
+export async function saveDraft(e: Extraction): Promise<string> {
+  if (!sql) {
+    const id = String(gd.__oneshotDrafts!.length + 1);
+    gd.__oneshotDrafts!.unshift({
+      ...e,
+      id,
+      createdAt: new Date().toISOString(),
+    });
+    return id;
+  }
+  await draftReady();
+  const rows = await sql`
+    INSERT INTO drafts (payload) VALUES (${JSON.stringify(e)}) RETURNING id
+  `;
+  return String(rows[0].id);
+}
+
+export async function getDraft(id: string): Promise<Draft | null> {
+  if (!sql) return gd.__oneshotDrafts!.find((d) => d.id === id) ?? null;
+  await draftReady();
+  // id 는 URL 에서 온다. 숫자가 아니면 질의에 넣지 않는다.
+  if (!/^\d+$/.test(id)) return null;
+  const rows = await sql`SELECT id, payload FROM drafts WHERE id = ${Number(id)}`;
+  if (rows.length === 0) return null;
+  return { ...(rows[0].payload as Extraction), id: String(rows[0].id) };
+}
