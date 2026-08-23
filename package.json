@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --experimental-strip-types --no-warnings --import ./test-loader.mjs --test lib/*.test.ts"
+    "test": "node --experimental-strip-types --no-warnings --import ./test-loader.mjs --test lib/*.test.ts",
+    "test:e2e": "node --test e2e.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
