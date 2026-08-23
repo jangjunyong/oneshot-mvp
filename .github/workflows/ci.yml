@@ -31,6 +31,3 @@ jobs:
 
       - name: 빌드
         run: npm run build
-        env:
-          # 빌드 시점에는 실제 키가 필요 없다. 런타임에만 쓴다.
-          DART_API_KEY: dummy-for-build
