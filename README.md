@@ -43,12 +43,4 @@ npm run build      # 프로덕션 빌드
 - **CI** — push·PR 마다 타입 검사 · 린트 · 빌드 (`.github/workflows/ci.yml`)
 - **CD** — Vercel Git 연동. `main` push 시 자동 배포
 
-## 일정
-
-| 일자 | 단계 |
-|---|---|
-| 8/22 (1차) | 기획 & 환경 설정 |
-| 8/23 (2차) | 핵심 기능 구현 |
-| 8/29 (3차) | 연동 & 배포 |
-
-전체 14일 계획은 [`PLAN.md`](PLAN.md).
+오늘 만들 것과 안 만들 것은 [`PLAN.md`](PLAN.md).
