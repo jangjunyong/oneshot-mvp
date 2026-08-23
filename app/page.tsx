@@ -1,5 +1,8 @@
 import { revalidatePath } from "next/cache";
-import { list, save } from "@/lib/store";
+import { list, save, storageMode } from "@/lib/store";
+import { findSimilar } from "@/lib/match";
+import { grade } from "@/lib/grade";
+import { DATA_SOURCE, THEME_NAME } from "@/lib/types";
 
 // 저장한 것이 바로 보여야 하므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
@@ -40,8 +43,8 @@ export default async function Home() {
           <input id="month" name="month" defaultValue="10" />
         </p>
         <p>
-          <label htmlFor="theme">테마</label>{" "}
-          <input id="theme" name="theme" defaultValue="음식" />
+          <label htmlFor="theme">테마 코드 (1~8)</label>{" "}
+          <input id="theme" name="theme" defaultValue="1" />
         </p>
         <p>
           <label htmlFor="population">지역 인구(만 명)</label>{" "}
@@ -58,13 +61,79 @@ export default async function Home() {
 
       <h2>조회 이력 ({entries.length}건)</h2>
       <ul>
-        {entries.map((e) => (
-          <li key={e.id}>
-            {e.sido} {e.sigungu} · {e.month}월 · {e.theme} · 인구 {e.population}만 ·
-            접근성 {e.accessibility} · {e.savedAt}
-          </li>
-        ))}
+        {entries.map((e) => {
+          const result = findSimilar({
+            sido: e.sido,
+            sigungu: e.sigungu,
+            month: Number(e.month),
+            themeCode: Number(e.theme),
+            populationManMyeong: Number(e.population),
+            accessibility: Number(e.accessibility),
+          });
+          const g = grade(result);
+
+          return (
+            <li key={e.id}>
+              <p>
+                {e.sido} {e.sigungu} · {e.month}월 ·{" "}
+                {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만 · 접근성{" "}
+                {e.accessibility} · {e.savedAt}
+              </p>
+
+              {/* 결론이 먼저 */}
+              <p>
+                <strong>
+                  {g.level === "심각" || g.level === "주의"
+                    ? `⚠ 경보: ${g.level}`
+                    : g.level === "근거없음"
+                      ? "위험 근거 못 찾음"
+                      : "비교 대상 없음"}
+                </strong>
+              </p>
+              <p>{g.headline}</p>
+
+              {/* 근거는 접어둔다 */}
+              {result.matched.length > 0 && (
+                <>
+                  <details>
+                    <summary>왜 닮았나</summary>
+                    <ul>
+                      {result.matched.map((m) => (
+                        <li key={m.festival.id}>
+                          {m.festival.name}
+                          <ul>
+                            {m.axes.map((a) => (
+                              <li key={a.axis}>
+                                {a.label} — {a.detail}
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  <details>
+                    <summary>그들이 겪은 것</summary>
+                    <ul>
+                      {result.matched.map((m) => (
+                        <li key={m.festival.id}>
+                          {m.festival.name} ({m.festival.sido} {m.festival.sigungu}) ·{" "}
+                          {m.year}년 · 평소 대비{" "}
+                          {m.festival.actualVisitSurge.toFixed(2)}배
+                        </li>
+                      ))}
+                    </ul>
+                    <p>출처: {DATA_SOURCE}</p>
+                  </details>
+                </>
+              )}
+            </li>
+          );
+        })}
       </ul>
+
+      <p>저장소: {storageMode()}</p>
     </main>
   );
 }

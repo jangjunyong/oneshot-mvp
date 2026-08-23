@@ -82,3 +82,8 @@ export async function list(): Promise<Entry[]> {
     savedAt: new Date(r.saved_at as string).toISOString(),
   }));
 }
+
+// 배포본에서 어느 저장소를 쓰고 있는지 화면으로 확인하기 위한 진단용.
+export function storageMode(): string {
+  return sql ? "Postgres" : "메모리 (DATABASE_URL 없음)";
+}
