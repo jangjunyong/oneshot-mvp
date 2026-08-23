@@ -60,6 +60,12 @@ export default async function Home() {
       </form>
 
       <h2>조회 이력 ({entries.length}건)</h2>
+      {entries.length === 0 && (
+        <p>
+          아직 조회한 기획안이 없습니다. 위에 축제 조건을 넣고 저장을 누르면
+          닮은 과거 축제와 경보 등급이 여기에 쌓입니다.
+        </p>
+      )}
       <ul>
         {entries.map((e) => {
           const result = findSimilar({
