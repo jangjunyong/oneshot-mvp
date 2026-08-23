@@ -2,13 +2,15 @@ export default function Home() {
   return (
     <main style={{ padding: 32, fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ fontSize: 20, fontWeight: 600 }}>
-        공시 근거로 보유 종목 관계를 캐는 에이전트
+        이 축제, 작년 그 축제처럼 무너집니다
       </h1>
       <p style={{ marginTop: 8 }}>
-        섹터를 나눠 담아도, 어느 회사를 경유해 한 덩어리로 이어지는지는 알 수 없다.
+        축제 기획은 담당자의 경험과 작년 실적에 기대고 있다. 예산은 집행 전에 정해지는데,
+        그 시점에 기획안이 위험한지 확인할 수단이 없다.
       </p>
       <p style={{ marginTop: 4 }}>
-        에이전트가 공시를 직접 뒤져 경로를 찾아오고, 그 결과로 그래프가 자란다.
+        기획안을 넣으면 <strong>닮은 과거 축제들이 실제로 어떻게 무너졌는지</strong>를 근거로
+        경보 등급과 보완점을 낸다. 방문객 수를 예측하지는 않는다.
       </p>
       <p style={{ marginTop: 16, color: "#666" }}>
         숭실대 ONE SHOT 개별 프로젝트 · 2주 MVP · Day 1

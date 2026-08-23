@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "공시 근거로 보유 종목 관계를 캐는 에이전트",
+  title: "이 축제, 작년 그 축제처럼 무너집니다",
   description:
-    "보유 종목이 어느 회사를 경유해 한 덩어리로 이어지는지, 에이전트가 공시를 직접 뒤져 찾아낸다.",
+    "축제 기획안을 넣으면 닮은 과거 축제들이 실제로 어떻게 무너졌는지를 근거로 경보 등급을 낸다.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
