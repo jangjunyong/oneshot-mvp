@@ -28,19 +28,22 @@ npm run build      # 프로덕션 빌드
 
 환경변수는 `.env.example` 을 `.env.local` 로 복사해서 채운다.
 
+조회 이력은 **Neon Postgres** 에 저장한다. `DATABASE_URL` 은 Vercel 이 배포본에 자동으로 넣어주고,
+로컬에서 이 값이 없으면 서버 메모리로 떨어진다 (재시작하면 날아간다).
+축제 데이터 619건은 DB 가 아니라 `data/festivals.json` 정적 파일이다.
+
 ## 문서
 
 | 파일 | 내용 |
 |---|---|
 | [`PRD.md`](PRD.md) | 왜 · 누구 · 안 만들 것 |
-| [`CLAUDE.md`](CLAUDE.md) | 저장소 규칙 · 암묵지 · UI/UX 가이드 |
+| [`CLAUDE.md`](CLAUDE.md) | 저장소 규칙 · 암묵지 |
 | [`docs/FLOW.md`](docs/FLOW.md) | 흐름 · 실패 경로 · 도구 선택 |
 | [`evals/cases.md`](evals/cases.md) | 믿을 근거 열 줄 |
-| [`PLAN.md`](PLAN.md) | 2주를 자른 결과 |
+| [`PLAN.md`](PLAN.md) | 오늘 만들 것 · 안 만들 것 |
+| [`docs/slices/`](docs/slices/) | 기능별 스펙 |
 
 ## CI/CD
 
 - **CI** — push·PR 마다 타입 검사 · 린트 · 빌드 (`.github/workflows/ci.yml`)
 - **CD** — Vercel Git 연동. `main` push 시 자동 배포
-
-오늘 만들 것과 안 만들 것은 [`PLAN.md`](PLAN.md).

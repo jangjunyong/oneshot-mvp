@@ -33,6 +33,8 @@ g.__oneshotEntries ??= [];
 // 테이블은 첫 요청 때 한 번만 만든다. 마이그레이션 도구를 붙일 단계가 아니다.
 function ready(): Promise<void> {
   if (!sql) return Promise.resolve();
+  // 실패한 Promise 를 캐싱하면 그 인스턴스가 살아 있는 동안 저장·조회가
+  // 전부 죽는다. 재시도 경로를 남긴다.
   g.__oneshotReady ??= sql`
     CREATE TABLE IF NOT EXISTS entries (
       id            BIGSERIAL PRIMARY KEY,
@@ -44,7 +46,12 @@ function ready(): Promise<void> {
       accessibility TEXT NOT NULL,
       saved_at      TIMESTAMPTZ NOT NULL DEFAULT now()
     )
-  `.then(() => undefined);
+  `
+    .then(() => undefined)
+    .catch((e) => {
+      g.__oneshotReady = undefined;
+      throw e;
+    });
   return g.__oneshotReady;
 }
 

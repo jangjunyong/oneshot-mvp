@@ -80,17 +80,34 @@ export default async function Home() {
                 {e.accessibility} · {e.savedAt}
               </p>
 
-              {/* 결론이 먼저 */}
-              <p>
-                <strong>
-                  {g.level === "심각" || g.level === "주의"
-                    ? `⚠ 경보: ${g.level}`
-                    : g.level === "근거없음"
-                      ? "위험 근거 못 찾음"
-                      : "비교 대상 없음"}
-                </strong>
-              </p>
-              <p>{g.headline}</p>
+              {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
+                  둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}
+              {result.invalid ? (
+                <>
+                  <p>
+                    <strong>입력을 확인해 주세요</strong>
+                  </p>
+                  <ul>
+                    {result.invalid.map((p) => (
+                      <li key={p}>{p}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  {/* 결론이 먼저 */}
+                  <p>
+                    <strong>
+                      {g.level === "심각" || g.level === "주의"
+                        ? `⚠ 경보: ${g.level}`
+                        : g.level === "근거없음"
+                          ? "위험 근거 못 찾음"
+                          : "비교 대상 없음"}
+                    </strong>
+                  </p>
+                  <p>{g.headline}</p>
+                </>
+              )}
 
               {/* 근거는 접어둔다 */}
               {result.matched.length > 0 && (

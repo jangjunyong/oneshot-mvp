@@ -7,7 +7,7 @@
 
 # 실행
 
-개발 `npm run dev` · 타입 `npm run typecheck` · 린트 `npm run lint` · 빌드 `npm run build`
+개발 `npm run dev` · **테스트 `npm test`** · 타입 `npm run typecheck` · 린트 `npm run lint` · 빌드 `npm run build`
 
 # 스택
 

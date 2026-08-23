@@ -133,10 +133,56 @@ function weightedDistance(axes: AxisSimilarity[]): number {
 }
 
 /**
+ * 입력이 잴 수 있는 값인지 본다.
+ *
+ * 검증 없이 NaN 이 들어오면 clamp01(NaN) 이 NaN 이 되고, NaN <= 임계값 이
+ * false 라 619건이 전부 조용히 탈락한다. 그러면 화면에는 "비교할 만한 과거
+ * 축제가 없습니다" 가 뜬다 — 입력이 틀렸을 뿐인데 전례가 없다고 답하는 셈이다.
+ * 0월처럼 범위를 벗어난 값은 더 나쁘다. 탈락하지 않고 엉뚱한 답을 내놓는다.
+ */
+export function validatePlanInput(input: PlanInput): string[] {
+  const problems: string[] = [];
+
+  if (!input.sido?.trim()) problems.push("시도를 입력해 주세요");
+  if (!input.sigungu?.trim()) problems.push("시군구를 입력해 주세요");
+
+  if (!Number.isFinite(input.month) || input.month < 1 || input.month > 12) {
+    problems.push("개최 월은 1~12 사이의 숫자여야 합니다");
+  }
+  if (
+    !Number.isFinite(input.themeCode) ||
+    input.themeCode < 1 ||
+    input.themeCode > 8
+  ) {
+    problems.push("테마 코드는 1~8 사이의 숫자여야 합니다");
+  }
+  if (
+    !Number.isFinite(input.populationManMyeong) ||
+    input.populationManMyeong <= 0
+  ) {
+    problems.push("지역 인구는 0보다 큰 숫자여야 합니다");
+  }
+  if (
+    !Number.isFinite(input.accessibility) ||
+    input.accessibility < 1 ||
+    input.accessibility > 5
+  ) {
+    problems.push("접근성은 1~5 사이의 숫자여야 합니다");
+  }
+
+  return problems;
+}
+
+/**
  * 닮은 과거 축제를 찾는다. 순수 함수 — 같은 입력에 항상 같은 결과.
  * 임계값을 넘으면 뺀다. 3개를 채우려고 억지로 넣지 않는다.
  */
 export function findSimilar(input: PlanInput, limit = 3): MatchResult {
+  const invalid = validatePlanInput(input);
+  if (invalid.length > 0) {
+    return { matched: [], searchedScope: SEARCHED_SCOPE, invalid };
+  }
+
   const origin = coordsOf(input.sido, input.sigungu);
 
   const matched: MatchedFestival[] = FESTIVALS.map((festival) => {

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --experimental-strip-types --no-warnings --import ./test-loader.mjs --test lib/*.test.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
