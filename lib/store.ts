@@ -1,13 +1,13 @@
-// 스켈레톤용 저장소. 서버 메모리에 쌓는다.
+// 스켈레톤용 저장소.
 //
-// 브라우저가 아니라 서버에 두는 이유 — 옆 사람 폰에서도 같은 목록이 보여야 한다.
+// 서버에 두는 이유 — 옆 사람 폰에서도 같은 목록이 보여야 한다.
 // localStorage 였다면 내 브라우저에만 남는다.
 //
-// globalThis 에 매다는 이유 — 프로덕션 빌드에서 Server Action 과 페이지 렌더가
-// 서로 다른 번들로 갈려 이 모듈이 두 번 초기화된다. 모듈 지역 변수로 두면
-// 저장한 배열과 읽는 배열이 달라져서, 로컬은 되는데 배포본에서 0건이 나온다.
-//
-// 재배포하거나 서버가 잠들면 날아간다. 그때는 Vercel Postgres 로 이 파일만 바꾼다.
+// DATABASE_URL 이 있으면 Postgres(Neon), 없으면 메모리를 쓴다.
+// 메모리는 Vercel 에서 요청마다 인스턴스가 갈려 안 남는 것을 실측으로 확인했다.
+// 배포본에는 DATABASE_URL 이 꽂혀 있으므로 Postgres 로 간다.
+
+import { neon } from "@neondatabase/serverless";
 
 export interface Entry {
   id: string;
@@ -20,17 +20,65 @@ export interface Entry {
   savedAt: string;
 }
 
-const g = globalThis as unknown as { __oneshotEntries?: Entry[] };
+const url = process.env.DATABASE_URL;
+const sql = url ? neon(url) : null;
+
+// 메모리 폴백 (로컬 개발용)
+const g = globalThis as unknown as {
+  __oneshotEntries?: Entry[];
+  __oneshotReady?: Promise<void>;
+};
 g.__oneshotEntries ??= [];
 
-export function save(e: Omit<Entry, "id" | "savedAt">): void {
-  g.__oneshotEntries!.unshift({
-    ...e,
-    id: String(g.__oneshotEntries!.length + 1),
-    savedAt: new Date().toISOString(),
-  });
+// 테이블은 첫 요청 때 한 번만 만든다. 마이그레이션 도구를 붙일 단계가 아니다.
+function ready(): Promise<void> {
+  if (!sql) return Promise.resolve();
+  g.__oneshotReady ??= sql`
+    CREATE TABLE IF NOT EXISTS entries (
+      id            BIGSERIAL PRIMARY KEY,
+      sido          TEXT NOT NULL,
+      sigungu       TEXT NOT NULL,
+      month         TEXT NOT NULL,
+      theme         TEXT NOT NULL,
+      population    TEXT NOT NULL,
+      accessibility TEXT NOT NULL,
+      saved_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `.then(() => undefined);
+  return g.__oneshotReady;
 }
 
-export function list(): Entry[] {
-  return g.__oneshotEntries!;
+export async function save(e: Omit<Entry, "id" | "savedAt">): Promise<void> {
+  if (!sql) {
+    g.__oneshotEntries!.unshift({
+      ...e,
+      id: String(g.__oneshotEntries!.length + 1),
+      savedAt: new Date().toISOString(),
+    });
+    return;
+  }
+  await ready();
+  await sql`
+    INSERT INTO entries (sido, sigungu, month, theme, population, accessibility)
+    VALUES (${e.sido}, ${e.sigungu}, ${e.month}, ${e.theme}, ${e.population}, ${e.accessibility})
+  `;
+}
+
+export async function list(): Promise<Entry[]> {
+  if (!sql) return g.__oneshotEntries!;
+  await ready();
+  const rows = await sql`
+    SELECT id, sido, sigungu, month, theme, population, accessibility, saved_at
+    FROM entries ORDER BY id DESC LIMIT 50
+  `;
+  return rows.map((r) => ({
+    id: String(r.id),
+    sido: r.sido as string,
+    sigungu: r.sigungu as string,
+    month: r.month as string,
+    theme: r.theme as string,
+    population: r.population as string,
+    accessibility: r.accessibility as string,
+    savedAt: new Date(r.saved_at as string).toISOString(),
+  }));
 }

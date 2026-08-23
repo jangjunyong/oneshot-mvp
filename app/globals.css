@@ -1,26 +1,4 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* 스켈레톤은 브라우저 기본 모습으로 둔다.
+   Tailwind 를 import 하면 Preflight 리셋이 h1 크기·input 테두리·ul 불릿까지
+   전부 지워버린다. 클래스를 하나도 안 쓰는 지금은 손해만 있다.
+   화면을 실제로 만들 때 다시 넣는다. */

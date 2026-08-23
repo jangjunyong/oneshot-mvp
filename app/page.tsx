@@ -4,11 +4,11 @@ import { list, save } from "@/lib/store";
 // 저장한 것이 바로 보여야 하므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
   async function 저장(formData: FormData) {
     "use server";
     const get = (k: string) => String(formData.get(k) ?? "");
-    save({
+    await save({
       sido: get("sido"),
       sigungu: get("sigungu"),
       month: get("month"),
@@ -19,7 +19,7 @@ export default function Home() {
     revalidatePath("/");
   }
 
-  const entries = list();
+  const entries = await list();
 
   return (
     <main>
