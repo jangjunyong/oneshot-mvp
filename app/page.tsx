@@ -23,7 +23,7 @@ import {
   type TourFestival,
 } from "@/lib/tourapi";
 import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
-import { FestivalMap } from "@/app/festival-map";
+import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
   ACCESSIBILITY_LABEL,
@@ -61,6 +61,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const draftId = typeof params.draft === "string" ? params.draft : null;
   const 수동입력 = params.manual === "1";
   const 검색어 = typeof params.q === "string" ? params.q.trim() : "";
+
+  // 지도에 펼 진단과 그 안에서 고른 핀. 선택은 URL 에만 있다 —
+  // 클라이언트 상태로 두면 619건 좌표가 번들로 딸려 들어가고,
+  // 자바스크립트 없는 e2e 가 이 화면을 더는 검증하지 못한다.
+  const 고른id = typeof params.entry === "string" ? params.entry : null;
+  const 고른핀 = typeof params.pin === "string" ? params.pin : null;
 
   /** 1단계 — 기획서 텍스트에서 초안을 뽑는다. 모델을 부르는 유일한 곳이다 */
   async function 추출(formData: FormData) {
@@ -232,6 +238,29 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   } catch {
     조회실패 = true;
   }
+
+  // 이력마다 한 번만 잰다. 지도(한 건)와 요약 행이 같은 결과를 봐야
+  // 목록의 등급과 지도의 등급이 갈리지 않는다.
+  const 진단들 = entries.map((e) => {
+    const result = findSimilar({
+      sido: e.sido,
+      sigungu: e.sigungu,
+      month: Number(e.month),
+      themeCode: Number(e.theme),
+      populationManMyeong: Number(e.population),
+      accessibility: Number(e.accessibility),
+    });
+    return { e, result, g: grade(result) };
+  });
+
+  // 지도는 페이지에 하나뿐이다 — 이력마다 썸네일을 깔면 어느 것도 못 읽는다.
+  // 고른 게 없으면 가장 최근 진단을 편다(list 는 최신순).
+  const 고름 = 진단들.find((d) => d.e.id === 고른id) ?? 진단들[0] ?? null;
+
+  // 핀은 고른 진단의 닮은 축제 중에서만 유효하다. 개수는 0~3 이고
+  // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
+  const 핀 = 고름?.result.matched.find((m) => m.festival.id === 고른핀) ?? null;
+  const 핀번호 = 핀 && 고름 ? 고름.result.matched.indexOf(핀) + 1 : 0;
 
   return (
     <div className="sheet">
@@ -493,20 +522,135 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           나오지 않습니다
         </p>
       )}
+      {/* 한 장의 지도 + 그 지도가 말하는 것. 이력 목록은 그 아래 요약만 */}
+      {고름 && (
+        <section id="twin" className="twin-layout">
+          {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
+              둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}
+          {고름.result.invalid ? (
+            <div className="twin-detail">
+              <p className="alert" data-level="심각">
+                입력을 확인해 주세요
+              </p>
+              <ul>
+                {고름.result.invalid.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <>
+              <TwinMap
+                matched={고름.result.matched}
+                origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
+                entryId={고름.e.id}
+                selectedPin={핀?.festival.id ?? null}
+                scope={고름.result.searchedScope}
+              />
+
+              <div className="twin-detail">
+                <p className="num">
+                  {고름.e.sido} {고름.e.sigungu} · {고름.e.month}월 ·{" "}
+                  {THEME_NAME[Number(고름.e.theme)] ?? 고름.e.theme} · 인구{" "}
+                  {고름.e.population}만 · 접근성{" "}
+                  {ACCESSIBILITY_LABEL[Number(고름.e.accessibility)] ??
+                    고름.e.accessibility}{" "}
+                  · {한국시각(고름.e.savedAt)}
+                </p>
+
+                {/* 결론이 먼저 */}
+                <p className="alert" data-level={고름.g.level}>
+                  {고름.g.level === "심각" || 고름.g.level === "주의"
+                    ? `⚠ 경보: ${고름.g.level}`
+                    : 고름.g.level === "근거없음"
+                      ? "위험 근거 못 찾음"
+                      : "비교 대상 없음"}
+                </p>
+                <p className="headline">{고름.g.headline}</p>
+
+                {/* 핀을 눌렀으면 그 한 곳을 깊게, 아니면 닮은 곳 전부를 얕게.
+                    번호는 지도의 핀 번호와 같은 것이어야 짝이 읽힌다 */}
+                {핀 ? (
+                  <div className="pin-card">
+                    <p className="num">
+                      <strong>{핀번호}</strong> {핀.festival.name}
+                    </p>
+                    <p>
+                      {핀.festival.sido} {핀.festival.sigungu} · {핀.year}년 ·
+                      평소 대비{" "}
+                      <strong>{핀.festival.actualVisitSurge.toFixed(2)}배</strong>
+                    </p>
+                    <ul>
+                      {핀.axes.map((a) => (
+                        <li key={a.axis}>
+                          {a.label} — {a.detail}
+                        </li>
+                      ))}
+                    </ul>
+                    <p>
+                      <Link href={`/?entry=${고름.e.id}#twin`}>핀 선택 해제</Link>
+                    </p>
+                  </div>
+                ) : (
+                  고름.result.matched.length > 0 && (
+                    <ol className="legend">
+                      {고름.result.matched.map((m, i) => (
+                        <li key={m.festival.id} className="num">
+                          <Link
+                            href={`/?entry=${고름.e.id}&pin=${m.festival.id}#twin`}
+                          >
+                            <strong>{i + 1}</strong> {m.festival.name} (
+                            {m.festival.sido} {m.festival.sigungu}) · {m.year}년
+                            · 평소 대비 {m.festival.actualVisitSurge.toFixed(2)}
+                            배
+                          </Link>
+                        </li>
+                      ))}
+                    </ol>
+                  )
+                )}
+
+                {/* 결론(누가 몇 배)은 위에 펼쳐져 있다. 접는 건 "왜"뿐이다 */}
+                {고름.result.matched.length > 0 && (
+                  <details>
+                    <summary>왜 닮았나</summary>
+                    <ul>
+                      {고름.result.matched.map((m) => (
+                        <li key={m.festival.id}>
+                          {m.festival.name}
+                          <ul>
+                            {m.axes.map((a) => (
+                              <li key={a.axis}>
+                                {a.label} — {a.detail}
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                <p className="note">출처: {DATA_SOURCE}</p>
+                <p>
+                  {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
+                  <Link href={`/venue?entry=${고름.e.id}`}>
+                    이 쏠림에 대비하기 — 행사장 도면 →
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
       <ul>
-        {entries.map((e) => {
-          const result = findSimilar({
-            sido: e.sido,
-            sigungu: e.sigungu,
-            month: Number(e.month),
-            themeCode: Number(e.theme),
-            populationManMyeong: Number(e.population),
-            accessibility: Number(e.accessibility),
-          });
-          const g = grade(result);
+        {진단들.map(({ e, result, g }) => {
+          const 대표 = result.matched[0];
+          const 펴진것 = 고름?.e.id === e.id;
 
           return (
-            <li key={e.id} className="entry">
+            <li key={e.id} className="entry" data-current={펴진것 ? "1" : undefined}>
               <p className="num">
                 {e.sido} {e.sigungu} · {e.month}월 ·{" "}
                 {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만
@@ -515,91 +659,40 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 · {한국시각(e.savedAt)}
               </p>
 
+              {/* 요약 행에도 근거 한 조각을 남긴다. 등급만 남기면 담당자는
+                  무엇을 보고 매긴 등급인지 모른 채 목록을 훑게 된다 */}
+              <p className="verdict">
+                <span className="chip" data-level={g.level}>
+                  {g.level === "심각" || g.level === "주의"
+                    ? `경보 ${g.level}`
+                    : g.level === "근거없음"
+                      ? "근거 못 찾음"
+                      : "비교 대상 없음"}
+                </span>{" "}
+                {result.invalid
+                  ? "입력을 확인해 주세요"
+                  : 대표
+                    ? `${대표.festival.name}처럼 — 평소 대비 ${대표.festival.actualVisitSurge.toFixed(2)}배`
+                    : `찾아본 범위: ${result.searchedScope}`}
+              </p>
+
+              <p>
+                {펴진것 ? (
+                  <span className="note">지금 지도에 펼친 진단</span>
+                ) : (
+                  <Link href={`/?entry=${e.id}#twin`}>지도에서 보기</Link>
+                )}{" "}
+                · <Link href={`/venue?entry=${e.id}`}>행사장 도면 →</Link>
+              </p>
+
               {/* 시연 중 쌓인 시험 데이터를 그 자리에서 치운다. 확인창은 안 띄운다
                   — 진단은 다시 넣으면 그만이고, 모달은 폰 데모를 끊는다 */}
-              <p>
-                {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
-                <Link href={`/venue?entry=${e.id}`}>이 쏠림에 대비하기 — 행사장 도면 →</Link>
-              </p>
               <form action={지운다}>
                 <input type="hidden" name="entryId" value={e.id} />
                 <button type="submit" className="note">
                   이 진단 지우기
                 </button>
               </form>
-
-              {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
-                  둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}
-              {result.invalid ? (
-                <>
-                  <p className="alert" data-level="심각">
-                    입력을 확인해 주세요
-                  </p>
-                  <ul>
-                    {result.invalid.map((p) => (
-                      <li key={p}>{p}</li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <>
-                  {/* 결론이 먼저 */}
-                  <p className="alert" data-level={g.level}>
-                    {g.level === "심각" || g.level === "주의"
-                      ? `⚠ 경보: ${g.level}`
-                      : g.level === "근거없음"
-                        ? "위험 근거 못 찾음"
-                        : "비교 대상 없음"}
-                  </p>
-                  <p className="headline">{g.headline}</p>
-
-                  {/* 어디서 벌어졌던 일인지 한눈에. 점 하나하나가 전부 실측이다.
-                      결론(어느 축제가 몇 배)은 접지 않는다 — 접는 건 "왜"뿐이다 */}
-                  {result.matched.length > 0 && (
-                    <>
-                      <FestivalMap
-                        matched={result.matched}
-                        origin={coordsOf(e.sido, e.sigungu)}
-                      />
-                      <ol className="legend">
-                        {result.matched.map((m, i) => (
-                          <li key={m.festival.id} className="num">
-                            <strong>{i + 1}</strong> {m.festival.name} (
-                            {m.festival.sido} {m.festival.sigungu}) · {m.year}년
-                            · 평소 대비 {m.festival.actualVisitSurge.toFixed(2)}
-                            배
-                          </li>
-                        ))}
-                      </ol>
-                      <p className="note">
-                        회색 점 = 잰 축제 619곳 전부 · 붉은 ✕ = 이 기획안의
-                        지역 · 출처: {DATA_SOURCE}
-                      </p>
-                    </>
-                  )}
-                </>
-              )}
-
-              {/* 결론(누가 몇 배)은 위에 펼쳐져 있다. 접는 건 "왜"뿐이다 */}
-              {result.matched.length > 0 && (
-                <details>
-                  <summary>왜 닮았나</summary>
-                  <ul>
-                    {result.matched.map((m) => (
-                      <li key={m.festival.id}>
-                        {m.festival.name}
-                        <ul>
-                          {m.axes.map((a) => (
-                            <li key={a.axis}>
-                              {a.label} — {a.detail}
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
             </li>
           );
         })}

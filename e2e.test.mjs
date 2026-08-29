@@ -147,6 +147,40 @@ test("핵심 흐름 — 조건을 저장하면 목록에 남고 경보 등급이
   assert.equal(await 건수(), 전건수, "지웠는데 건수가 돌아오지 않았다");
 });
 
+test("지도는 한 장이고, 핀을 누르면 그 축제의 근거가 펴진다", async () => {
+  await 저장한다({
+    sido: "경북", sigungu: "김천시", month: "10",
+    theme: "1", population: "14", accessibility: "2",
+  });
+
+  const 홈 = await (await fetch(BASE + "/")).text();
+
+  // 이력이 몇 건이든 지도는 하나다 — 썸네일이 이력마다 깔리면 아무것도 안 읽힌다
+  assert.equal(
+    (홈.match(/class="map"/g) || []).length,
+    1,
+    "지도가 한 장이 아니다",
+  );
+
+  // 요약 행은 등급만 남기지 않는다. 근거 한 조각(배수)이 같이 있어야 한다
+  assert.match(홈, /평소 대비 \d+\.\d+배/, "요약에 근거가 없다");
+
+  // 핀은 자바스크립트 없이 눌린다 — 링크가 실제 주소여야 한다
+  const 핀 = 홈.match(/href="\/\?entry=(\d+)&(?:amp;)?pin=([^"#]+)#twin"/);
+  assert.ok(핀, "핀에 걸린 주소가 없다");
+
+  const 펴짐 = await (
+    await fetch(`${BASE}/?entry=${핀[1]}&pin=${핀[2]}#twin`)
+  ).text();
+  assert.match(펴짐, /핀 선택 해제/, "핀을 눌러도 상세가 펴지지 않는다");
+  assert.match(펴짐, /class="pin-card"/, "고른 축제의 근거 카드가 없다");
+  assert.equal(
+    (펴짐.match(/class="map"/g) || []).length,
+    1,
+    "핀을 눌렀더니 지도가 늘었다",
+  );
+});
+
 test("잘못된 값은 저장되지 않는다", async () => {
   const 전 = await (await fetch(BASE + "/")).text();
   const 전건수 = (전.match(/김천시/g) || []).length;

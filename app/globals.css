@@ -159,6 +159,14 @@ ol.legend {
   font-size: var(--text-sm);
 }
 ol.legend li { margin: 0.15rem 0; }
+/* 목록 줄도 핀과 같은 곳으로 간다 — 지도를 못 누르는 손가락이 있다 */
+ol.legend a {
+  display: block;
+  padding: 0.2rem 0.3rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+ol.legend a:hover { background: var(--raised); }
 ol.legend strong,
 ul.scan-findings strong {
   display: inline-block;
@@ -180,12 +188,110 @@ ul.scan-findings {
 }
 ul.scan-findings strong { background: var(--severe); }
 
-/* 닮은 축제 지도 — 619개 실측 점이 나라 모양을 그린다 */
+/* 닮은 축제 지도 — 실측 점 615개가 나라 모양을 그린다.
+   페이지에 하나뿐이라 크게 쓴다. 15rem 썸네일이 이력마다 깔렸을 때는
+   어느 것도 읽히지 않았고, 핀을 누를 수도 없었다.
+   캔버스가 240×470(남한 비율)이라 17rem 이면 원래 크기의 1.13배로 그려진다. */
 .map {
   display: block;
-  width: min(15rem, 100%);
+  width: min(17rem, 100%);
   height: auto;
-  margin: var(--s1) 0;
+  margin: 0;
+}
+
+/* 배경 점 — 배경이되 읽혀야 한다. 괘선색(#D4D4D4)은 지도를 키우니
+   점 사이가 벌어져 나라 윤곽이 사라졌다 */
+.map-dots {
+  fill: none;
+  stroke: var(--concrete);
+  opacity: 0.45;
+}
+.map-origin { fill: none; stroke: var(--severe); }
+
+/* 핀. 색은 여기서만 정한다 — 도면 시스템 토큰 밖으로 새지 않게 */
+.pin { cursor: pointer; }
+.pin line { stroke: var(--ink); }
+.pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
+.pin text { fill: var(--surface); }
+.pin-foot { fill: var(--ink); opacity: 0.18; }
+.pin[data-selected] line { stroke: var(--severe); }
+.pin[data-selected] circle { fill: var(--severe); }
+
+/* 지도 한 장 + 그 지도가 말하는 것을 나란히 */
+.twin-layout {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  margin: var(--s2) 0 var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line-strong);
+}
+/* 지도 폭에 figure 를 묶는다 — 안 묶으면 한 줄짜리 캡션이 figure 를
+   지도보다 넓게 벌려 지도 오른쪽에 빈 땅이 생긴다 */
+.twin-map { flex: 0 0 auto; width: min(17rem, 100%); margin: 0; }
+.twin-map figcaption {
+  margin-top: var(--s1);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.twin-detail { flex: 1 1 22rem; min-width: 0; }
+.twin-detail > p:first-child {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--concrete);
+  margin: 0 0 var(--s1);
+}
+@media (max-width: 56rem) {
+  .twin-layout { flex-direction: column; }
+}
+
+/* 누를 수 있다는 것이 보여야 누른다 */
+.twin-map a { text-decoration: none; }
+.pin:hover circle { fill: var(--severe); }
+.pin:hover line { stroke: var(--severe); }
+.twin-map a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* 핀 하나를 눌렀을 때 펴지는 그 축제의 근거 */
+.pin-card {
+  margin: var(--s1) 0 var(--s2);
+  padding: var(--s2);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+.pin-card p { margin: 0 0 var(--s1); }
+.pin-card ul {
+  margin: 0 0 var(--s1);
+  padding-left: 1.1rem;
+  font-size: var(--text-sm);
+  color: var(--concrete);
+}
+
+/* 요약 행의 등급 — 목록에서 훑을 때 등급이 먼저 걸리게 */
+.chip {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--concrete);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--concrete);
+}
+.chip[data-level="심각"] {
+  border-color: var(--severe);
+  background: var(--severe-bg);
+  color: var(--severe);
+  font-weight: 700;
+}
+.chip[data-level="주의"] {
+  border-color: var(--caution);
+  background: var(--caution-bg);
+  color: var(--caution);
+}
+.verdict { font-size: var(--text-sm); margin: 0 0 var(--s1); }
+/* 지금 지도에 펴 있는 행. 색이 아니라 괘선으로 — 흑백에서도 갈린다 */
+.entry[data-current] {
+  border-left: 3px solid var(--ink);
+  padding-left: var(--s2);
 }
 
 /* ── 행사장 도면 편집기 ── */

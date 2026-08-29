@@ -47,7 +47,7 @@ function monthDistance(m1: number, m2: number): number {
 /**
  * 입력 지역의 좌표. 같은 시군구를 먼저 찾고 없으면 같은 시도의 첫 건을 쓴다.
  * 둘 다 없으면 null 을 돌려주고 지역 축을 아예 빼고 잰다. 좌표를 지어내지 않는다.
- * (지도(app/festival-map.tsx)도 같은 좌표를 쓴다 — 재는 자와 그리는 자가 같아야 한다)
+ * (지도(app/twin-map.tsx)도 같은 좌표를 쓴다 — 재는 자와 그리는 자가 같아야 한다)
  */
 export function coordsOf(
   sido: string,
