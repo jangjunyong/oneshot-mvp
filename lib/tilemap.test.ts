@@ -8,11 +8,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  clampZoom,
   metersPerPixel,
   panCenter,
   tileUrl,
   latLngToWorldPx,
   visibleTiles,
+  zoomRange,
 } from "@/lib/tilemap";
 
 test("자동 축척 — 줌과 위도에서 m/px 를 얻는다", () => {
@@ -82,4 +84,32 @@ test("보이는 타일 — 스타일과 키가 타일 주소까지 흘러간다"
   const tiles = visibleTiles(36.14, 128.11, 16, 300, 300, "plan", "TESTKEY123");
   assert.ok(tiles.length > 0);
   for (const t of tiles) assert.match(t.url, /vworld/);
+});
+
+test("줌 범위 — 배경이 실제로 주는 만큼만 연다", () => {
+  // 2026-08-29 실측: 브이월드 백지도는 z19 를 안 준다(XML 오류). 열어 두면
+  // 담당자는 확대를 눌렀는데 빈 캔버스를 본다.
+  const vw = zoomRange("plan", true);
+  assert.equal(vw.max, 18, "브이월드는 z18 까지다");
+  assert.equal(vw.min, 6);
+
+  // 키가 없으면 OSM 폴백이라 범위가 다르다
+  const osm = zoomRange("plan", false);
+  assert.equal(osm.max, 19);
+  assert.equal(osm.min, 5);
+
+  // 위성(Esri)은 z20 부터 빈 타일이 온다
+  assert.deepEqual(zoomRange("satellite", true), { min: 5, max: 19 });
+
+  // 예전 하한(15)보다 훨씬 아래까지 내려간다 — 부지를 못 찾겠다는 지적
+  assert.ok(vw.min < 15 && osm.min < 15, "축소 제한이 그대로다");
+});
+
+test("줌 데려오기 — 배경을 바꿔도 없는 줌에 남지 않는다", () => {
+  // 위성 z19 에서 도면(브이월드)으로 바꾸면 z18 로 내려와야 한다
+  assert.equal(clampZoom(19, "plan", true), 18);
+  // 도면 z6 에서 위성으로 바꾸면 z6 그대로 (위성은 5까지 준다)
+  assert.equal(clampZoom(6, "satellite", true), 6);
+  // 범위 안이면 건드리지 않는다
+  assert.equal(clampZoom(16, "plan", true), 16);
 });

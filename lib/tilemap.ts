@@ -11,9 +11,42 @@
 
 export const TILE_SIZE = 256;
 
-/** 편집에 쓸 만한 줌 범위 — 15(동네)~19(부스 단위) */
-export const MIN_ZOOM = 15;
-export const MAX_ZOOM = 19;
+/**
+ * 줌 범위는 **타일 제공자가 정한다**. 없는 줌을 열어 주면 화면이 빈 캔버스가
+ * 되고, 담당자는 자기가 뭘 잘못 눌렀는지 모른다.
+ *
+ * 2026-08-29 실측(서울시청 타일 요청):
+ *   브이월드 백지도  z6~18   (z5 이하·z19 이상은 XML 오류를 돌려준다)
+ *   OSM             z5~19   (z20 은 400)
+ *   Esri 위성        z5~19   (z20 이상은 빈 타일)
+ *
+ * 이전 상수(15~19)는 두 군데가 틀렸다 — 기본 배경인 브이월드에서 z19 는
+ * 아예 안 나오는데 열려 있었고, 아래는 15에서 막혀 동네 밖으로 못 나갔다.
+ */
+export const ZOOM_LIMITS = {
+  vworld: { min: 6, max: 18 },
+  osm: { min: 5, max: 19 },
+  satellite: { min: 5, max: 19 },
+} as const;
+
+/** 지금 배경으로 열 수 있는 줌 범위 */
+export function zoomRange(
+  style: TileStyle,
+  hasVworldKey: boolean,
+): { min: number; max: number } {
+  if (style === "satellite") return ZOOM_LIMITS.satellite;
+  return hasVworldKey ? ZOOM_LIMITS.vworld : ZOOM_LIMITS.osm;
+}
+
+/** 배경을 바꿨을 때 지금 줌이 그 배경에 없으면 가장 가까운 줌으로 데려온다 */
+export function clampZoom(
+  zoom: number,
+  style: TileStyle,
+  hasVworldKey: boolean,
+): number {
+  const { min, max } = zoomRange(style, hasVworldKey);
+  return Math.min(max, Math.max(min, zoom));
+}
 
 /**
  * 배경 스타일 — plan(기본)은 건축 도면처럼 조용한 회백색 지도다.

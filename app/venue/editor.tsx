@@ -30,12 +30,12 @@ import {
   type VenueKind,
 } from "@/lib/venue";
 import {
-  MAX_ZOOM,
+  clampZoom,
   metersPerPixel,
-  MIN_ZOOM,
   panCenter,
   tileAttribution,
   visibleTiles,
+  zoomRange,
   type Tile,
 } from "@/lib/tilemap";
 import { scanVenue } from "@/lib/scan";
@@ -192,22 +192,39 @@ export default function Editor({
     setMode("pan");
   }
 
+  /** 배경이 실제로 주는 줌 범위. 배경마다 다르다 (tilemap.ZOOM_LIMITS) */
+  const 줌범위 = zoomRange(mapStyle, vworldKey !== null);
+
+  /** 줌을 z 로 옮긴다 — 도형도 같은 배율로 키워 땅에 붙여 둔다 */
+  function goZoom(z: number, style: "plan" | "satellite" = mapStyle) {
+    const m = venue.map;
+    if (!m || z === m.zoom) return;
+    const f = 2 ** (z - m.zoom);
+    setVenue((v) => ({
+      ...v,
+      map: { ...m, zoom: z, style },
+      mPerPx: metersPerPixel(m.lat, z),
+      items: zoomItems(v.items, f),
+    }));
+  }
+
+  /** 배경을 바꾼다. 새 배경에 없는 줌이면 가장 가까운 줌으로 데려온다 —
+   *  안 그러면 위성 z19 에서 도면으로 바꾸는 순간 화면이 빈 캔버스가 된다 */
   function setMapStyle(style: "plan" | "satellite") {
-    setVenue((v) => (v.map ? { ...v, map: { ...v.map, style } } : v));
+    const m = venue.map;
+    if (!m) return;
+    const z = clampZoom(m.zoom, style, vworldKey !== null);
+    if (z === m.zoom) {
+      setVenue((v) => (v.map ? { ...v, map: { ...v.map, style } } : v));
+      return;
+    }
+    goZoom(z, style);
   }
 
   function changeZoom(dir: 1 | -1) {
     const m = venue.map;
     if (!m) return;
-    const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, m.zoom + dir));
-    if (zoom === m.zoom) return;
-    const f = 2 ** (zoom - m.zoom);
-    setVenue((v) => ({
-      ...v,
-      map: { ...m, zoom },
-      mPerPx: metersPerPixel(m.lat, zoom),
-      items: zoomItems(v.items, f),
-    }));
+    goZoom(Math.min(줌범위.max, Math.max(줌범위.min, m.zoom + dir)));
   }
 
   function onStageDragEnd(e: KonvaEventObject<DragEvent>) {
@@ -670,8 +687,25 @@ export default function Editor({
               ) : (
                 <button type="button" className="active" onClick={() => setMode("select")}>이동 끝 — 배치로</button>
               )}{" "}
-              <button type="button" onClick={() => changeZoom(1)}>확대 +</button>{" "}
-              <button type="button" onClick={() => changeZoom(-1)}>축소 −</button>
+              {/* 끝에 닿으면 버튼을 죽인다 — 눌러도 아무 일이 없으면
+                  담당자는 자기가 뭘 잘못했는지 찾는다 */}
+              <button
+                type="button"
+                onClick={() => changeZoom(1)}
+                disabled={(venue.map?.zoom ?? 0) >= 줌범위.max}
+              >
+                확대 +
+              </button>{" "}
+              <button
+                type="button"
+                onClick={() => changeZoom(-1)}
+                disabled={(venue.map?.zoom ?? 0) <= 줌범위.min}
+              >
+                축소 −
+              </button>{" "}
+              <span className="note num">
+                줌 {venue.map?.zoom} / {줌범위.min}~{줌범위.max}
+              </span>
             </p>
             <p>
               <button
