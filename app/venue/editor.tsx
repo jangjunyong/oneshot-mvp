@@ -22,14 +22,18 @@ import {
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
+  fitToSite,
   freeSpot,
   metersOf,
   outsideSite,
   polygonAreaM2,
   scaleFromPoints,
+  scaleItems,
+  shiftItems,
   siteOf,
   sizeInPx,
   VENUE_KIND_NAME,
+  viewOf,
   type BoxKind,
   type Venue,
   type VenueItem,
@@ -144,45 +148,19 @@ export default function Editor({
 
   // 배경 지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
   const mapStyle = venue.map?.style ?? "plan";
+  // 뷰 배율 — 지도 줌으로 못 당기는 몫을 타일 오버줌으로 채운다
+  const view = viewOf(venue);
   const tiles = venue.map
-    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height, mapStyle, vworldKey)
+    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height, mapStyle, vworldKey, view)
     : [];
   const tileImgs = useTileImages(tiles);
   // 브이월드 백지도는 그 자체가 도면 톤이라 그대로, OSM 폴백은 색이 시끄러워
   // 종이 위에 연하게 가라앉힌다. 위성은 확인용이니 원본 그대로.
   const tileOpacity = mapStyle === "satellite" ? 1 : vworldKey ? 1 : 0.35;
 
-  /** 도형 전체를 픽셀만큼 옮긴다 — 지도를 끌면 도형이 땅에 붙어 따라온다 */
-  function shiftItems(items: VenueItem[], dx: number, dy: number): VenueItem[] {
-    return items.map((it) =>
-      it.kind === "path"
-        ? { ...it, points: (it.points ?? []).map((n, i) => n + (i % 2 === 0 ? dx : dy)) }
-        : { ...it, x: it.x + dx, y: it.y + dy },
-    );
-  }
-
-  /** 캔버스 중앙 기준으로 도형을 배율만큼 키운다 — 줌해도 땅에 붙어 있다 */
-  function zoomItems(items: VenueItem[], f: number): VenueItem[] {
-    const cx = venue.width / 2;
-    const cy = venue.height / 2;
-    return items.map((it) =>
-      it.kind === "path"
-        ? {
-            ...it,
-            w: Math.max(2, it.w * f),
-            points: (it.points ?? []).map((n, i) =>
-              i % 2 === 0 ? cx + (n - cx) * f : cy + (n - cy) * f,
-            ),
-          }
-        : {
-            ...it,
-            x: cx + (it.x - cx) * f,
-            y: cy + (it.y - cy) * f,
-            w: it.w * f,
-            h: it.h * f,
-          },
-    );
-  }
+  /** 캔버스 중앙을 붙박고 도형을 키운다 — 줌·배율이 바뀌어도 땅에 붙어 있다 */
+  const zoomItems = (items: VenueItem[], f: number) =>
+    scaleItems(items, f, venue.width / 2, venue.height / 2);
 
   function layMap() {
     const lat = initialCenter?.lat ?? 37.5663; // 서울시청 — 이력 없이 들어온 경우
@@ -193,7 +171,7 @@ export default function Editor({
     const zoom = 18;
     setVenue((v) => ({
       ...v,
-      map: { lat, lng, zoom, style: "plan" },
+      map: { lat, lng, zoom, style: "plan", view: 1 },
       mPerPx: metersPerPixel(lat, zoom),
     }));
     setMode("pan");
@@ -210,9 +188,41 @@ export default function Editor({
     setVenue((v) => ({
       ...v,
       map: { ...m, zoom: z, style },
-      mPerPx: metersPerPixel(m.lat, z),
+      // 뷰 배율은 줌과 별개로 유지된다 — 맞춰 본 상태에서 줌을 만져도
+      // 축척은 "타일 해상도 ÷ 배율" 이라는 정의가 안 흔들린다
+      mPerPx: metersPerPixel(m.lat, z) / view,
       items: zoomItems(v.items, f),
     }));
+  }
+
+  /**
+   * 뷰 배율을 바꾼다 — 캔버스 중앙을 붙박고 도형을 키운 뒤 (dx,dy) 만큼 민다.
+   * 축척(m/px)을 같은 곱으로 나누므로 **실측은 한 치도 안 변한다**: 늘어난
+   * 것은 화면뿐이고, 200m 부지는 배율 3 배에서도 200m 다.
+   */
+  function applyView(next: number, f: number, dx: number, dy: number) {
+    const m = venue.map;
+    if (!m) return;
+    setVenue((v) => ({
+      ...v,
+      map: { ...m, view: next, ...panCenter(m.lat, m.lng, m.zoom, dx, dy, next) },
+      mPerPx: metersPerPixel(m.lat, m.zoom) / next,
+      items: shiftItems(zoomItems(v.items, f), dx, dy),
+    }));
+  }
+
+  /** 부지에 맞춰 보기 — 그린 부지가 캔버스를 채우도록 당긴다 */
+  function fitView() {
+    const pts = site?.points;
+    if (!venue.map || !pts) return;
+    const fit = fitToSite(pts, venue, view);
+    if (!fit) {
+      set알림("부지가 너무 좁아 맞출 수 없습니다 — 경계를 다시 그려 주세요");
+      return;
+    }
+    applyView(fit.view, fit.factor, fit.dx, fit.dy);
+    setMode("select");
+    set알림(null);
   }
 
   /** 배경을 바꾼다. 새 배경에 없는 줌이면 가장 가까운 줌으로 데려온다 —
@@ -243,7 +253,7 @@ export default function Editor({
     const m = venue.map;
     setVenue((v) => ({
       ...v,
-      map: { ...m, ...panCenter(m.lat, m.lng, m.zoom, dx, dy) },
+      map: { ...m, ...panCenter(m.lat, m.lng, m.zoom, dx, dy, view) },
       items: shiftItems(v.items, dx, dy),
     }));
   }
@@ -434,7 +444,11 @@ export default function Editor({
   const 축척문구 =
     venue.mPerPx === null
       ? "축척 없음 — 쏠림 검증 전에 재 두세요"
-      : `1px = ${venue.mPerPx.toFixed(3)}m · 도면 폭 ≈ ${Math.round(venue.width * venue.mPerPx)}m${venue.map ? " (지도 줌에서 자동)" : ""}`;
+      : `1px = ${venue.mPerPx.toFixed(3)}m · 도면 폭 ≈ ${Math.round(venue.width * venue.mPerPx)}m${
+          venue.map
+            ? ` (지도 줌 ${venue.map.zoom}${view === 1 ? "" : ` × 보기 ${view.toFixed(1)}배`} 에서 자동)`
+            : ""
+        }`;
 
   const selectedMeters = selected ? metersOf(selected, venue.mPerPx) : null;
 
@@ -456,7 +470,17 @@ export default function Editor({
               {tiles.map(
                 (t) =>
                   tileImgs[t.url] && (
-                    <KonvaImage key={t.url} image={tileImgs[t.url]} x={t.px} y={t.py} width={256} height={256} listening={false} />
+                    // 배율이 소수면 타일 경계가 반픽셀에 걸려 흰 실선이 생긴다.
+                    // 1px 겹쳐 그려 이음매를 덮는다 (오버줌 그림이라 손해가 없다)
+                    <KonvaImage
+                      key={t.url}
+                      image={tileImgs[t.url]}
+                      x={t.px}
+                      y={t.py}
+                      width={t.size + 1}
+                      height={t.size + 1}
+                      listening={false}
+                    />
                   ),
               )}
             </Group>
@@ -731,14 +755,29 @@ export default function Editor({
         {mode === "site" && (
           <p className="note">
             부지의 모서리를 차례로 눌러 찍고 경계 닫기를 누르세요 — 세 점 이상.
-            부지가 있으면 면적이 나오고, 밖으로 나간 배치를 잡아냅니다
+            부지가 있으면 면적이 나오고, 밖으로 나간 배치를 잡아냅니다.
+            닫고 나면 &ldquo;부지에 맞춰 보기&rdquo;로 그 부지를 화면 가득 당겨
+            3m 부스도 손으로 잡을 수 있습니다
           </p>
         )}
         {site && (
-          <p className="note num">
-            부지 {면적 === null ? "면적 미정(축척 없음)" : `${Math.round(면적).toLocaleString()}㎡`}
-            {밖으로 > 0 && ` · 경계 밖 배치 ${밖으로}개`}
-          </p>
+          <>
+            <p className="note num">
+              부지 {면적 === null ? "면적 미정(축척 없음)" : `${Math.round(면적).toLocaleString()}㎡`}
+              {밖으로 > 0 && ` · 경계 밖 배치 ${밖으로}개`}
+            </p>
+            {venue.map && (
+              <p>
+                <button type="button" onClick={fitView}>부지에 맞춰 보기</button>{" "}
+                {view !== 1 && (
+                  <button type="button" onClick={() => applyView(1, 1 / view, 0, 0)}>
+                    배율 1× 로
+                  </button>
+                )}{" "}
+                <span className="note num">보기 {view.toFixed(1)}×</span>
+              </p>
+            )}
+          </>
         )}
 
         <h2>배경 지도</h2>
@@ -795,7 +834,14 @@ export default function Editor({
             </p>
             <p className="note">
               설계는 조용한 도면 위에서, 강·다리·지형 확인은 위성으로. 지도를
-              끌거나 줌해도 놓은 것들은 땅에 붙어 따라옵니다
+              끌거나 줌해도 놓은 것들은 땅에 붙어 따라옵니다.
+              {(venue.map?.zoom ?? 0) >= 줌범위.max && site && (
+                <>
+                  {" "}확대가 여기서 막히면 <strong>부지에 맞춰 보기</strong>로 더
+                  당기세요 — 있는 타일을 늘려 그리는 것이라 배경은 흐려지지만
+                  치수는 그대로입니다
+                </>
+              )}
             </p>
           </>
         )}

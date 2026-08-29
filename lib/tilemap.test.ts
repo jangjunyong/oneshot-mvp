@@ -13,6 +13,7 @@ import {
   panCenter,
   tileUrl,
   latLngToWorldPx,
+  TILE_SIZE,
   visibleTiles,
   zoomRange,
 } from "@/lib/tilemap";
@@ -103,6 +104,41 @@ test("줌 범위 — 배경이 실제로 주는 만큼만 연다", () => {
 
   // 예전 하한(15)보다 훨씬 아래까지 내려간다 — 부지를 못 찾겠다는 지적
   assert.ok(vw.min < 15 && osm.min < 15, "축소 제한이 그대로다");
+});
+
+test("타일 오버줌 — 뷰 배율만큼 타일을 늘려 그리고, 덮는 땅은 그만큼 좁아진다", () => {
+  // 브이월드가 z19 를 안 주니 부지를 당겨 보려면 z18 타일을 늘리는 수밖에 없다
+  const 배율 = 2.5;
+  const tiles = visibleTiles(36.14, 128.11, 18, 900, 620, "plan", null, 배율);
+
+  for (const t of tiles) {
+    assert.equal(t.size, TILE_SIZE * 배율, "타일을 배율만큼 늘려 그려야 한다");
+    assert.ok(t.px > -t.size && t.px < 900, `타일이 캔버스 밖이다: px=${t.px}`);
+    assert.ok(t.py > -t.size && t.py < 620, `타일이 캔버스 밖이다: py=${t.py}`);
+  }
+  // 중앙은 여전히 덮인다 — 배율을 올렸는데 빈 캔버스가 나오면 안 된다
+  assert.ok(
+    tiles.some((t) => t.px <= 450 && 450 < t.px + t.size && t.py <= 310 && 310 < t.py + t.size),
+    "중앙을 덮는 타일이 없다",
+  );
+  // 같은 캔버스가 더 좁은 땅을 보므로 타일 수가 준다
+  assert.ok(
+    tiles.length < visibleTiles(36.14, 128.11, 18, 900, 620).length,
+    "배율을 올렸는데 타일 수가 안 줄었다 — 덮는 땅이 안 좁아진 것이다",
+  );
+  // 배율 1 은 예전 그대로여야 한다 (저장된 옛 도면)
+  assert.deepEqual(
+    visibleTiles(36.14, 128.11, 18, 900, 620, "plan", null, 1),
+    visibleTiles(36.14, 128.11, 18, 900, 620),
+  );
+});
+
+test("지도 끌기 — 뷰 배율이 있으면 화면 픽셀이 그만큼 적은 땅이다", () => {
+  // 2.5 배로 당겨 본 화면에서 100px 끌면 땅은 40px 만 움직여야 한다
+  const before = latLngToWorldPx(36.14, 128.11, 18);
+  const moved = panCenter(36.14, 128.11, 18, 100, 0, 2.5);
+  const after = latLngToWorldPx(moved.lat, moved.lng, 18);
+  assert.ok(Math.abs(after.x - (before.x - 40)) < 0.01, `x 어긋남: ${after.x - before.x}`);
 });
 
 test("줌 데려오기 — 배경을 바꿔도 없는 줌에 남지 않는다", () => {

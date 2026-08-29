@@ -87,6 +87,8 @@ export interface Tile {
   /** 캔버스 위 배치 위치(px) */
   px: number;
   py: number;
+  /** 그릴 크기(px) — 뷰 배율만큼 늘어난다. 배율 1 이면 TILE_SIZE */
+  size: number;
   url: string;
 }
 
@@ -117,6 +119,11 @@ export function tileUrl(
 /**
  * 중심 위경도를 캔버스 정중앙에 두었을 때, 캔버스를 덮는 타일 목록.
  * 완전히 밖에 있는 타일은 내려받지 않는다.
+ *
+ * `view` 는 **뷰 배율(오버줌)** 이다. 브이월드 백지도는 z18 이 상한이라
+ * 3m 부스가 6px 로 남는데, 그보다 당겨 보려면 있는 타일을 늘려 그리는 수밖에
+ * 없다. 배율을 올리면 타일은 `TILE_SIZE × view` 로 커지고 같은 캔버스가 덮는
+ * 땅은 그만큼 좁아진다. 늘린 그림이라 흐려지는 건 감수하는 값이다.
  */
 export function visibleTiles(
   lat: number,
@@ -126,15 +133,18 @@ export function visibleTiles(
   height: number,
   style: TileStyle = "plan",
   vworldKey: string | null = null,
+  view = 1,
 ): Tile[] {
+  const size = TILE_SIZE * view;
   const center = latLngToWorldPx(lat, lng, zoom);
-  const originX = center.x - width / 2; // 캔버스 (0,0) 의 세계 픽셀
-  const originY = center.y - height / 2;
+  // 캔버스가 덮는 세계 픽셀은 배율만큼 좁다
+  const originX = center.x - width / view / 2; // 캔버스 (0,0) 의 세계 픽셀
+  const originY = center.y - height / view / 2;
 
   const first = { tx: Math.floor(originX / TILE_SIZE), ty: Math.floor(originY / TILE_SIZE) };
   const last = {
-    tx: Math.floor((originX + width) / TILE_SIZE),
-    ty: Math.floor((originY + height) / TILE_SIZE),
+    tx: Math.floor((originX + width / view) / TILE_SIZE),
+    ty: Math.floor((originY + height / view) / TILE_SIZE),
   };
 
   const max = 2 ** zoom - 1;
@@ -146,8 +156,9 @@ export function visibleTiles(
         tx,
         ty,
         zoom,
-        px: tx * TILE_SIZE - originX,
-        py: ty * TILE_SIZE - originY,
+        px: (tx * TILE_SIZE - originX) * view,
+        py: (ty * TILE_SIZE - originY) * view,
+        size,
         url: tileUrl(tx, ty, zoom, style, vworldKey),
       });
     }
@@ -155,18 +166,22 @@ export function visibleTiles(
   return tiles;
 }
 
-/** 지도 화면을 드래그로 옮길 때 — 픽셀 이동량만큼 중심 위경도를 되돌린다 */
+/**
+ * 지도 화면을 드래그로 옮길 때 — 픽셀 이동량만큼 중심 위경도를 되돌린다.
+ * 뷰 배율이 걸려 있으면 화면 1px 이 세계 1px 이 아니다(배율만큼 적은 땅이다).
+ */
 export function panCenter(
   lat: number,
   lng: number,
   zoom: number,
   dxPx: number,
   dyPx: number,
+  view = 1,
 ): { lat: number; lng: number } {
   const world = TILE_SIZE * 2 ** zoom;
   const p = latLngToWorldPx(lat, lng, zoom);
-  const x = Math.min(world, Math.max(0, p.x - dxPx));
-  const y = Math.min(world, Math.max(0, p.y - dyPx));
+  const x = Math.min(world, Math.max(0, p.x - dxPx / view));
+  const y = Math.min(world, Math.max(0, p.y - dyPx / view));
   const newLng = (x / world) * 360 - 180;
   const n = Math.PI - (2 * Math.PI * y) / world;
   const newLat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));

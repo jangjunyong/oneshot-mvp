@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 
 import {
   emptyVenue,
+  fitToSite,
   freeSpot,
   KIND_SIZE_M,
   metersOf,
@@ -15,10 +16,14 @@ import {
   pointInPolygon,
   polygonAreaM2,
   scaleFromPoints,
+  scaleItems,
+  shiftItems,
   sizeInPx,
   siteOf,
   validateVenue,
   VENUE_KIND_NAME,
+  VIEW_RANGE,
+  viewOf,
   type Venue,
   type VenueItem,
 } from "@/lib/venue";
@@ -234,4 +239,128 @@ test("부지 경계는 하나뿐이고 세 점 이상이어야 한다", () => {
 
 test("부지 경계도 화면에 그대로 나갈 한국어 이름을 가진다", () => {
   assert.equal(VENUE_KIND_NAME.site, "부지 경계");
+});
+
+// ── 부지에 맞춰 보기 / 뷰 배율 (1-e) ──────────────────────────────
+
+test("부지에 맞춰 보기 — 부지가 캔버스를 채우는 배율과 중앙으로 데려올 이동량", () => {
+  const canvas = { width: 900, height: 620 };
+  // 200×200px 부지가 캔버스 왼쪽 위에 치우쳐 있다
+  const 부지 = [100, 100, 300, 100, 300, 300, 100, 300];
+  const fit = fitToSite(부지, canvas, 1)!;
+
+  // 짧은 변(세로 620)이 배율을 정한다: 620×0.88 / 200 = 2.728
+  assert.ok(Math.abs(fit.view - 2.728) < 0.001, `배율: ${fit.view}`);
+  assert.ok(Math.abs(fit.factor - fit.view) < 1e-9, "배율 1 에서 시작하면 곱은 배율과 같다");
+
+  // 실제로 옮겨 보면 부지 중심이 캔버스 중심에 온다
+  const 옮긴것 = shiftItems(
+    scaleItems([상자({ id: "s", kind: "site", points: 부지 })], fit.factor, canvas.width / 2, canvas.height / 2),
+    fit.dx,
+    fit.dy,
+  );
+  const p = 옮긴것[0].points!;
+  const cx = (Math.min(p[0], p[4]) + Math.max(p[0], p[4])) / 2;
+  const cy = (Math.min(p[1], p[5]) + Math.max(p[1], p[5])) / 2;
+  assert.ok(Math.abs(cx - 450) < 0.001, `가로 중심이 어긋났다: ${cx}`);
+  assert.ok(Math.abs(cy - 310) < 0.001, `세로 중심이 어긋났다: ${cy}`);
+
+  // 부지가 캔버스 안에 들어온다
+  assert.ok(Math.max(p[0], p[4]) - Math.min(p[0], p[4]) <= canvas.width);
+});
+
+test("맞춰 보기를 해도 실측은 한 치도 안 변한다 — 늘어난 것은 화면뿐이다", () => {
+  // 이 등식이 이 기능의 전부다. 배율은 보기를 키우는 것이지 부지를 키우는 게
+  // 아니다. mPerPx 를 같은 곱으로 나누지 않으면 200m 부지가 545m 가 된다.
+  const canvas = { width: 900, height: 620 };
+  const mPerPx = 0.474; // 줌 18, 위도 37.5
+  const 부지 = [100, 100, 522, 100, 522, 395, 100, 395]; // ≈200×140m
+  const 전 = polygonAreaM2(부지, mPerPx)!;
+
+  const fit = fitToSite(부지, canvas, 1)!;
+  const 후점 = scaleItems(
+    [상자({ id: "s", kind: "site", points: 부지 })],
+    fit.factor,
+    canvas.width / 2,
+    canvas.height / 2,
+  )[0].points!;
+  const 후 = polygonAreaM2(후점, mPerPx / fit.view)!;
+
+  assert.ok(Math.abs(후 - 전) / 전 < 1e-9, `면적이 변했다: ${전} → ${후}`);
+  assert.ok(전 > 27000 && 전 < 29000, `≈200×140m 부지여야 한다: ${전}`);
+
+  // 3m 부스도 마찬가지 — 픽셀은 커지고 미터는 그대로다
+  const [w0] = sizeInPx("booth", mPerPx);
+  const [w1] = sizeInPx("booth", mPerPx / fit.view);
+  assert.ok(w1 > w0 * 1.5, `부스가 안 커졌다: ${w0.toFixed(1)}px → ${w1.toFixed(1)}px`);
+  assert.ok(Math.abs(w1 * (mPerPx / fit.view) - 3) < 1e-9, "부스는 여전히 3m 다");
+  // 줌 18 에서 6.3px 이던 부스가 11px 대가 된다 — 손으로 잡을 수 있는 크기다.
+  // 세로(140m)가 캔버스 294m 안에서 배율을 정하므로 여기가 상한이다.
+  assert.ok(w1 > 11, `만질 수 있는 크기여야 한다: ${w1.toFixed(1)}px`);
+});
+
+test("배율은 한계가 있다 — 타일 오버줌은 늘린 그림이라 무한정 못 늘린다", () => {
+  const canvas = { width: 900, height: 620 };
+  // 10px 짜리 점만 한 부지 — 계산상 배율 54 배지만 상한에서 멈춘다
+  const 점 = [400, 300, 410, 300, 410, 310, 400, 310];
+  assert.equal(fitToSite(점, canvas, 1)!.view, VIEW_RANGE.max);
+
+  // 캔버스보다 큰 부지는 배율이 1 아래로 내려가지 않는다 — 축소는 지도 줌의 몫
+  const 거대 = [0, 0, 4000, 0, 4000, 3000, 0, 3000];
+  assert.equal(fitToSite(거대, canvas, 1)!.view, VIEW_RANGE.min);
+});
+
+test("맞춰 볼 부지가 없거나 넓이가 없으면 지어내지 않고 null", () => {
+  const canvas = { width: 900, height: 620 };
+  assert.equal(fitToSite([], canvas, 1), null);
+  assert.equal(fitToSite([0, 0, 10, 10], canvas, 1), null, "세 점이 안 되면 부지가 아니다");
+  // 한 줄로 늘어선 점들은 면이 아니다
+  assert.equal(fitToSite([0, 0, 100, 0, 200, 0], canvas, 1), null);
+});
+
+test("이미 맞춰 본 상태에서 다시 맞추면 곱이 아니라 절대 배율로 간다", () => {
+  const canvas = { width: 900, height: 620 };
+  // 배율 2 에서 이미 400px(=배율 1 기준 200px) 로 커져 있는 부지
+  const 부지 = [100, 100, 500, 100, 500, 500, 100, 500];
+  const fit = fitToSite(부지, canvas, 2)!;
+  // 620×0.88 / 400 = 1.364 배 더 → 절대 배율 2.728
+  assert.ok(Math.abs(fit.view - 2.728) < 0.001, `절대 배율: ${fit.view}`);
+  assert.ok(Math.abs(fit.factor - 1.364) < 0.001, `곱: ${fit.factor}`);
+});
+
+test("뷰 배율은 없으면 1 — 옛 도면을 열어도 그대로 보인다", () => {
+  assert.equal(viewOf(emptyVenue(900, 620)), 1);
+  assert.equal(viewOf({ ...emptyVenue(900, 620), map: { lat: 36, lng: 128, zoom: 18 } }), 1);
+  assert.equal(
+    viewOf({ ...emptyVenue(900, 620), map: { lat: 36, lng: 128, zoom: 18, view: 2.5 } }),
+    2.5,
+  );
+  // 이상한 값은 1 로 — 0 이면 축척이 무한대가 된다
+  assert.equal(viewOf({ ...emptyVenue(900, 620), map: { lat: 36, lng: 128, zoom: 18, view: 0 } }), 1);
+});
+
+test("도형 늘리기·옮기기 — 통로 폭도, 부지 경계도 같이 간다", () => {
+  const items = [
+    상자({ id: "b", x: 100, y: 100, w: 10, h: 10 }),
+    상자({ id: "p", kind: "path", w: 16, points: [100, 100, 200, 100] }),
+    상자({ id: "s", kind: "site", points: [100, 100, 200, 100, 200, 200] }),
+  ];
+  const 커진것 = scaleItems(items, 2, 100, 100);
+  assert.deepEqual(
+    { x: 커진것[0].x, y: 커진것[0].y, w: 커진것[0].w, h: 커진것[0].h },
+    { x: 100, y: 100, w: 20, h: 20 },
+    "중심에 있는 도형은 제자리에서 커진다",
+  );
+  assert.equal(커진것[1].w, 32, "통로 폭이 안 커지면 실측 폭이 반이 된다");
+  assert.deepEqual(커진것[1].points, [100, 100, 300, 100]);
+
+  // 부지 경계도 꺾은선이다 — 예전에는 path 만 봐서 지도를 끌면 경계만
+  // 제자리에 남았다. 경계가 안 따라오면 면적도 밖 판정도 통째로 거짓말이 된다
+  assert.deepEqual(커진것[2].points, [100, 100, 300, 100, 300, 300]);
+
+  const 옮긴것 = shiftItems(커진것, 10, -5);
+  assert.equal(옮긴것[0].x, 110);
+  assert.equal(옮긴것[0].y, 95);
+  assert.deepEqual(옮긴것[1].points, [110, 95, 310, 95]);
+  assert.deepEqual(옮긴것[2].points, [110, 95, 310, 95, 310, 295]);
 });

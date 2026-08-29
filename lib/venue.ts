@@ -124,9 +124,125 @@ export interface Venue {
   /** 밑그림(배치도 사진) dataURL. 없어도 된다 */
   underlay?: string;
   /** 배경 지도 — 캔버스 중앙의 위경도와 줌. 타일은 열 때마다 다시 그린다.
-   *  style: plan(도면 느낌, 기본) | satellite(지형 확인용) */
-  map?: { lat: number; lng: number; zoom: number; style?: "plan" | "satellite" };
+   *  style: plan(도면 느낌, 기본) | satellite(지형 확인용)
+   *  view: 뷰 배율(오버줌). 없으면 1 — 옛 도면도 그대로 열린다 */
+  map?: {
+    lat: number;
+    lng: number;
+    zoom: number;
+    style?: "plan" | "satellite";
+    view?: number;
+  };
   items: VenueItem[];
+}
+
+/**
+ * 뷰 배율의 한계.
+ *
+ * 상한 6 은 타일 오버줌의 한계다 — z18 타일을 6 배로 늘리면 1px 짜리 선이
+ * 6px 뭉치가 되어 건물 윤곽이 뭉갠다. 하한 1 은 "축소는 지도 줌의 몫"이라서다:
+ * 배율로 줄이면 타일이 덜 그려지는 게 아니라 같은 타일을 축소해 그리는 셈이라
+ * 손해만 본다(줌을 내리면 제공자가 더 넓은 그림을 준다).
+ */
+export const VIEW_RANGE = { min: 1, max: 6 } as const;
+
+/** 이 도면의 뷰 배율. 없거나 이상하면 1 — 0 이면 축척이 무한대가 된다 */
+export function viewOf(v: Venue): number {
+  const view = v.map?.view;
+  return typeof view === "number" && view > 0 ? view : 1;
+}
+
+/** 도형 전체를 픽셀만큼 옮긴다 — 지도를 끌면 도형이 땅에 붙어 따라온다 */
+export function shiftItems(
+  items: readonly VenueItem[],
+  dx: number,
+  dy: number,
+): VenueItem[] {
+  return items.map((it) =>
+    it.points
+      ? { ...it, points: it.points.map((n, i) => n + (i % 2 === 0 ? dx : dy)) }
+      : { ...it, x: it.x + dx, y: it.y + dy },
+  );
+}
+
+/**
+ * (cx,cy) 를 붙박아 두고 도형을 배율만큼 키운다 — 줌해도 땅에 붙어 있다.
+ *
+ * 꺾은선(통로·부지)은 점과 함께 **폭**도 키워야 한다. 폭이 그대로면 통로
+ * 실측 폭이 배율만큼 좁아진 것으로 계산돼 대기열 침범 판정이 거짓말을 한다.
+ */
+export function scaleItems(
+  items: readonly VenueItem[],
+  f: number,
+  cx: number,
+  cy: number,
+): VenueItem[] {
+  return items.map((it) =>
+    it.points
+      ? {
+          ...it,
+          w: Math.max(2, it.w * f),
+          points: it.points.map((n, i) =>
+            i % 2 === 0 ? cx + (n - cx) * f : cy + (n - cy) * f,
+          ),
+        }
+      : {
+          ...it,
+          x: cx + (it.x - cx) * f,
+          y: cy + (it.y - cy) * f,
+          w: it.w * f,
+          h: it.h * f,
+        },
+  );
+}
+
+/**
+ * 부지에 맞춰 보기 — 그 부지가 캔버스를 채우는 **절대 뷰 배율**과, 부지를
+ * 캔버스 한가운데로 데려올 이동량(px).
+ *
+ * 지도 줌으로는 못 푸는 문제를 푼다: 브이월드 백지도가 z18 에서 멈춰
+ * 3m 부스가 6px 로 남는다. 200m 부지에 맞추면 배율 1.8 배가 되어 11px 대,
+ * 손으로 잡을 수 있는 크기가 된다.
+ *
+ * 쓰는 쪽은 `scaleItems(items, factor, 캔버스중심)` 한 뒤 `shiftItems(dx, dy)`
+ * 하면 된다 — 이 순서를 지켜야 부지 중심이 캔버스 중심에 온다.
+ * 넓이가 없는 부지는 맞출 대상이 아니므로 null (지어내지 않는다).
+ */
+export function fitToSite(
+  points: readonly number[],
+  canvas: { width: number; height: number },
+  view: number,
+  /** 부지 둘레에 남길 여백 — 경계에 딱 붙으면 어디까지가 부지인지 안 보인다 */
+  padding = 0.88,
+): { view: number; factor: number; dx: number; dy: number } | null {
+  if (points.length < 6 || points.length % 2 !== 0) return null;
+  if (!(view > 0)) return null;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < points.length; i += 2) {
+    minX = Math.min(minX, points[i]);
+    maxX = Math.max(maxX, points[i]);
+    minY = Math.min(minY, points[i + 1]);
+    maxY = Math.max(maxY, points[i + 1]);
+  }
+  const w = maxX - minX;
+  const h = maxY - minY;
+  if (!(w > 0) || !(h > 0)) return null;
+
+  const 필요배 = Math.min((canvas.width * padding) / w, (canvas.height * padding) / h);
+  const 새배율 = Math.min(VIEW_RANGE.max, Math.max(VIEW_RANGE.min, view * 필요배));
+  const factor = 새배율 / view;
+
+  // 캔버스 중심을 붙박아 키운 뒤(scaleItems) 부지 중심이 가 있을 자리에서
+  // 캔버스 중심까지의 거리가 그대로 이동량이다
+  const ax = (minX + maxX) / 2;
+  const ay = (minY + maxY) / 2;
+  return {
+    view: 새배율,
+    factor,
+    dx: (canvas.width / 2 - ax) * factor,
+    dy: (canvas.height / 2 - ay) * factor,
+  };
 }
 
 export function emptyVenue(width: number, height: number): Venue {
