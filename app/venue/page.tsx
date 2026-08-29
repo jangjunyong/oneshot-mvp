@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getEntry, getVenue, saveVenue } from "@/lib/store";
-import { coordsOf } from "@/lib/match";
+import { coordsOf, findSimilar } from "@/lib/match";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
 
@@ -67,15 +67,40 @@ export default async function VenuePage({
     }
   }
 
-  // 진단에서 넘어왔으면 그 지역 좌표에서 위성지도가 시작된다.
-  // 좌표는 619건 실측에서 온다 — 여기서도 지어내지 않는다.
+  // 진단에서 넘어왔으면 그 지역 좌표에서 지도가 시작되고, 그 진단의
+  // 쌍둥이 실측 배수가 쏠림 스캔의 근거가 된다. 좌표도 배수도 619건
+  // 실측에서 온다 — 여기서도 지어내지 않는다.
   let initialCenter: { lat: number; lng: number } | null = null;
+  let scenario: { surge: number | null; label: string } | null = null;
   if (entryId) {
     try {
       const entry = await getEntry(entryId);
-      if (entry) initialCenter = coordsOf(entry.sido, entry.sigungu);
+      if (entry) {
+        initialCenter = coordsOf(entry.sido, entry.sigungu);
+        const r = findSimilar({
+          sido: entry.sido,
+          sigungu: entry.sigungu,
+          month: Number(entry.month),
+          themeCode: Number(entry.theme),
+          populationManMyeong: Number(entry.population),
+          accessibility: Number(entry.accessibility),
+        });
+        if (r.invalid || r.matched.length === 0) {
+          scenario = { surge: null, label: "이 진단은 비교 대상이 없습니다" };
+        } else {
+          const surges = r.matched
+            .map((m) => m.festival.actualVisitSurge)
+            .sort((a, b) => a - b);
+          const median = surges[Math.floor((surges.length - 1) / 2)];
+          scenario = {
+            surge: median,
+            label: `쌍둥이 ${r.matched.length}곳 실측 중앙값 ${median.toFixed(2)}배`,
+          };
+        }
+      }
     } catch {
       initialCenter = null;
+      scenario = null;
     }
   }
 
@@ -109,6 +134,7 @@ export default async function VenuePage({
         // 서버에서 읽어 넘긴다 — 빌드 인라인(NEXT_PUBLIC)에 기대지 않아
         // Vercel 에 env 만 넣으면 재배포 한 번으로 백지도가 켜진다
         vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+        scenario={scenario}
         saveAction={저장}
       />
     </main>

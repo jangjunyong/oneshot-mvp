@@ -201,6 +201,25 @@ ol.legend strong {
   line-height: 1.1rem;
 }
 
+/* 쏠림 스캔 발견 목록 — 지도 뱃지 번호와 짝이다 */
+ul.scan-findings {
+  list-style: none;
+  padding-left: 0;
+  font-size: 0.9rem;
+}
+ul.scan-findings strong {
+  display: inline-block;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-right: 0.25rem;
+  border-radius: 50%;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.05rem;
+}
+
 /* 닮은 축제 지도 — 실측 점 619개가 나라 모양을 그린다 */
 .map {
   display: block;

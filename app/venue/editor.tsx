@@ -38,6 +38,8 @@ import {
   visibleTiles,
   type Tile,
 } from "@/lib/tilemap";
+import { scanVenue } from "@/lib/scan";
+import { GRADE_CUT } from "@/lib/types";
 
 
 type Mode = "select" | "scale" | "path" | "pan";
@@ -108,6 +110,7 @@ export default function Editor({
   entryId,
   initialCenter,
   vworldKey,
+  scenario,
   saveAction,
 }: {
   initialVenue: Venue;
@@ -116,6 +119,8 @@ export default function Editor({
   /** 브이월드 키 — 서버가 env 에서 읽어 넘겨준다. 실측상 리퍼러 제한이
    *  느슨한 키라 저장소에 하드코딩하지 않는다 */
   vworldKey: string | null;
+  /** 연결된 진단의 쌍둥이 실측 배수 — 쏠림 스캔의 유일한 수요 근거 */
+  scenario: { surge: number | null; label: string } | null;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
   const [venue, setVenue] = useState<Venue>(initialVenue);
@@ -126,6 +131,7 @@ export default function Editor({
   const [pathPts, setPathPts] = useState<number[]>([]);
   const [underlayImg, setUnderlayImg] = useState<HTMLImageElement | null>(null);
   const [알림, set알림] = useState<string | null>(null);
+  const [스캔켬, set스캔켬] = useState(true);
 
   const trRef = useRef<Konva.Transformer>(null);
   const nodeRefs = useRef<Map<string, Konva.Node>>(new Map());
@@ -367,6 +373,13 @@ export default function Editor({
     });
   }
 
+  // 전수 스캔 — 수식이라 렌더마다 다시 재도 밀리초다. 편집 즉시 판정이 따라온다.
+  const scan =
+    스캔켬 && scenario ? scanVenue(venue, scenario.surge) : null;
+  const loadOf = (id: string) => scan?.loads.find((l) => l.id === id)?.load;
+  const 부하색 = (load: number) =>
+    load >= GRADE_CUT.severe ? "#b3261e" : load >= GRADE_CUT.caution ? "#a86100" : INK;
+
   const 축척문구 =
     venue.mPerPx === null
       ? "축척 없음 — 쏠림 검증 전에 재 두세요"
@@ -523,6 +536,77 @@ export default function Editor({
               ),
             )}
 
+            {/* 쏠림 스캔 오버레이 — 색과 크기만으로 문제가 보여야 한다 */}
+            {scan && !scan.blocked && (
+              <>
+                {/* 침범당한 통로를 먼저 붉게 — 대기열이 그 위에 겹쳐 그려진다 */}
+                {scan.invasions.map((v) => {
+                  const path = venue.items.find((it) => it.id === v.pathId);
+                  return (
+                    path && (
+                      <Line
+                        key={`inv-${v.boothId}-${v.pathId}`}
+                        points={path.points ?? []}
+                        stroke="#b3261e"
+                        strokeWidth={path.w}
+                        opacity={0.3}
+                        lineCap="round"
+                        lineJoin="round"
+                        listening={false}
+                      />
+                    )
+                  );
+                })}
+                {/* 대기열 — 부하 1 초과분만큼 부스 앞으로 자란다 (가정 명시) */}
+                {scan.queues.map((q) => {
+                  const load = loadOf(q.boothId) ?? 0;
+                  return (
+                    <Group key={`q-${q.boothId}`} x={q.bx} y={q.by} rotation={q.rotation} listening={false}>
+                      <Rect
+                        y={q.h0}
+                        width={q.w}
+                        height={q.depth}
+                        fill={부하색(load)}
+                        opacity={0.16}
+                        stroke={부하색(load)}
+                        strokeWidth={1}
+                        dash={[5, 4]}
+                      />
+                      <Text
+                        y={q.h0 + q.depth + 2}
+                        width={q.w}
+                        align="center"
+                        text={`${load.toFixed(1)}× 대기`}
+                        fontSize={10}
+                        fill={부하색(load)}
+                      />
+                    </Group>
+                  );
+                })}
+                {/* 위험 상위 뱃지 1·2·3 */}
+                {scan.top.map((id, i) => {
+                  const b = venue.items.find((it) => it.id === id);
+                  const load = loadOf(id) ?? 0;
+                  return (
+                    b && (
+                      <Group key={`top-${id}`} x={b.x} y={b.y} rotation={b.rotation} listening={false}>
+                        <Circle radius={9} fill={부하색(load)} />
+                        <Text
+                          x={-9}
+                          y={-4.5}
+                          width={18}
+                          align="center"
+                          text={String(i + 1)}
+                          fontSize={10}
+                          fill="#ffffff"
+                        />
+                      </Group>
+                    )
+                  );
+                })}
+              </>
+            )}
+
             {/* 축척 측정 점 · 그리는 중인 통로 미리보기 */}
             {scalePts.map((p, i) => (
               <Circle key={i} x={p.x} y={p.y} radius={5} fill="#b3261e" />
@@ -641,7 +725,15 @@ export default function Editor({
           <p className="note">도형을 누르면 이름·인력·선호도를 고칠 수 있습니다</p>
         ) : (
           <div className="props">
-            <p className="note">{VENUE_KIND_NAME[selected.kind]}{selectedMeters ? ` · 실측 ${selectedMeters.wM}m × ${selectedMeters.hM}m` : ""}</p>
+            <p className="note">
+              {VENUE_KIND_NAME[selected.kind]}
+              {/* 통로는 면이 아니라 선이다 — 폭만 실측으로 말한다 */}
+              {selected.kind === "path" && venue.mPerPx !== null
+                ? ` · 실측 폭 ${(selected.w * venue.mPerPx).toFixed(1)}m`
+                : selectedMeters
+                  ? ` · 실측 ${selectedMeters.wM}m × ${selectedMeters.hM}m`
+                  : ""}
+            </p>
             <p>
               <label htmlFor="p-name">이름</label>{" "}
               <input id="p-name" value={selected.name} onChange={(e) => updateItem(selected.id, { name: e.target.value })} />
@@ -674,6 +766,60 @@ export default function Editor({
               <button type="button" className="note" onClick={() => removeItem(selected.id)}>이것 지우기</button>
             </p>
           </div>
+        )}
+
+        <h2>쏠림 스캔</h2>
+        {!scenario ? (
+          <p className="note">
+            진단 이력의 "이 쏠림에 대비하기"로 들어오면 쌍둥이 축제의 실측
+            배수로 전 부스를 스캔합니다
+          </p>
+        ) : scan?.blocked ? (
+          <p className="alert" data-level="주의">{scan.blocked}</p>
+        ) : (
+          <>
+            <p className="note num">근거: {scenario.label}</p>
+            <p>
+              <button type="button" onClick={() => set스캔켬((v) => !v)}>
+                {스캔켬 ? "스캔 끄기" : "스캔 켜기"}
+              </button>
+            </p>
+            {scan && (
+              <>
+                {scan.top.length === 0 && scan.loads.length > 0 && (
+                  <p className="note">
+                    부하 1을 넘는 부스가 없습니다 — 이 배치는 쌍둥이 수준의
+                    쏠림을 처리 범위 안에서 받습니다
+                  </p>
+                )}
+                {scan.loads.length === 0 && (
+                  <p className="note">부스를 놓으면 부하를 잽니다</p>
+                )}
+                <ul className="scan-findings">
+                  {scan.top.map((id, i) => {
+                    const l = scan.loads.find((x) => x.id === id)!;
+                    return (
+                      <li key={id} className="num">
+                        <strong>{i + 1}</strong> {l.name} — 부하{" "}
+                        {l.load.toFixed(1)}× · 인력을 늘리거나 부스를 나누세요
+                      </li>
+                    );
+                  })}
+                  {scan.invasions.map((v) => (
+                    <li key={`${v.boothId}-${v.pathId}`}>
+                      ⚠ {v.boothName} 대기열이 {v.pathName}을(를) 덮습니다 —
+                      부스를 옮기거나 통로를 우회시키세요
+                    </li>
+                  ))}
+                </ul>
+                <p className="note">
+                  가정: 대기열은 부하 1 초과분 × 부스 깊이로 그립니다 · 인력
+                  미정 부스는 0.5명으로 칩니다 · 부하는 상대 지수이며 방문객
+                  수 예측이 아닙니다
+                </p>
+              </>
+            )}
+          </>
         )}
 
         <h2>저장</h2>
