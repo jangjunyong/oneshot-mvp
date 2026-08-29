@@ -21,8 +21,9 @@ const WEIGHT: Record<AxisSimilarity["axis"], number> = {
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
-/** 지구 위 두 점 사이 km */
-function haversineKm(
+/** 지구 위 두 점 사이 km. 같은 시기 경쟁(overlap.ts)도 이 자를 쓴다 —
+ *  진단이 재는 거리와 화면이 말하는 거리가 다르면 안 된다 */
+export function haversineKm(
   lat1: number,
   lng1: number,
   lat2: number,

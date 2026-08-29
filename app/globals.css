@@ -364,6 +364,42 @@ ul.scan-findings strong { background: var(--severe); }
   .venue-panel { max-width: none; }
 }
 
+/* ── 같은 시기 경쟁 ──
+   과거(619건)와 다른 출처라 시각적으로도 갈라 놓는다. 실시간으로 불러온
+   값이라는 사실이 화면에서 읽혀야 한다 */
+.rivals {
+  margin: var(--s2) 0;
+  padding-left: var(--s2);
+  border-left: 3px solid var(--line-strong);
+}
+.rivals h3 {
+  margin: 0 0 var(--s1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--concrete);
+}
+.rivals-head {
+  margin: 0 0 var(--s1);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.rivals ol.legend { margin-top: 0; }
+/* 실측이 있는 축제만 배수가 붙는다 — 붙은 것과 안 붙은 것이 갈려 보여야 한다.
+   legend 의 번호 뱃지(ol.legend strong)와 같은 태그를 쓰면 그 규칙에 잡혀
+   검은 정사각형이 된다. 그래서 span 이다 */
+.rival-surge {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--concrete);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
 /* 값의 출처 — 값보다 약하되 읽을 수는 있어야 한다 */
 .evidence {
   margin: -0.3rem 0 var(--s2) 8.5rem;

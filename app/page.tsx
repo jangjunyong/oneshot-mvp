@@ -19,9 +19,18 @@ import {
   festivalStartDate,
   hasTourKey,
   searchFestivals,
+  searchFestivalsInPeriod,
   toExtraction,
   type TourFestival,
 } from "@/lib/tourapi";
+import {
+  competitionHeadline,
+  competitorsNear,
+  dayLabel,
+  monthWindow,
+  NEARBY_RADIUS_KM,
+  type Competitor,
+} from "@/lib/overlap";
 import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
@@ -261,6 +270,24 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
   const 핀 = 고름?.result.matched.find((m) => m.festival.id === 고른핀) ?? null;
   const 핀번호 = 핀 && 고름 ? 고름.result.matched.indexOf(핀) + 1 : 0;
+
+  // 같은 시기 경쟁 — 619건이 못 하는 질문("올해 그 달에 누가 여는가")이라
+  // 공사 OpenAPI 를 실시간으로 부른다. 지도에 편 한 건에 대해서만 부른다.
+  // 죽어도 화면은 살아야 하므로 실패는 목록 없음이 아니라 "못 불러왔다"로 남긴다.
+  const 기획지역 = 고름 ? coordsOf(고름.e.sido, 고름.e.sigungu) : null;
+  let 경쟁: Competitor[] = [];
+  let 경쟁조회실패 = false;
+  const 경쟁창 = 고름 ? monthWindow(Number(고름.e.month), new Date()) : null;
+  if (고름 && 경쟁창 && hasTourKey() && !고름.result.invalid) {
+    try {
+      경쟁 = competitorsNear(
+        기획지역,
+        await searchFestivalsInPeriod(경쟁창.start, 경쟁창.end),
+      );
+    } catch {
+      경쟁조회실패 = true;
+    }
+  }
 
   return (
     <div className="sheet">
@@ -629,6 +656,62 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       ))}
                     </ul>
                   </details>
+                )}
+
+                {/* 같은 시기 경쟁 — 화면에서 유일하게 **실시간** 공사 OpenAPI 로
+                    오는 값이다. 619건은 과거만 알고, 올해 그 달에 누가 여는지는
+                    여기서만 온다. 키가 없으면 섹션째 숨긴다(없는 기능은 광고 안 함) */}
+                {hasTourKey() && 경쟁창 && (
+                  <div className="rivals">
+                    <h3>같은 시기 경쟁</h3>
+                    {경쟁조회실패 ? (
+                      <p className="note">
+                        같은 시기 축제를 불러오지 못했습니다 — 잠시 후 새로고침해
+                        주세요
+                      </p>
+                    ) : 기획지역 === null ? (
+                      <p className="note">
+                        {고름.e.sido} {고름.e.sigungu} 의 좌표를 찾지 못해 거리를
+                        재지 못했습니다 — 없는 것이 아니라 못 잰 것입니다
+                      </p>
+                    ) : (
+                      <>
+                        <p className="rivals-head">
+                          {competitionHeadline(
+                            경쟁창.year,
+                            Number(고름.e.month),
+                            경쟁,
+                          )}
+                        </p>
+                        {경쟁.length > 0 && (
+                          <ol className="legend">
+                            {경쟁.slice(0, 5).map((c) => (
+                              <li key={c.contentId} className="num">
+                                {c.title} · {dayLabel(c.startDate)}~
+                                {dayLabel(c.endDate)} ·{" "}
+                                {c.distanceKm.toFixed(0)}km
+                                {c.surge !== null && (
+                                  <span className="rival-surge">
+                                    평소 {c.surge.toFixed(2)}배
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                            {경쟁.length > 5 && (
+                              <li className="note">외 {경쟁.length - 5}곳</li>
+                            )}
+                          </ol>
+                        )}
+                        <p className="note">
+                          한국관광공사 OpenAPI 실시간 조회 · 반경{" "}
+                          {NEARBY_RADIUS_KM}km · 축제는 대체로 매년 같은 시기에
+                          열리므로 <strong>가장 최근 {Number(고름.e.month)}월
+                          실적</strong>으로 봅니다(예측이 아닙니다) · 배수는 619건에
+                          실측이 있는 축제에만 붙습니다
+                        </p>
+                      </>
+                    )}
+                  </div>
                 )}
 
                 <p className="note">출처: {DATA_SOURCE}</p>

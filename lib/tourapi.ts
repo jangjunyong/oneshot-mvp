@@ -10,6 +10,7 @@
 // 정보에 없다 — 채우면 지어낸 것이므로 비워서 사람에게 넘긴다.
 
 import type { Extraction } from "@/lib/types";
+import type { PeriodFestival } from "@/lib/overlap";
 import { FESTIVALS, populationOf } from "@/lib/festivals";
 
 const BASE = "https://apis.data.go.kr/B551011/KorService2";
@@ -179,6 +180,60 @@ export async function searchFestivals(keyword: string): Promise<TourFestival[]> 
       title: String(it.title),
       addr1: String(it.addr1 ?? ""),
     }));
+}
+
+/**
+ * 그 기간에 열리는 축제 전국 목록.
+ *
+ * 이건 619건이 못 하는 유일한 질문에 답한다 — "올해 그 달에 누가 여는가".
+ * 지역 필터(areaCode)는 쓰지 않는다: 2026-08-29 실측에서 areaCode 를 주면
+ * 0건이 왔고, 어차피 응답에 좌표가 다 있어 반경으로 거르는 편이 정확하다
+ * (2026-10 조회 140건 전부 mapx·mapy 보유).
+ *
+ * 한 달치가 150건 안쪽이라 한 번에 받는다. 페이지를 넘길 일이 생기면
+ * totalCount 를 보고 늘린다.
+ */
+export async function searchFestivalsInPeriod(
+  start: string,
+  end: string,
+): Promise<PeriodFestival[]> {
+  const items = (await call("searchFestival2", {
+    eventStartDate: start,
+    eventEndDate: end,
+    numOfRows: "200",
+    pageNo: "1",
+    arrange: "A",
+  })) as {
+    contentid?: string;
+    title?: string;
+    addr1?: string;
+    eventstartdate?: string;
+    eventenddate?: string;
+    mapx?: string;
+    mapy?: string;
+  }[];
+
+  return items
+    .map((it) => ({
+      contentId: String(it.contentid ?? ""),
+      title: String(it.title ?? ""),
+      addr1: String(it.addr1 ?? ""),
+      startDate: String(it.eventstartdate ?? ""),
+      endDate: String(it.eventenddate ?? ""),
+      // mapx 가 경도, mapy 가 위도다 (TourAPI 표기)
+      lng: Number(it.mapx),
+      lat: Number(it.mapy),
+    }))
+    // 좌표가 없으면 거리를 잴 수 없다. 지도의 그 4건처럼 지어내지 않는다
+    .filter(
+      (f) =>
+        f.contentId !== "" &&
+        f.title !== "" &&
+        Number.isFinite(f.lat) &&
+        Number.isFinite(f.lng) &&
+        f.lat !== 0 &&
+        f.lng !== 0,
+    );
 }
 
 /** 선택한 축제의 개최 시작일(YYYYMMDD). 없으면 빈 문자열 */
