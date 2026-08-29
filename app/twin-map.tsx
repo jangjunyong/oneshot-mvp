@@ -12,48 +12,60 @@
 
 import Link from "next/link";
 import { FESTIVALS } from "@/lib/festivals";
-import { MAP_H, MAP_W, pinGroups, project } from "@/lib/mapproj";
+import {
+  hasPlace,
+  layoutPins,
+  MAP_H,
+  MAP_W,
+  PIN_HEAD_R,
+  project,
+} from "@/lib/mapproj";
 import type { MatchedFestival } from "@/lib/types";
 
-/** 619개 점을 path 하나로 접는다 — circle 619개면 DOM 이 터진다.
- *  길이 0 선분 + 둥근 끝 = 점. 모듈 로드 때 한 번만 만든다. */
-const 배경점들 = FESTIVALS.map((f) => {
-  const p = project(f.lat, f.lng);
-  return `M${p.x} ${p.y}l0 0`;
-}).join("");
+/** 좌표가 실제로 있는 축제만. 4건은 빈 값이거나 기본값이 박혀 있어서
+ *  그대로 찍으면 바다에 없는 축제가 생긴다 (mapproj.hasPlace) */
+const 찍히는축제 = FESTIVALS.filter((f) => hasPlace(f.lat, f.lng));
 
-/** 핀 하나. 기둥 + 바닥 그림자 + 머리 — 평면 지도 위에 서 있게 보이는 최소 단서 */
+/** 점을 path 하나로 접는다 — circle 615개면 DOM 이 터진다.
+ *  길이 0 선분 + 둥근 끝 = 점. 모듈 로드 때 한 번만 만든다. */
+const 배경점들 = 찍히는축제
+  .map((f) => {
+    const p = project(f.lat, f.lng);
+    return `M${p.x} ${p.y}l0 0`;
+  })
+  .join("");
+
+/** 핀 하나. 기둥 + 바닥 그림자 + 머리 — 평면 지도 위에 서 있게 보이는 최소 단서.
+ *  기둥 높이는 밖에서 준다 — 이웃과 머리가 겹치면 layoutPins 가 늘려 보낸다 */
 function Pin({
   x,
   y,
+  stem,
   label,
   href,
   selected,
-  tone,
 }: {
   x: number;
   y: number;
+  stem: number;
   label: string;
   href: string;
   selected: boolean;
-  tone: string;
 }) {
-  const 기둥 = 26;
-  const r = selected ? 11 : 9;
+  const r = selected ? PIN_HEAD_R + 2 : PIN_HEAD_R;
   return (
     <Link href={href} aria-label={`닮은 축제 ${label} 자세히 보기`}>
       <g className="pin" data-selected={selected ? "1" : undefined}>
         {/* 바닥 그림자 — 핀이 땅에 꽂혀 있다는 유일한 단서 */}
-        <ellipse cx={x} cy={y} rx={r * 0.75} ry={r * 0.3} fill="#000" opacity="0.18" />
-        <line x1={x} y1={y} x2={x} y2={y - 기둥} stroke={tone} strokeWidth={selected ? 3 : 2} />
-        <circle cx={x} cy={y - 기둥} r={r} fill={tone} stroke="#fff" strokeWidth="1.5" />
+        <ellipse className="pin-foot" cx={x} cy={y} rx={r * 0.75} ry={r * 0.3} />
+        <line x1={x} y1={y} x2={x} y2={y - stem} strokeWidth={selected ? 3 : 2} />
+        <circle cx={x} cy={y - stem} r={r} />
         <text
           x={x}
-          y={y - 기둥 + 4}
+          y={y - stem + 4}
           textAnchor="middle"
           fontSize={selected ? 12 : 11}
           fontWeight="700"
-          fill="#fff"
         >
           {label}
         </text>
@@ -61,6 +73,10 @@ function Pin({
     </Link>
   );
 }
+
+/** 이 핀이 지금 고른 것인가 (1/0) — 그리는 순서를 정하는 데도 쓴다 */
+const 고른것 = (g: { ids: string[] }, selectedPin: string | null) =>
+  g.ids.includes(selectedPin ?? "") ? 1 : 0;
 
 /**
  * 진단 한 건의 지도.
@@ -82,10 +98,20 @@ export function TwinMap({
   selectedPin: string | null;
   scope: string;
 }) {
-  const groups = pinGroups(
-    matched.map((m) => ({ id: m.festival.id, lat: m.festival.lat, lng: m.festival.lng })),
+  // 좌표가 없는 곳은 핀을 세울 자리가 없다. 순번은 목록과 같아야 하므로
+  // 거르기 **전에** 매겨서 넘긴다 — 목록의 3번이 지도의 3번이다.
+  const 핀들 = layoutPins(
+    matched
+      .map((m, i) => ({
+        id: m.festival.id,
+        lat: m.festival.lat,
+        lng: m.festival.lng,
+        num: i + 1,
+      }))
+      .filter((p) => hasPlace(p.lat, p.lng)),
   );
-  const o = origin ? project(origin.lat, origin.lng) : null;
+  const 못올린수 = matched.length - 핀들.reduce((n, g) => n + g.ids.length, 0);
+  const o = origin && hasPlace(origin.lat, origin.lng) ? project(origin.lat, origin.lng) : null;
 
   return (
     <figure className="twin-map">
@@ -93,40 +119,41 @@ export function TwinMap({
         className="map"
         viewBox={`0 0 ${MAP_W} ${MAP_H}`}
         role="img"
-        aria-label={`닮은 과거 축제 ${matched.length}곳의 위치. 배경 점은 잰 축제 ${FESTIVALS.length}곳 전부`}
+        aria-label={`닮은 과거 축제 ${matched.length}곳의 위치. 배경 점은 좌표가 있는 축제 ${찍히는축제.length}곳`}
       >
-        <path d={배경점들} stroke="var(--line-strong)" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+        <path className="map-dots" d={배경점들} strokeWidth="2.6" strokeLinecap="round" />
 
         {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
         {o && (
-          <g stroke="var(--severe)" strokeWidth="2" fill="none">
+          <g className="map-origin" strokeWidth="2">
             <circle cx={o.x} cy={o.y} r="7" />
             <line x1={o.x - 11} y1={o.y} x2={o.x + 11} y2={o.y} />
             <line x1={o.x} y1={o.y - 11} x2={o.x} y2={o.y + 11} />
           </g>
         )}
 
-        {groups.map((g) => {
-          const 대표 = g.ids[0];
-          const 선택됨 = g.ids.includes(selectedPin ?? "");
-          return (
+        {/* 고른 핀을 맨 나중에 그린다 — SVG 는 z-index 가 없어 그리는 순서가
+            곧 위아래다. 고른 핀이 이웃 기둥에 가리면 무엇을 골랐는지 흐려진다 */}
+        {[...핀들]
+          .sort((a, b) => 고른것(a, selectedPin) - 고른것(b, selectedPin))
+          .map((g) => (
             <Pin
-              key={대표}
+              key={g.ids[0]}
               x={g.x}
               y={g.y}
+              stem={g.stem}
               label={g.nums.join("·")}
-              href={`/?entry=${entryId}&pin=${대표}#twin`}
-              selected={선택됨}
-              tone={선택됨 ? "var(--severe)" : "var(--ink)"}
+              href={`/?entry=${entryId}&pin=${g.ids[0]}#twin`}
+              selected={고른것(g, selectedPin) === 1}
             />
-          );
-        })}
+          ))}
       </svg>
 
       <figcaption className="note">
         {matched.length === 0
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
-          : `점 = 잰 축제 ${FESTIVALS.length}곳 전부 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · ⊕ = 이 기획안의 지역`}
+          : `점 = 좌표가 있는 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · ⊕ = 이 기획안의 지역` +
+            (못올린수 > 0 ? ` · 좌표가 없어 지도에 못 올린 ${못올린수}곳은 아래 목록에 있습니다` : "")}
       </figcaption>
     </figure>
   );

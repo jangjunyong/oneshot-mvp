@@ -8,7 +8,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { MAP_H, MAP_W, project, pinGroups } from "@/lib/mapproj";
+import {
+  hasPlace,
+  layoutPins,
+  MAP_H,
+  MAP_W,
+  PIN_HEAD_R,
+  project,
+  pinGroups,
+} from "@/lib/mapproj";
 
 test("투영 — 남서쪽일수록 x 작고 y 크다 (화면 좌표)", () => {
   const 서울 = project(37.5665, 126.978);
@@ -51,6 +59,48 @@ test("핀 묶기 — 빈 입력은 빈 배열 (핀 개수를 지어내지 않는
   // findSimilar 는 0~3 건을 돌려준다. 3 을 상수로 가정하면 안 된다.
   assert.deepEqual(pinGroups([]), []);
   assert.equal(pinGroups([{ id: "a", lat: 36, lng: 128 }]).length, 1);
+});
+
+test("좌표 없는 축제는 지도에 못 올린다 — 바다 한가운데 점을 만들지 않는다", () => {
+  // 619건 중 4건이 이렇다: 빈 값이거나 (19.69, 117.99) 같은 기본값.
+  // project 는 clamp 하므로 그대로 찍으면 지도 모서리에 없는 축제가 생긴다.
+  assert.equal(hasPlace(0, 0), false);
+  assert.equal(hasPlace(19.69442748, 117.9925662504), false);
+  assert.equal(hasPlace(Number.NaN, 127), false);
+  assert.equal(hasPlace(35.1796, 129.0756), true, "부산은 찍을 수 있어야 한다");
+  assert.equal(hasPlace(33.4996, 126.5312), true, "제주는 찍을 수 있어야 한다");
+});
+
+test("핀 세우기 — 머리가 겹치면 기둥을 늘려 비켜 세운다 (번호가 안 사라진다)", () => {
+  // 남해군·하동군. 20km 남짓이라 좌표는 다른데 머리는 포개진다.
+  const 핀들 = layoutPins([
+    { id: "남해", lat: 34.8375, lng: 127.8925 },
+    { id: "하동", lat: 35.0674, lng: 127.7514 },
+  ]);
+  assert.equal(핀들.length, 2, "다른 자리는 합치지 않는다");
+
+  const 머리 = 핀들.map((p) => ({ x: p.x, y: p.y - p.stem }));
+  const 거리 = Math.hypot(머리[0].x - 머리[1].x, 머리[0].y - 머리[1].y);
+  assert.ok(
+    거리 >= PIN_HEAD_R * 2,
+    `머리가 겹친다 (${거리.toFixed(1)}px) — 번호 하나가 가려진다`,
+  );
+
+  // 발은 실측 그대로다. 비켜 세우느라 위치를 옮기면 지도가 거짓말한다
+  const 발 = layoutPins([{ id: "남해", lat: 34.8375, lng: 127.8925 }])[0];
+  assert.equal(핀들.find((p) => p.ids[0] === "남해")?.x, 발.x);
+});
+
+test("핀 세우기 — 순번은 밖에서 준 것을 그대로 쓴다", () => {
+  // 좌표 없는 2번을 걸러내도 목록의 3번은 지도에서도 3번이어야 한다
+  const 핀들 = layoutPins([
+    { id: "a", lat: 36, lng: 128, num: 1 },
+    { id: "c", lat: 37.5, lng: 127, num: 3 },
+  ]);
+  assert.deepEqual(
+    핀들.map((p) => p.nums).flat().sort(),
+    [1, 3],
+  );
 });
 
 test("경계 — mapproj 는 축제 데이터나 매칭 로직을 import 하지 않는다", () => {
