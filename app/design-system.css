@@ -1,21 +1,40 @@
 /* ============================================================
-   도면 (Drawing Sheet) — Jacob 개인 디자인 시스템 v1.0
-   방향: 스위스 미니멀(대형 그로테스크·그리드) × 건축 잡지 에디토리얼(세리프·괘선)
-   시그니처: 건축 도면 주석 언어 — 치수선, 도면 좌표, 표제란
-   서체 로드(구글 폰트):
+   도면 (Drawing Sheet) — Jacob 개인 디자인 시스템 v2.0
+   2026-08-29 개정: 따뜻한 종이(플라스터) 팔레트를 접고 뉴트럴 흑백으로.
+   레퍼런스는 Vercel 대시보드 — 흰 면, 거의 검은 글자, 옅은 회색 괘선,
+   유채색은 상태 표시에만. 구조 언어(치수선·도면 좌표·표제란)는 유지한다.
+
+   v1 → v2 변경
+   - 팔레트 전면 교체 (#E9E7E1 종이 → #FAFAFA/#FFFFFF 뉴트럴)
+   - 강조를 색(적선)에서 **대비**로 이전 — 활성은 검정 면, 호버는 옅은 면.
+     색만으로 구분하던 곳을 굵기·채움으로 바꿨다 (흑백 인쇄·색각 대응)
+   - radius 0 → 6px, 그림자 없음 → 1px 링 (Vercel 룩)
+   - `.sheet > main` 을 패딩 규칙에 포함 (v1 누락 버그: main 만 여백 0 이었다)
+
+   서체 로드(구글 폰트) — 한글 본문이 있는 페이지는 반드시 KR 서체를 포함할 것:
    https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap
    ============================================================ */
 
 :root {
-  /* 색 — 석고·콘크리트 계열 (light 단일 테마: "종이 위 도면" 세계관) */
-  --paper:    #E9E7E1;  /* 바탕: 플라스터 */
-  --surface:  #F4F3EF;  /* 시트(카드·본문 면) */
-  --ink:      #21201C;  /* 웜 블랙 */
-  --concrete: #8E8A81;  /* 보조 텍스트 */
-  --line:     #C7C3B9;  /* 헤어라인 괘선 */
-  --redline:  #A63B22;  /* 적선 — 링크·활성·마킹 전용, 화면의 5% 미만 */
+  /* 색 — 뉴트럴 그레이스케일 */
+  --paper:    #FAFAFA;  /* 페이지 바탕 */
+  --surface:  #FFFFFF;  /* 시트·카드 면 */
+  --raised:   #F5F5F5;  /* 호버·비활성 강조 면 */
+  --ink:      #171717;  /* 본문·헤드라인 */
+  --concrete: #666666;  /* 보조 텍스트 */
+  --line:     #EBEBEB;  /* 헤어라인 괘선 */
+  --line-strong: #D4D4D4; /* 강조 괘선 */
 
-  /* 서체 */
+  /* 강조는 색이 아니라 대비다. 이름은 v1 호환으로 남긴다 */
+  --redline:  #171717;
+
+  /* 상태 — 유채색은 여기서만 쓴다 (경보·성공·경고) */
+  --severe:    #C62A20;
+  --severe-bg: #FDF3F2;
+  --caution:   #8A5A00;
+  --caution-bg:#FDF8EE;
+
+  /* 서체 — var(--font-*-loaded) 는 next/font 등에서 주입되면 우선한다 */
   --font-display: var(--font-display-loaded), "Archivo", "Pretendard", "IBM Plex Sans KR", sans-serif;
   --font-body:    var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
   --font-serif:   "Noto Serif KR", "Nanum Myeongjo", serif;
@@ -24,7 +43,7 @@
   /* 타입 스케일 (1.333 배수 기반) */
   --text-xs:   0.75rem;
   --text-sm:   0.875rem;
-  --text-base: 1.0625rem;   /* 본문 17px */
+  --text-base: 1.0625rem;
   --text-lg:   1.333rem;
   --text-xl:   1.777rem;
   --text-2xl:  2.369rem;
@@ -33,6 +52,9 @@
   /* 간격 — 8px 모듈 */
   --s1: 0.5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2rem;
   --s6: 3rem;    --s8: 4rem;  --s12: 6rem;
+
+  --radius: 6px;
+  --ring: 0 0 0 1px rgba(0, 0, 0, 0.08);
 
   --sheet-max: 1200px;
   color-scheme: light;
@@ -54,7 +76,7 @@ body {
 ::selection { background: var(--ink); color: var(--surface); }
 
 :focus-visible {
-  outline: 2px solid var(--redline);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -74,7 +96,11 @@ body {
   flex-direction: column;
 }
 
-.sheet > section, .sheet > header, .sheet > footer {
+/* main 이 빠져 있으면 본문만 여백 0 이 되어 시트 테두리에 붙는다 (v1 버그) */
+.sheet > section,
+.sheet > main,
+.sheet > header,
+.sheet > footer {
   padding: var(--s8) clamp(var(--s3), 5vw, var(--s12));
 }
 
@@ -86,14 +112,13 @@ h1, h2, h3 { margin: 0 0 var(--s3); line-height: 1.15; text-wrap: balance; }
   font-size: var(--text-display);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1.08; /* 한글 대형 헤드라인 기준 */
+  line-height: 1.08;
 }
 
 h1 { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.02em; }
 h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
 h3 { font-size: var(--text-lg); font-weight: 700; }
 
-/* 에디토리얼 세리프 헤드라인 — 잡지 축. 페이지당 1~2회만 */
 .serif-head {
   font-family: var(--font-serif);
   font-weight: 600;
@@ -113,10 +138,10 @@ h3 { font-size: var(--text-lg); font-weight: 700; }
 p { margin: 0 0 var(--s2); max-width: 65ch; }
 .muted { color: var(--concrete); }
 
-a { color: var(--ink); text-decoration-color: var(--redline); text-underline-offset: 3px; }
-a:hover { color: var(--redline); }
+a { color: var(--ink); text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink); }
 
-/* 도면 좌표 아이브로 — 섹션 식별자. 실제 순번·구역을 담을 때만 쓴다 */
+/* 도면 좌표 아이브로 — 실제 순번·구역일 때만 */
 .grid-ref {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -127,11 +152,9 @@ a:hover { color: var(--redline); }
   display: block;
   margin-bottom: var(--s2);
 }
-.grid-ref b { color: var(--redline); font-weight: 500; }
+.grid-ref b { color: var(--ink); font-weight: 500; }
 
-/* ---------- 치수선 (시그니처) ----------
-   양끝 틱이 있는 괘선 + 중앙 모노 라벨. 섹션 구분자로 쓴다.
-   <div class="dim"><span>SECTION A—A′</span></div> */
+/* ---------- 치수선 (시그니처) ---------- */
 .dim {
   position: relative;
   display: flex;
@@ -165,33 +188,44 @@ a:hover { color: var(--redline); }
   z-index: 1;
 }
 
-/* ---------- 버튼 ---------- */
+/* ---------- 버튼 ----------
+   활성/주 동작 = 검정 면. 부 동작 = 흰 면 + 괘선. 호버 = 면 밝기 변화.
+   색이 아니라 채움으로 갈리므로 흑백 인쇄·색각에서도 구분된다. */
 .btn {
   display: inline-block;
   font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: 500;
-  letter-spacing: 0.02em;
-  padding: 0.7em 1.6em;
-  border: 1px solid var(--ink);
-  border-radius: 0;               /* 직교 — 라운드 금지 */
-  background: transparent;
+  letter-spacing: 0.01em;
+  padding: 0.55em 1.1em;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.btn:hover { background: var(--ink); color: var(--surface); }
+.btn:hover { background: var(--raised); border-color: var(--ink); }
 
-.btn-redline { border-color: var(--redline); color: var(--redline); }
-.btn-redline:hover { background: var(--redline); color: var(--surface); }
+/* 주 동작 — v1 의 .btn-redline 자리. 이름은 호환으로 남긴다 */
+.btn-primary,
+.btn-redline {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.btn-primary:hover,
+.btn-redline:hover { background: #000; border-color: #000; color: var(--surface); }
 
 /* ---------- 카드 ---------- */
 .card-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0;                          /* 헤어라인 공유 — 도면 분할 느낌 */
+  gap: 0;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 .card {
   padding: var(--s4);
@@ -230,8 +264,7 @@ th {
   border-bottom: 1px solid var(--ink);
 }
 
-/* ---------- 표제란 (푸터) ----------
-   도면 시트의 title block. 페이지 메타데이터를 담는다. */
+/* ---------- 표제란 (푸터) ---------- */
 .titleblock {
   margin-top: auto;
   border-top: 1px solid var(--ink);
@@ -281,4 +314,11 @@ th {
   text-decoration: none;
   color: var(--concrete);
 }
-.topbar nav a:hover, .topbar nav a[aria-current] { color: var(--redline); }
+.topbar nav a:hover { color: var(--ink); }
+/* 활성 탭은 색이 아니라 굵기+밑줄로 — 흑백에서도 갈린다 */
+.topbar nav a[aria-current] {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 2px;
+}

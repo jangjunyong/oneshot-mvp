@@ -5,14 +5,9 @@
    강의 규칙(0829): 색 3개(바탕/글자/강조) + 경보용 시맨틱 2색 · 폰트 1벌 ·
    간격 8px 배수. 도면 시스템이 그 규칙을 그대로 만족한다. */
 
-:root {
-  /* 경보 시맨틱 — redline(마킹)과 구분되는 별도 축이다.
-     흑백 인쇄에서도 갈리도록 색만으로 구분하지 않는다(테두리 두께·문구 병행). */
-  --severe: #A63B22;
-  --severe-bg: #F3E4DF;
-  --caution: #8A6A1F;
-  --caution-bg: #F2EDDF;
-}
+/* 경보 시맨틱(--severe/--caution)은 디자인 시스템 v2 가 정의한다.
+   UI 크롬은 무채색이고 유채색은 상태 표시에만 쓴다 — 그 경계를 여기서 다시
+   흐리지 않기 위해 앱은 토큰을 재정의하지 않는다. */
 
 /* 폼 요소 — 도면 시스템의 직교·헤어라인 규칙을 따른다 */
 input,
@@ -91,7 +86,7 @@ button.note {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-button.note:hover { color: var(--redline); background: none; }
+button.note:hover { color: var(--ink); background: none; }
 
 .note {
   color: var(--concrete);
@@ -222,16 +217,22 @@ ul.scan-findings strong { background: var(--severe); }
 .venue-panel button {
   background: var(--surface);
   color: var(--ink);
+  border-color: var(--line-strong);
   font-size: var(--text-xs);
   padding: 0.4em 0.9em;
 }
+/* 호버는 면 밝기만 바꾼다 — 활성(검정 면)과 절대 같아지면 안 된다.
+   v1 에서는 호버가 검정, 활성이 적색이라 갈렸지만 팔레트가 무채색이 된
+   지금은 채움 + 테두리 굵기로 가른다 (흑백 인쇄·색각에서도 구분된다). */
 .palette button:hover,
-.venue-panel button:hover { background: var(--ink); color: var(--surface); }
+.venue-panel button:hover { background: var(--raised); border-color: var(--ink); color: var(--ink); }
 .venue-panel button.active,
 .palette button.active {
-  background: var(--redline);
-  border-color: var(--redline);
+  background: var(--ink);
+  border-color: var(--ink);
+  border-width: 2px;
   color: var(--surface);
+  font-weight: 700;
 }
 .venue-panel button.note { background: none; border: 0; }
 
