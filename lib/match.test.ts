@@ -7,7 +7,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { findSimilar } from "@/lib/match";
-import type { AxisKey, PlanInput } from "@/lib/types";
+import { FESTIVALS, monthOf } from "@/lib/festivals";
+import { DISTANCE_THRESHOLD, type AxisKey, type PlanInput } from "@/lib/types";
 
 /** 김천김밥축제 1회 조건 — PRD 성공 판정에 쓰는 그 입력 */
 const 김천: PlanInput = {
@@ -75,4 +76,50 @@ test("limit 을 주면 그 개수만 나온다", () => {
 test("찾아본 범위를 항상 함께 낸다 — 못 찾았을 때 화면에 쓴다", () => {
   const r = findSimilar(김천);
   assert.match(r.searchedScope, /619/);
+});
+
+test("전례 없는 조건에는 3개를 지어내지 않고 '없음'을 낸다 (암묵지 3)", () => {
+  // PLAN 완료 조건의 그 케이스 — 7월 · 청년 테마 · 인구 0.5만 · 접근성 최악.
+  // 619건 어디에도 이런 조합이 없다. 억지로 가장 가까운 걸 내놓으면 안 된다.
+  const r = findSimilar({
+    sido: "강원",
+    sigungu: "양구군",
+    month: 7,
+    themeCode: 7,
+    populationManMyeong: 0.5,
+    accessibility: 1,
+  });
+  assert.equal(r.invalid, undefined, "입력 오류가 아니라 전례 없음이어야 한다");
+  assert.equal(r.matched.length, 0, "전례 없는 조건인데 닮은 축제를 내놓았다");
+});
+
+test("임계값은 실측이 보증하는 범위에 붙어 있다", () => {
+  // 619건을 하나씩 빼고 재면(leave-one-out) 진짜 축제의 3번째 이웃 거리는
+  // 어떤 경우에도 이 최댓값 안에 든다. 임계값이 이보다 크게 느슨하면
+  // 실측이 보증하지 않는 어중간한 입력에도 "닮았다"고 말하게 된다.
+  let 최대 = 0;
+  for (const f of FESTIVALS) {
+    const r = findSimilar(
+      {
+        sido: f.sido,
+        sigungu: f.sigungu,
+        month: monthOf(f),
+        themeCode: f.themeCode,
+        populationManMyeong: f.populationManMyeong,
+        accessibility: f.accessibility,
+      },
+      4, // 자기 자신(거리 0) 포함 4개
+    );
+    const 이웃 = r.matched.filter((m) => m.festival.id !== f.id).slice(0, 3);
+    assert.equal(이웃.length, 3, `${f.name} 이 임계값에 잘려 3개를 못 채웠다`);
+    최대 = Math.max(최대, 이웃[2].distance);
+  }
+  assert.ok(
+    최대 <= DISTANCE_THRESHOLD,
+    `실측 최대 ${최대.toFixed(4)} 가 임계값을 넘는다 — 진짜 축제가 잘린다`,
+  );
+  assert.ok(
+    DISTANCE_THRESHOLD <= 최대 + 0.01,
+    `임계값 ${DISTANCE_THRESHOLD} 가 실측 최대 ${최대.toFixed(4)} 보다 크게 느슨하다`,
+  );
 });

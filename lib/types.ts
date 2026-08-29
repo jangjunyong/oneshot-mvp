@@ -74,8 +74,14 @@ export interface MatchResult {
   invalid?: string[];
 }
 
-/** 이 거리를 넘으면 닮았다고 하지 않는다. 억지로 가장 가까운 걸 내놓지 않는다 */
-export const DISTANCE_THRESHOLD = 0.35;
+/**
+ * 이 거리를 넘으면 닮았다고 하지 않는다. 억지로 가장 가까운 걸 내놓지 않는다.
+ *
+ * 0.27 의 근거 — 619건 leave-one-out 실측에서 진짜 축제의 3번째 이웃 거리는
+ * 최대 0.2674 (p99 0.203). 그 밖은 실측이 보증하지 않는 범위다.
+ * match.test.ts 가 이 근거를 데이터로 다시 재서 지킨다.
+ */
+export const DISTANCE_THRESHOLD = 0.27;
 
 /** 등급 컷라인. 닮은 3곳의 방문 배수 중앙값 기준 */
 export const GRADE_CUT = { severe: 2.0, caution: 1.5 } as const;
