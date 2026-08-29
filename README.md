@@ -38,6 +38,8 @@ npm run build      # 프로덕션 빌드
 |---|---|
 | [`PRD.md`](PRD.md) | 왜 · 누구 · 안 만들 것 |
 | [`CLAUDE.md`](CLAUDE.md) | 저장소 규칙 · 암묵지 |
+| [`docs/wireframe.md`](docs/wireframe.md) | 와이어프레임 — 화면 4개 × 4상태, 화면 이동 |
+| [`docs/screens.md`](docs/screens.md) | 화면 매핑 — 엔드포인트 ↔ 화면, 플로우 3개 |
 | [`docs/FLOW.md`](docs/FLOW.md) | 흐름 · 실패 경로 · 도구 선택 |
 | [`evals/cases.md`](evals/cases.md) | 믿을 근거 열 줄 |
 | [`PLAN.md`](PLAN.md) | 오늘 만들 것 · 안 만들 것 |
