@@ -720,6 +720,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   <Link href={`/venue?entry=${고름.e.id}`}>
                     이 쏠림에 대비하기 — 행사장 도면 →
                   </Link>
+                  {" · "}
+                  {/* 근거는 화면에만 있으면 결재에 못 올라간다 */}
+                  <Link href={`/report?entry=${고름.e.id}`}>진단서 한 장 →</Link>
                 </p>
               </div>
             </>

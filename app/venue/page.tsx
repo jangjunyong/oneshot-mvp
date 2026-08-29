@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getEntry, getVenue, saveVenue } from "@/lib/store";
+import {
+  getEntry,
+  getVenue,
+  latestVenueForEntry,
+  saveVenue,
+} from "@/lib/store";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
@@ -64,6 +69,15 @@ export default async function VenuePage({
       }
     } catch {
       // 아래에서 빈 도면으로 진행
+    }
+  } else if (entryParam) {
+    // 진단에서 넘어왔는데 도면 id 가 없다. 전에 그려 둔 게 있으면 그걸 연다 —
+    // 매번 빈 캔버스가 뜨면 담당자는 자기가 그린 배치가 사라진 줄 안다.
+    try {
+      const row = await latestVenueForEntry(entryParam);
+      if (row) venue = row.venue;
+    } catch {
+      // 빈 도면으로 진행
     }
   }
 

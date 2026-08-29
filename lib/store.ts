@@ -190,6 +190,32 @@ export async function saveVenue(
   return String(rows[0].id);
 }
 
+/**
+ * 그 진단에 연결된 **가장 최근** 도면.
+ *
+ * 도면은 저장할 때마다 새 행이 된다(고쳐 쓰지 않는다 — 이전 배치를 남긴다).
+ * 그래서 "이 진단의 도면"은 그중 마지막 것이다. 진단서(리포트)와 도면
+ * 화면이 같은 것을 봐야 하므로 조회를 한 곳에 둔다.
+ */
+export async function latestVenueForEntry(
+  entryId: string,
+): Promise<{ id: string; venue: Venue } | null> {
+  if (!/^\d+$/.test(entryId)) return null;
+  if (!sql) {
+    // 메모리 저장소는 최신이 앞이다 (saveVenue 가 unshift 한다)
+    const row = gv.__oneshotVenues!.find((r) => r.entryId === entryId);
+    return row ? { id: row.id, venue: row.venue } : null;
+  }
+  await venueReady();
+  const rows = await sql`
+    SELECT id, payload FROM venues
+    WHERE entry_id = ${Number(entryId)}
+    ORDER BY id DESC LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  return { id: String(rows[0].id), venue: rows[0].payload as Venue };
+}
+
 export async function getVenue(
   id: string,
 ): Promise<{ venue: Venue; entryId: string | null } | null> {

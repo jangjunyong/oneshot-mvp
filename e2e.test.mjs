@@ -189,6 +189,40 @@ test("지도는 한 장이고, 핀을 누르면 그 축제의 근거가 펴진�
   );
 });
 
+test("진단서 한 장 — 결론과 근거와 한계가 자바스크립트 없이 나온다", async () => {
+  await 저장한다({
+    sido: "경북", sigungu: "김천시", month: "10",
+    theme: "1", population: "14", accessibility: "2",
+  });
+  const 홈 = await (await fetch(BASE + "/")).text();
+  const id = 홈.match(/name="entryId" value="(\d+)"/)?.[1];
+  assert.ok(id, "진단 이력이 없다");
+
+  // 진단 화면에서 진단서로 가는 길이 있어야 한다
+  assert.match(홈, /report\?entry=/, "진단서로 가는 링크가 없다");
+
+  const res = await fetch(`${BASE}/report?entry=${id}`);
+  assert.equal(res.status, 200);
+  const 진단서 = await res.text();
+
+  assert.match(진단서, /축제 위험 경보 진단서/, "표제가 없다");
+  assert.match(진단서, /경북/, "대상이 안 적혀 있다");
+  assert.match(진단서, /근거 1/, "닮은 축제 근거가 없다");
+  assert.match(진단서, /근거 3/, "도면 근거 칸이 없다");
+  assert.match(진단서, /배/, "실측 배수가 없다");
+  assert.match(진단서, /한국관광공사/, "출처가 없다");
+
+  // 진단서에서도 제품의 선은 같다 — 예측하지 않고, 안전하다고 말하지 않는다
+  assert.match(진단서, /예측하지 않습니다/, "한계 고지가 없다");
+  const 본문 = 진단서.replace(/<[^>]+>/g, " ");
+  assert.doesNotMatch(본문, /\d+\s*명\s*(예상|올)/, "방문객 수 예측이 있다");
+
+  // 없는 진단을 부르면 죽지 않고 되돌려보낸다
+  const 없는것 = await fetch(`${BASE}/report?entry=999999`);
+  assert.ok(없는것.status < 500, `없는 진단에서 서버 오류 (${없는것.status})`);
+  assert.match(await 없는것.text(), /진단서를 만들 수 없습니다/);
+});
+
 test("잘못된 값은 저장되지 않는다", async () => {
   const 전 = await (await fetch(BASE + "/")).text();
   const 전건수 = (전.match(/김천시/g) || []).length;

@@ -400,6 +400,108 @@ ul.scan-findings strong { background: var(--severe); }
   white-space: nowrap;
 }
 
+/* ── 대비 진단서 (A4 한 장) ──
+   결재에 올라가는 종이다. 화면용 여백·크기가 아니라 인쇄 기준으로 짠다.
+   PDF 라이브러리 없이 브라우저 인쇄가 PDF 를 만든다 */
+.report {
+  max-width: 190mm;
+  margin: 0 auto;
+  padding: var(--s4) var(--s3);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+.report h1 {
+  margin: 0 0 0.2rem;
+  font-size: 16pt;
+}
+.report h2 {
+  margin: var(--s2) 0 0.3rem;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5pt;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--concrete);
+}
+.report p { max-width: none; margin: 0 0 0.4rem; }
+.report-head {
+  padding-bottom: var(--s1);
+  border-bottom: 2px solid var(--ink);
+}
+.report-head .num { margin: 0; font-size: 9pt; color: var(--concrete); }
+.report-verdict { margin-top: var(--s2); }
+.report-verdict .alert { margin: 0 0 0.3rem; padding: 0.35rem 0.6rem; }
+.report-verdict .headline { margin: 0; font-size: 13pt; }
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+.report-table th,
+.report-table td {
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.report-table th {
+  font-family: var(--font-mono);
+  font-size: 8pt;
+  font-weight: 500;
+  color: var(--concrete);
+  border-bottom: 1px solid var(--line-strong);
+  /* "평소 대비"가 세 줄로 쪼개지면 표가 아니라 잡음이 된다 */
+  white-space: nowrap;
+}
+/* 지역·연도·배수는 줄을 타면 안 된다. 축제명과 닮은 점만 흐른다 */
+.report-table td:nth-child(2),
+.report-table td:nth-child(3),
+.report-table td:nth-child(4) { white-space: nowrap; }
+.report-list { margin: 0.2rem 0; padding-left: 1.1rem; font-size: 9.5pt; }
+.report-list li { margin: 0.1rem 0; }
+.report-limits .report-list { font-size: 9pt; color: var(--concrete); }
+
+.report-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem var(--s2);
+  margin-top: var(--s3);
+  padding-top: var(--s1);
+  border-top: 1px solid var(--ink);
+  font-size: 8pt;
+  color: var(--concrete);
+}
+.report-hint {
+  margin-bottom: var(--s2);
+  padding: 0.5rem 0.7rem;
+  background: var(--raised);
+  font-size: var(--text-sm);
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+@media print {
+  /* 종이에는 안내·항해가 남을 이유가 없다 */
+  .no-print,
+  .topbar,
+  .titleblock { display: none !important; }
+  .report {
+    max-width: none;
+    padding: 0;
+    font-size: 9.5pt;
+  }
+  /* 근거가 페이지 경계에서 잘리면 결재자가 앞뒤를 뒤져야 한다 */
+  .report section,
+  .report-table,
+  .report-list li { break-inside: avoid; }
+  a { text-decoration: none; color: inherit; }
+}
+
 /* 값의 출처 — 값보다 약하되 읽을 수는 있어야 한다 */
 .evidence {
   margin: -0.3rem 0 var(--s2) 8.5rem;
