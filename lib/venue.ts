@@ -43,8 +43,9 @@ export interface Venue {
   mPerPx: number | null;
   /** 밑그림(배치도 사진) dataURL. 없어도 된다 */
   underlay?: string;
-  /** 위성지도 밑그림 — 캔버스 중앙의 위경도와 줌. 타일은 열 때마다 다시 그린다 */
-  map?: { lat: number; lng: number; zoom: number };
+  /** 배경 지도 — 캔버스 중앙의 위경도와 줌. 타일은 열 때마다 다시 그린다.
+   *  style: plan(도면 느낌, 기본) | satellite(지형 확인용) */
+  map?: { lat: number; lng: number; zoom: number; style?: "plan" | "satellite" };
   items: VenueItem[];
 }
 

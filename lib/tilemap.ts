@@ -15,7 +15,17 @@ export const TILE_SIZE = 256;
 export const MIN_ZOOM = 15;
 export const MAX_ZOOM = 19;
 
-export const TILE_ATTRIBUTION = "위성사진: Esri World Imagery";
+/**
+ * 배경 스타일 — plan(기본)은 건축 도면처럼 조용한 회백색 지도다.
+ * 위성사진 위에서는 아무도 설계하지 않는다 (2026-08-29 검토 피드백).
+ * satellite 는 지형 확인용 토글로 남긴다.
+ */
+export type TileStyle = "plan" | "satellite";
+
+export function tileAttribution(style: TileStyle, vworldKey: string | null): string {
+  if (style === "satellite") return "위성사진: Esri World Imagery";
+  return vworldKey ? "지도: 국토교통부 브이월드" : "지도: © OpenStreetMap contributors";
+}
 
 /** 웹 메르카토르 해상도(m/px). 이 값이 도면의 자동 축척이 된다 */
 export function metersPerPixel(lat: number, zoom: number): number {
@@ -47,9 +57,28 @@ export interface Tile {
   url: string;
 }
 
-/** Esri 는 z/y/x 순서다 */
-export function tileUrl(tx: number, ty: number, zoom: number): string {
-  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`;
+/**
+ * 타일 주소 조립 — 위성(Esri)·브이월드는 z/y/x, OSM 은 z/x/y 순서다.
+ *
+ * 도면 스타일의 본선은 국토부 브이월드 백지도(흑백 건축도면 룩, 국내 건물
+ * 윤곽 최상) — 단 키가 필요하다(NEXT_PUBLIC_VWORLD_KEY, 도메인 제한 키라
+ * 브라우저 노출이 설계상 정상). 키가 없으면 OSM 으로 폴백해 화면은 산다.
+ * CARTO light_all 은 2026 현재 키 없이 쓰면 워터마크가 박혀 뺐다.
+ */
+export function tileUrl(
+  tx: number,
+  ty: number,
+  zoom: number,
+  style: TileStyle = "plan",
+  vworldKey: string | null = null,
+): string {
+  if (style === "satellite") {
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`;
+  }
+  if (vworldKey) {
+    return `https://api.vworld.kr/req/wmts/1.0.0/${vworldKey}/white/${zoom}/${ty}/${tx}.png`;
+  }
+  return `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
 }
 
 /**
@@ -62,6 +91,8 @@ export function visibleTiles(
   zoom: number,
   width: number,
   height: number,
+  style: TileStyle = "plan",
+  vworldKey: string | null = null,
 ): Tile[] {
   const center = latLngToWorldPx(lat, lng, zoom);
   const originX = center.x - width / 2; // 캔버스 (0,0) 의 세계 픽셀
@@ -84,7 +115,7 @@ export function visibleTiles(
         zoom,
         px: tx * TILE_SIZE - originX,
         py: ty * TILE_SIZE - originY,
-        url: tileUrl(tx, ty, zoom),
+        url: tileUrl(tx, ty, zoom, style, vworldKey),
       });
     }
   }

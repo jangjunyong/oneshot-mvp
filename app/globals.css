@@ -219,11 +219,14 @@ ol.legend strong {
   align-items: flex-start;
   margin-top: 1rem;
 }
+.venue-canvas-col {
+  flex: 0 1 auto;
+  min-width: 0;
+}
 .venue-canvas {
   overflow: auto;
   border: 1px solid #c9c4bd;
-  background: #fcfbf9;
-  flex: 0 1 auto;
+  background: #fbfaf7;
   max-width: 100%;
 }
 .venue-panel {

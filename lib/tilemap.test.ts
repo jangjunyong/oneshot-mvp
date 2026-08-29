@@ -62,8 +62,24 @@ test("지도 끌기 — 화면을 dx 만큼 끌면 중심이 세계 픽셀로 �
   assert.ok(Math.abs(after.y - (before.y + 52)) < 0.01, `y 어긋남: ${after.y - before.y}`);
 });
 
-test("타일 주소 — 위성 타일 URL 이 z/y/x 순서로 조립된다", () => {
-  const url = tileUrl(55906, 25459, 16);
-  assert.match(url, /World_Imagery/, "위성(Imagery) 타일이어야 한다");
-  assert.match(url, /\/16\/25459\/55906$/, "Esri 는 z/y/x 순서다");
+test("타일 주소 — 브이월드 키가 있으면 백지도, 없으면 OSM 폴백", () => {
+  const sat = tileUrl(55906, 25459, 16, "satellite");
+  assert.match(sat, /World_Imagery/, "위성(Imagery) 타일이어야 한다");
+  assert.match(sat, /\/16\/25459\/55906$/, "Esri 는 z/y/x 순서다");
+
+  // 도면 스타일 본선 — 국토부 브이월드 백지도 (흑백 건축도면 룩, 사용자 승인)
+  const vw = tileUrl(55906, 25459, 16, "plan", "TESTKEY123");
+  assert.match(vw, /api\.vworld\.kr/, "키가 있으면 브이월드여야 한다");
+  assert.match(vw, /TESTKEY123\/white\/16\/25459\/55906\.png$/, "백지도 z/y/x 순서다");
+
+  // 키가 없을 때의 폴백 — OSM (z/x/y)
+  const osm = tileUrl(55906, 25459, 16, "plan");
+  assert.match(osm, /openstreetmap/, "키가 없으면 OSM 폴백이어야 한다");
+  assert.match(osm, /\/16\/55906\/25459\.png$/, "OSM 은 z/x/y 순서다");
+});
+
+test("보이는 타일 — 스타일과 키가 타일 주소까지 흘러간다", () => {
+  const tiles = visibleTiles(36.14, 128.11, 16, 300, 300, "plan", "TESTKEY123");
+  assert.ok(tiles.length > 0);
+  for (const t of tiles) assert.match(t.url, /vworld/);
 });

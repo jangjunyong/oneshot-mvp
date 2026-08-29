@@ -34,10 +34,13 @@ import {
   metersPerPixel,
   MIN_ZOOM,
   panCenter,
-  TILE_ATTRIBUTION,
+  tileAttribution,
   visibleTiles,
   type Tile,
 } from "@/lib/tilemap";
+
+// 도메인 제한 키라 브라우저 노출이 설계상 정상 (빌드 때 인라인된다)
+const VWORLD_KEY = process.env.NEXT_PUBLIC_VWORLD_KEY ?? null;
 
 type Mode = "select" | "scale" | "path" | "pan";
 
@@ -50,14 +53,32 @@ const DEFAULT_SIZE: Record<Exclude<VenueKind, "path">, [number, number]> = {
   gate: [34, 56],
 };
 
-/** 종류별 채움색 — 흑백 도면 위에서 구분만 되면 된다. 위험색(적색)은 출입구만 */
-const FILL: Record<Exclude<VenueKind, "path">, string> = {
-  booth: "#ffffff",
-  stage: "#e5e0d8",
-  parking: "#eeeeee",
-  toilet: "#dbe7db",
-  gate: "#fbe9e9",
-};
+// 흑백 건축도면 룩 (사용자 승인) — 종류 구분은 색이 아니라 선·패턴으로 한다.
+const INK = "#1c1b1a";
+const ACCENT = "#b3261e";
+
+/** 해칭·점 패턴 캔버스 — 한 번 만들어 재사용 (클라이언트 전용 파일) */
+const patternCache: Partial<Record<"hatch" | "dots", HTMLCanvasElement>> = {};
+function pattern(type: "hatch" | "dots"): HTMLCanvasElement {
+  if (patternCache[type]) return patternCache[type]!;
+  const c = document.createElement("canvas");
+  c.width = c.height = 8;
+  const ctx = c.getContext("2d")!;
+  ctx.strokeStyle = "#8a857e";
+  ctx.fillStyle = "#8a857e";
+  if (type === "hatch") {
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(8, 0);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(4, 4, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  patternCache[type] = c;
+  return c;
+}
 
 const 통로기본폭 = 16;
 const MAX_UNDERLAY_BYTES = 4 * 1024 * 1024;
@@ -109,11 +130,15 @@ export default function Editor({
 
   const selected = venue.items.find((it) => it.id === selectedId) ?? null;
 
-  // 위성지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
+  // 배경 지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
+  const mapStyle = venue.map?.style ?? "plan";
   const tiles = venue.map
-    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height)
+    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height, mapStyle, VWORLD_KEY)
     : [];
   const tileImgs = useTileImages(tiles);
+  // 브이월드 백지도는 그 자체가 도면 톤이라 그대로, OSM 폴백은 색이 시끄러워
+  // 종이 위에 연하게 가라앉힌다. 위성은 확인용이니 원본 그대로.
+  const tileOpacity = mapStyle === "satellite" ? 1 : VWORLD_KEY ? 1 : 0.35;
 
   /** 도형 전체를 픽셀만큼 옮긴다 — 지도를 끌면 도형이 땅에 붙어 따라온다 */
   function shiftItems(items: VenueItem[], dx: number, dy: number): VenueItem[] {
@@ -151,8 +176,16 @@ export default function Editor({
     const lat = initialCenter?.lat ?? 37.5663; // 서울시청 — 이력 없이 들어온 경우
     const lng = initialCenter?.lng ?? 126.9779;
     const zoom = 16;
-    setVenue((v) => ({ ...v, map: { lat, lng, zoom }, mPerPx: metersPerPixel(lat, zoom) }));
+    setVenue((v) => ({
+      ...v,
+      map: { lat, lng, zoom, style: "plan" },
+      mPerPx: metersPerPixel(lat, zoom),
+    }));
     setMode("pan");
+  }
+
+  function setMapStyle(style: "plan" | "satellite") {
+    setVenue((v) => (v.map ? { ...v, map: { ...v.map, style } } : v));
   }
 
   function changeZoom(dir: 1 | -1) {
@@ -341,6 +374,7 @@ export default function Editor({
 
   return (
     <div className="venue-layout">
+      <div className="venue-canvas-col">
       <div className="venue-canvas">
         <Stage
           width={venue.width}
@@ -351,15 +385,27 @@ export default function Editor({
           style={{ cursor: mode === "select" ? "default" : mode === "pan" ? "grab" : "crosshair" }}
         >
           <Layer>
-            <Rect x={0} y={0} width={venue.width} height={venue.height} fill="#fcfbf9" stroke="#c9c4bd" listening={mode !== "select"} />
-            {tiles.map(
-              (t) =>
-                tileImgs[t.url] && (
-                  <KonvaImage key={t.url} image={tileImgs[t.url]} x={t.px} y={t.py} width={256} height={256} listening={false} />
-                ),
-            )}
+            <Rect x={0} y={0} width={venue.width} height={venue.height} fill="#fbfaf7" stroke="#c9c4bd" listening={mode !== "select"} />
+            <Group opacity={tileOpacity}>
+              {tiles.map(
+                (t) =>
+                  tileImgs[t.url] && (
+                    <KonvaImage key={t.url} image={tileImgs[t.url]} x={t.px} y={t.py} width={256} height={256} listening={false} />
+                  ),
+              )}
+            </Group>
             {venue.map && (
-              <Text x={venue.width - 190} y={venue.height - 18} width={184} align="right" text={TILE_ATTRIBUTION} fontSize={10} fill="#ffffff" opacity={0.85} listening={false} />
+              <Text
+                x={venue.width - 230}
+                y={venue.height - 18}
+                width={224}
+                align="right"
+                text={tileAttribution(mapStyle, VWORLD_KEY)}
+                fontSize={10}
+                fill={mapStyle === "satellite" ? "#ffffff" : "#6d6862"}
+                opacity={0.9}
+                listening={false}
+              />
             )}
             {underlayImg && (
               <KonvaImage image={underlayImg} width={venue.width} height={venue.height} opacity={0.45} listening={false} />
@@ -367,14 +413,9 @@ export default function Editor({
 
             {venue.items.map((it) =>
               it.kind === "path" ? (
-                <Line
+                // 통로 — 연회색 띠 + 중심 점선 (도면의 동선 표기)
+                <Group
                   key={it.id}
-                  points={it.points ?? []}
-                  stroke={selectedId === it.id ? "#b3261e" : "#b9b2a8"}
-                  strokeWidth={it.w}
-                  lineCap="round"
-                  lineJoin="round"
-                  opacity={0.55}
                   draggable={mode === "select"}
                   onClick={() => setSelectedId(it.id)}
                   onDragEnd={(e) => {
@@ -387,7 +428,25 @@ export default function Editor({
                       ),
                     });
                   }}
-                />
+                >
+                  <Line
+                    points={it.points ?? []}
+                    stroke={selectedId === it.id ? ACCENT : "#dbd6ce"}
+                    strokeWidth={it.w}
+                    lineCap="round"
+                    lineJoin="round"
+                    opacity={selectedId === it.id ? 0.5 : 0.85}
+                  />
+                  <Line
+                    points={it.points ?? []}
+                    stroke={INK}
+                    strokeWidth={1}
+                    dash={[9, 7]}
+                    lineCap="round"
+                    lineJoin="round"
+                    listening={false}
+                  />
+                </Group>
               ) : (
                 <Group
                   key={it.id}
@@ -408,10 +467,29 @@ export default function Editor({
                   <Rect
                     width={it.w}
                     height={it.h}
-                    fill={FILL[it.kind]}
-                    stroke={selectedId === it.id ? "#b3261e" : "#37332f"}
-                    strokeWidth={selectedId === it.id ? 2 : 1.2}
+                    fill="#ffffff"
+                    stroke={selectedId === it.id ? ACCENT : INK}
+                    strokeWidth={selectedId === it.id ? 2 : 1}
                   />
+                  {/* 종류 기호 — 무대: 해칭 · 주차장: 점 · 화장실: 이중선 · 출입구: 벽 절단 틱 */}
+                  {(it.kind === "stage" || it.kind === "parking") && (
+                    <Rect
+                      width={it.w}
+                      height={it.h}
+                      // Konva 는 캔버스도 패턴으로 받지만 타입 선언이 이미지뿐이다
+                      fillPatternImage={pattern(it.kind === "stage" ? "hatch" : "dots") as unknown as HTMLImageElement}
+                      listening={false}
+                    />
+                  )}
+                  {it.kind === "toilet" && (
+                    <Rect x={3} y={3} width={it.w - 6} height={it.h - 6} stroke={INK} strokeWidth={0.7} listening={false} />
+                  )}
+                  {it.kind === "gate" && (
+                    <>
+                      <Line points={[0, 0, 0, it.h]} stroke={INK} strokeWidth={4} listening={false} />
+                      <Line points={[it.w, 0, it.w, it.h]} stroke={INK} strokeWidth={4} listening={false} />
+                    </>
+                  )}
                   <Text
                     text={it.name}
                     width={it.w}
@@ -419,9 +497,26 @@ export default function Editor({
                     align="center"
                     verticalAlign="middle"
                     fontSize={11}
-                    fill="#37332f"
+                    fill={INK}
                     listening={false}
                   />
+                  {/* 선택하면 건축도면식 치수선 — 축척이 있어야 숫자가 정직하다 */}
+                  {selectedId === it.id && venue.mPerPx !== null && (
+                    <>
+                      <Line points={[0, it.h + 12, it.w, it.h + 12]} stroke={ACCENT} strokeWidth={1} listening={false} />
+                      <Line points={[0, it.h + 7, 0, it.h + 17]} stroke={ACCENT} strokeWidth={1} listening={false} />
+                      <Line points={[it.w, it.h + 7, it.w, it.h + 17]} stroke={ACCENT} strokeWidth={1} listening={false} />
+                      <Text
+                        text={`${(it.w * venue.mPerPx).toFixed(1)}m`}
+                        width={it.w}
+                        y={it.h + 16}
+                        align="center"
+                        fontSize={10}
+                        fill={ACCENT}
+                        listening={false}
+                      />
+                    </>
+                  )}
                 </Group>
               ),
             )}
@@ -440,6 +535,11 @@ export default function Editor({
             <Transformer ref={trRef} rotateEnabled flipEnabled={false} boundBoxFunc={(o, n) => (n.width < 10 || n.height < 10 ? o : n)} />
           </Layer>
         </Stage>
+      </div>
+      <p className="note">
+        기호 — 해칭: 무대 · 점: 주차장 · 이중 테두리: 화장실 · 굵은 양끝:
+        출입구 · 점선 띠: 통로 · 선택하면 치수가 붙습니다
+      </p>
       </div>
 
       <aside className="venue-panel">
@@ -471,7 +571,7 @@ export default function Editor({
         <h2>배경 지도</h2>
         {!venue.map ? (
           <p>
-            <button type="button" onClick={layMap}>위성지도 깔기</button>{" "}
+            <button type="button" onClick={layMap}>부지 지도 깔기</button>{" "}
             <span className="note">
               {initialCenter ? "진단한 지역에서 시작합니다" : "서울에서 시작 — 끌어서 옮기세요"}
             </span>
@@ -487,9 +587,25 @@ export default function Editor({
               <button type="button" onClick={() => changeZoom(1)}>확대 +</button>{" "}
               <button type="button" onClick={() => changeZoom(-1)}>축소 −</button>
             </p>
+            <p>
+              <button
+                type="button"
+                className={mapStyle === "plan" ? "active" : undefined}
+                onClick={() => setMapStyle("plan")}
+              >
+                도면 스타일
+              </button>{" "}
+              <button
+                type="button"
+                className={mapStyle === "satellite" ? "active" : undefined}
+                onClick={() => setMapStyle("satellite")}
+              >
+                위성 확인
+              </button>
+            </p>
             <p className="note">
-              강·다리·도로가 보이는 실제 부지 위에 배치하세요. 지도를 끌거나
-              줌해도 놓은 것들은 땅에 붙어 따라옵니다
+              설계는 조용한 도면 위에서, 강·다리·지형 확인은 위성으로. 지도를
+              끌거나 줌해도 놓은 것들은 땅에 붙어 따라옵니다
             </p>
           </>
         )}
