@@ -12,6 +12,7 @@ import { getEntry, latestVenueForEntry } from "@/lib/store";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { grade } from "@/lib/grade";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
+import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { scanVenue } from "@/lib/scan";
 import { VENUE_KIND_NAME } from "@/lib/venue";
 import {
@@ -92,6 +93,17 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   const 도면 = await latestVenueForEntry(entry.id).catch(() => null);
   const 배수 = g.medianSurge;
   const scan = 도면 ? scanVenue(도면.venue, 배수) : null;
+
+  // 감당 범위 — 같은 시군구·같은 달의 실측을 기준으로 몇 배 구간인지
+  const 기준 = localBaseline(
+    { sido: entry.sido, sigungu: entry.sigungu, month: Number(entry.month) },
+    result.matched,
+  );
+  const 감당 = capacityBand(
+    g,
+    result.matched.map((m) => m.festival.actualVisitSurge),
+    기준?.surge ?? null,
+  );
   const 이름 = (id: string) =>
     도면?.venue.items.find((it) => it.id === id)?.name ?? id;
 
@@ -252,6 +264,44 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             )}
           </section>
         </>
+      )}
+
+      {/* 근거 넷 — 결론. "왜 물량을 3배로 잡았습니까"에 대한 답이 여기 있다.
+          개수가 아니라 구간을 낸다 (lib/capacity.ts 머리말) */}
+      {감당 && (
+        <section className="report-capacity">
+          <h2>근거 4 — 감당 범위</h2>
+          {감당.baseSurge !== null && 기준 ? (
+            <>
+              <p className="num">
+                작년 물량이 감당한 수준의{" "}
+                <strong>
+                  {ratioText(감당.lo!)} ~ {ratioText(감당.hi!)}
+                </strong>{" "}
+                구간을 보십시오. 기준은 {기준.name}({기준.year}년) 평소 대비{" "}
+                {기준.surge.toFixed(2)}배이고, 닮은 축제 3곳은{" "}
+                {감당.twinLo.toFixed(2)}~{감당.twinHi.toFixed(2)}배였습니다.
+                {감당.floored &&
+                  " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+              </p>
+              <p className="num">
+                같은 시군구·같은 달의 실측을 기준으로 삼았습니다.{" "}
+                <strong>품목별 개수는 내지 않습니다</strong> — 작년 대장의 수량에
+                이 구간을 곱하는 것은 담당 부서의 판단입니다.
+              </p>
+            </>
+          ) : (
+            <p className="num">
+              닮은 축제 3곳은 평소의{" "}
+              <strong>
+                {감당.twinLo.toFixed(2)}~{감당.twinHi.toFixed(2)}배
+              </strong>
+              였습니다. 같은 시군구·같은 달에 열린 축제의 실측이 619건에 없어
+              작년 대비 몇 배인지는 내지 못했습니다 — 없는 것이 아니라 비교
+              기준을 못 찾은 것입니다.
+            </p>
+          )}
+        </section>
       )}
 
       {/* 결재자가 반드시 묻는 것 — "그게 맞는 건 어떻게 압니까".

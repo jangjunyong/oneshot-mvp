@@ -35,6 +35,7 @@ import {
 } from "@/lib/overlap";
 import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
+import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
@@ -777,6 +778,71 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     )}
                   </div>
                 )}
+
+                {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
+                    잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는
+                    평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
+                    같은 화면에서 충돌한다 (docs/DECISIONS.md) */}
+                {(() => {
+                  const 기준 = localBaseline(
+                    {
+                      sido: 고름.e.sido,
+                      sigungu: 고름.e.sigungu,
+                      month: Number(고름.e.month),
+                    },
+                    고름.result.matched,
+                  );
+                  const 범위 = capacityBand(
+                    고름.g,
+                    고름.result.matched.map((m) => m.festival.actualVisitSurge),
+                    기준?.surge ?? null,
+                  );
+                  if (!범위) return null;
+                  return (
+                    <div className="capacity">
+                      <h3>감당 범위</h3>
+                      {범위.baseSurge !== null && 기준 ? (
+                        <>
+                          <p className="capacity-head num">
+                            작년 물량이 감당한 수준의{" "}
+                            <strong>
+                              {ratioText(범위.lo!)} ~ {ratioText(범위.hi!)}
+                            </strong>{" "}
+                            구간을 보십시오
+                          </p>
+                          <p className="note num">
+                            기준 — {기준.name}({기준.year}년)이 평소의{" "}
+                            {기준.surge.toFixed(2)}배였고, 닮은 축제 3곳은{" "}
+                            {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
+                            {범위.floored &&
+                              " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+                          </p>
+                          <p className="note">
+                            같은 시군구·같은 달의 실측을 기준으로 삼았습니다. 이
+                            축제가 아니라면 기준이 아닙니다.{" "}
+                            <strong>개수는 내지 않습니다</strong> — 작년 대장의
+                            품목별 수량에 이 구간을 곱하는 건 담당자 몫입니다.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="capacity-head num">
+                            닮은 축제 3곳은 평소의{" "}
+                            <strong>
+                              {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배
+                            </strong>
+                            였습니다
+                          </p>
+                          <p className="note">
+                            같은 시군구·같은 달에 열린 축제의 실측이 619건에 없어
+                            <strong> 작년 대비 몇 배인지는 못 냅니다</strong> —
+                            없는 것이 아니라 비교 기준을 못 찾은 것입니다.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* 결재에서 반드시 받는 질문 — "그게 맞는 건 어떻게 압니까".
                     619건 leave-one-out 자기검증을 숫자로 낸다. 한계(재현율)도
