@@ -32,6 +32,11 @@ async function 서버가뜰때까지(ms = 60000) {
 before(async () => {
   const env = { ...process.env };
   delete env.DATABASE_URL; // 메모리 저장소로 — 외부 호출 없음
+  // .env.local 에 진짜 키가 꽂혀 있어도 이 테스트의 전제는 "키 없음"이다.
+  // delete 로는 안 된다 — next start 가 .env.local 로 도로 채운다.
+  // 빈 문자열로 덮어야 이미 있는 값으로 취급되어 파일이 못 건드린다.
+  env.OPENROUTER_API_KEY = "";
+  env.TOUR_API_KEY = "";
   server = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
     ["next", "start", "--port", String(PORT)],
