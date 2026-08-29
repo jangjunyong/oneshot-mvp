@@ -7,7 +7,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deleteEntry, HISTORY_LIMIT, list, save } from "@/lib/store";
+import { deleteEntry, getVenue, HISTORY_LIMIT, list, save, saveVenue } from "@/lib/store";
+import { emptyVenue } from "@/lib/venue";
 
 assert.equal(
   Boolean(process.env.DATABASE_URL),
@@ -44,6 +45,25 @@ test("숫자가 아닌 id 는 아무것도 지우지 않는다", async () => {
   assert.equal((await list()).length, 전, "이상한 id 가 뭔가를 지웠다");
 
   await deleteEntry((await list())[0].id); // 정리
+});
+
+test("도면을 저장하면 id 로 그대로 되찾는다 — 진단과의 연결 포함", async () => {
+  const 도면 = emptyVenue(800, 600);
+  도면.items.push({
+    id: "b1", kind: "booth", x: 10, y: 10, w: 30, h: 20, rotation: 0,
+    name: "김밥 부스", staff: 2, popularity: 4,
+  });
+
+  const id = await saveVenue(도면, "7");
+  const 복원 = await getVenue(id);
+  assert.ok(복원, "저장한 도면을 못 찾는다");
+  assert.equal(복원.entryId, "7");
+  assert.deepEqual(복원.venue, 도면, "도면이 저장 전후로 달라졌다");
+});
+
+test("없는 도면 id 나 이상한 id 는 null — 지어내지 않는다", async () => {
+  assert.equal(await getVenue("999999"), null);
+  assert.equal(await getVenue("1; DROP TABLE venues"), null);
 });
 
 test("이력은 상한까지만 돌려준다 — 화면이 그 이상을 약속하지 않는다", async () => {

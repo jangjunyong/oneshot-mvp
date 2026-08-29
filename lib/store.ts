@@ -111,6 +111,80 @@ export async function deleteEntry(id: string): Promise<void> {
   await sql`DELETE FROM entries WHERE id = ${Number(id)}`;
 }
 
+// ─────────────────────────────────────────────────────────────
+// 행사장 도면 — 진단(entry)에 붙는 대비 설계의 밑판.
+// 도면 한 건 = JSONB 한 덩어리. 아이템 단위 질의가 필요해지기 전까지는
+// 스키마를 쪼개지 않는다.
+// ─────────────────────────────────────────────────────────────
+
+import type { Venue } from "@/lib/venue";
+
+interface VenueRow {
+  id: string;
+  entryId: string | null;
+  venue: Venue;
+}
+
+const gv = globalThis as unknown as {
+  __oneshotVenues?: VenueRow[];
+  __oneshotVenueReady?: Promise<void>;
+};
+gv.__oneshotVenues ??= [];
+
+function venueReady(): Promise<void> {
+  if (!sql) return Promise.resolve();
+  gv.__oneshotVenueReady ??= sql`
+    CREATE TABLE IF NOT EXISTS venues (
+      id         BIGSERIAL PRIMARY KEY,
+      entry_id   BIGINT,
+      payload    JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `
+    .then(() => undefined)
+    .catch((e) => {
+      gv.__oneshotVenueReady = undefined;
+      throw e;
+    });
+  return gv.__oneshotVenueReady;
+}
+
+export async function saveVenue(
+  venue: Venue,
+  entryId: string | null = null,
+): Promise<string> {
+  if (!sql) {
+    const id = String(gv.__oneshotVenues!.length + 1);
+    gv.__oneshotVenues!.unshift({ id, entryId, venue });
+    return id;
+  }
+  await venueReady();
+  const rows = await sql`
+    INSERT INTO venues (entry_id, payload)
+    VALUES (${entryId === null ? null : Number(entryId)}, ${JSON.stringify(venue)})
+    RETURNING id
+  `;
+  return String(rows[0].id);
+}
+
+export async function getVenue(
+  id: string,
+): Promise<{ venue: Venue; entryId: string | null } | null> {
+  // id 는 URL 에서 온다. 숫자가 아니면 질의에 넣지 않는다.
+  if (!/^\d+$/.test(id)) return null;
+  if (!sql) {
+    const row = gv.__oneshotVenues!.find((r) => r.id === id);
+    return row ? { venue: row.venue, entryId: row.entryId } : null;
+  }
+  await venueReady();
+  const rows = await sql`SELECT entry_id, payload FROM venues WHERE id = ${Number(id)}`;
+  if (rows.length === 0) return null;
+  return {
+    venue: rows[0].payload as Venue,
+    entryId: rows[0].entry_id === null ? null : String(rows[0].entry_id),
+  };
+}
+
 // 배포본에서 어느 저장소를 쓰고 있는지 화면으로 확인하기 위한 진단용.
 export function storageMode(): string {
   return sql ? "Postgres" : "메모리 (DATABASE_URL 없음)";

@@ -486,6 +486,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
               {/* 시연 중 쌓인 시험 데이터를 그 자리에서 치운다. 확인창은 안 띄운다
                   — 진단은 다시 넣으면 그만이고, 모달은 폰 데모를 끊는다 */}
+              <p>
+                {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
+                <Link href={`/venue?entry=${e.id}`}>이 쏠림에 대비하기 — 행사장 도면 →</Link>
+              </p>
               <form action={지운다}>
                 <input type="hidden" name="entryId" value={e.id} />
                 <button type="submit" className="note">

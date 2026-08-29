@@ -208,3 +208,54 @@ ol.legend strong {
   height: auto;
   margin: 0.5rem 0 0.2rem;
 }
+
+/* ── 행사장 도면 편집기 ─────────────────────────────── */
+.venue-main {
+  max-width: 82rem; /* 캔버스+패널이 나란히 서야 해서 본문보다 넓다 */
+}
+.venue-layout {
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+}
+.venue-canvas {
+  overflow: auto;
+  border: 1px solid #c9c4bd;
+  background: #fcfbf9;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.venue-panel {
+  flex: 1 0 17rem;
+  max-width: 21rem;
+}
+.venue-panel h2 {
+  margin-top: 1.2rem;
+}
+.venue-panel h2:first-of-type {
+  margin-top: 0;
+}
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.palette button {
+  padding: 0.35rem 0.7rem;
+  background: #fff;
+  color: #222;
+}
+.palette button.active {
+  background: #b3261e;
+  border-color: #b3261e;
+  color: #fff;
+}
+@media (max-width: 60rem) {
+  .venue-layout {
+    flex-direction: column;
+  }
+  .venue-panel {
+    max-width: none;
+  }
+}
