@@ -151,6 +151,25 @@ button.note:hover { color: var(--ink); background: none; }
 }
 .entry summary:hover { color: var(--redline); }
 
+/* ── 자기검증 ──
+   "그게 맞는 건 어떻게 압니까"에 대한 답. 근거(닮은 이유)와 성격이 달라
+   접어 두되, 펼치면 한계까지 같이 읽히도록 배경을 깔아 묶는다 */
+.selfcheck { margin: var(--s2) 0; }
+.selfcheck summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--concrete);
+}
+.selfcheck summary:hover { color: var(--redline); }
+.selfcheck > :not(summary) {
+  margin: var(--s1) 0 0;
+  padding-left: var(--s2);
+  border-left: 2px solid var(--line);
+  font-size: var(--text-sm);
+}
+
 /* 닮은 축제 번호 목록 — 지도 마커 번호와 짝이다 */
 ol.legend {
   list-style: none;
@@ -481,6 +500,11 @@ ul.scan-findings strong { background: var(--severe); }
 .report-list { margin: 0.2rem 0; padding-left: 1.1rem; font-size: 9.5pt; }
 .report-list li { margin: 0.1rem 0; }
 .report-limits .report-list { font-size: 9pt; color: var(--concrete); }
+
+/* 자기검증 — 근거(사실)와 한계(고지) 사이에 앉는 성격이라 둘의 중간 톤으로.
+   A4 한 장을 지키려고 근거 표보다 작게 둔다 */
+.report-selfcheck p { font-size: 9pt; margin: 0.15rem 0; color: var(--concrete); }
+.report-selfcheck strong { color: var(--ink); }
 
 .report-foot {
   display: flex;

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { getEntry, latestVenueForEntry } from "@/lib/store";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { grade } from "@/lib/grade";
+import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { scanVenue } from "@/lib/scan";
 import { VENUE_KIND_NAME } from "@/lib/venue";
 import {
@@ -84,14 +85,12 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     }
   }
 
-  // 도면이 있으면 그 배치의 쏠림 스캔까지 한 장에 담는다
+  // 도면이 있으면 그 배치의 쏠림 스캔까지 한 장에 담는다.
+  // 배수는 grade 가 이미 낸 것을 쓴다 — 여기서 중앙값을 다시 세면 짝수 개일 때
+  // 위/아래가 갈려 **같은 문서 안에서 등급과 스캔이 다른 배수**를 쓰게 된다
+  // (grade.ts 는 경보를 보수적으로 내려고 위쪽 값을 쓴다).
   const 도면 = await latestVenueForEntry(entry.id).catch(() => null);
-  const 배수 =
-    result.matched.length > 0
-      ? [...result.matched.map((m) => m.festival.actualVisitSurge)].sort(
-          (a, b) => a - b,
-        )[Math.floor((result.matched.length - 1) / 2)]
-      : null;
+  const 배수 = g.medianSurge;
   const scan = 도면 ? scanVenue(도면.venue, 배수) : null;
   const 이름 = (id: string) =>
     도면?.venue.items.find((it) => it.id === id)?.name ?? id;
@@ -254,6 +253,25 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
           </section>
         </>
       )}
+
+      {/* 결재자가 반드시 묻는 것 — "그게 맞는 건 어떻게 압니까".
+          근거 세 종류를 다 낸 뒤에 이 방식 자체의 적중률을 낸다 */}
+      <section className="report-selfcheck">
+        <h2>이 방식은 얼마나 맞는가 — 619건 자기검증</h2>
+        <p className="num">
+          619건 각각을 기획안인 척 넣고 <strong>자기 자신을 뺀</strong> 닮은 축제로
+          등급을 매겨 실제와 대조했습니다(leave-one-out). 위험군을 무작위의{" "}
+          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냅니다 — 정밀도{" "}
+          {pct(LOO_PUBLISHED.precision)} · 재현율 {pct(LOO_PUBLISHED.recall)} ·
+          기저율 {pct(LOO_PUBLISHED.baseRate)}. 예측 배수의 절대오차는 중앙{" "}
+          {LOO_PUBLISHED.medianAbsErr.toFixed(2)}배이고{" "}
+          {pct(LOO_PUBLISHED.withinRatio)}가 ±{WITHIN_BAND}배 안에 들었습니다.
+        </p>
+        <p className="num">
+          <strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
+          {pct(LOO_PUBLISHED.recall)}). 이건 경보이지 보증이 아닙니다.
+        </p>
+      </section>
 
       <section className="report-limits">
         <h2>이 진단서가 말하지 않는 것</h2>

@@ -34,6 +34,7 @@ import {
   type Competitor,
 } from "@/lib/overlap";
 import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
+import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
@@ -775,6 +776,35 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       </>
                     )}
                   </div>
+                )}
+
+                {/* 결재에서 반드시 받는 질문 — "그게 맞는 건 어떻게 압니까".
+                    619건 leave-one-out 자기검증을 숫자로 낸다. 한계(재현율)도
+                    같이 낸다 — 맞은 것만 세면 그것도 지어낸 것이다.
+                    키·네트워크와 무관한 정적 값이라 게이트 밖에 둔다 */}
+                {!고름.result.invalid && (
+                  <details className="selfcheck">
+                    <summary>이 방식은 얼마나 맞는가 — 619건 자기검증</summary>
+                    <p className="num">
+                      위험군을 무작위의{" "}
+                      <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로
+                      집어냅니다 (정밀도 {pct(LOO_PUBLISHED.precision)} · 재현율{" "}
+                      {pct(LOO_PUBLISHED.recall)} · 기저율{" "}
+                      {pct(LOO_PUBLISHED.baseRate)}).
+                    </p>
+                    <p className="num">
+                      예측 배수의 절대오차는 중앙{" "}
+                      <strong>{LOO_PUBLISHED.medianAbsErr.toFixed(2)}배</strong>,{" "}
+                      {pct(LOO_PUBLISHED.withinRatio)}가 ±{WITHIN_BAND}배 안에
+                      들었습니다.
+                    </p>
+                    <p className="note">
+                      619건 각각을 기획안인 척 넣고 <strong>자기 자신을 뺀</strong>{" "}
+                      닮은 축제로 등급을 매겨 실제와 대조한 결과입니다.
+                      {" "}<strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
+                      {pct(LOO_PUBLISHED.recall)}) — 이건 경보지 보증이 아닙니다.
+                    </p>
+                  </details>
                 )}
 
                 <p className="note">출처: {DATA_SOURCE}</p>
