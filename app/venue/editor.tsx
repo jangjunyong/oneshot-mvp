@@ -39,8 +39,6 @@ import {
   type Tile,
 } from "@/lib/tilemap";
 
-// 도메인 제한 키라 브라우저 노출이 설계상 정상 (빌드 때 인라인된다)
-const VWORLD_KEY = process.env.NEXT_PUBLIC_VWORLD_KEY ?? null;
 
 type Mode = "select" | "scale" | "path" | "pan";
 
@@ -109,11 +107,15 @@ export default function Editor({
   initialVenue,
   entryId,
   initialCenter,
+  vworldKey,
   saveAction,
 }: {
   initialVenue: Venue;
   entryId: string | null;
   initialCenter: { lat: number; lng: number } | null;
+  /** 브이월드 키 — 서버가 env 에서 읽어 넘겨준다. 실측상 리퍼러 제한이
+   *  느슨한 키라 저장소에 하드코딩하지 않는다 */
+  vworldKey: string | null;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
   const [venue, setVenue] = useState<Venue>(initialVenue);
@@ -133,12 +135,12 @@ export default function Editor({
   // 배경 지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
   const mapStyle = venue.map?.style ?? "plan";
   const tiles = venue.map
-    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height, mapStyle, VWORLD_KEY)
+    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height, mapStyle, vworldKey)
     : [];
   const tileImgs = useTileImages(tiles);
   // 브이월드 백지도는 그 자체가 도면 톤이라 그대로, OSM 폴백은 색이 시끄러워
   // 종이 위에 연하게 가라앉힌다. 위성은 확인용이니 원본 그대로.
-  const tileOpacity = mapStyle === "satellite" ? 1 : VWORLD_KEY ? 1 : 0.35;
+  const tileOpacity = mapStyle === "satellite" ? 1 : vworldKey ? 1 : 0.35;
 
   /** 도형 전체를 픽셀만큼 옮긴다 — 지도를 끌면 도형이 땅에 붙어 따라온다 */
   function shiftItems(items: VenueItem[], dx: number, dy: number): VenueItem[] {
@@ -400,7 +402,7 @@ export default function Editor({
                 y={venue.height - 18}
                 width={224}
                 align="right"
-                text={tileAttribution(mapStyle, VWORLD_KEY)}
+                text={tileAttribution(mapStyle, vworldKey)}
                 fontSize={10}
                 fill={mapStyle === "satellite" ? "#ffffff" : "#6d6862"}
                 opacity={0.9}

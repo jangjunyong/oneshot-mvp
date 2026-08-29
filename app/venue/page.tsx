@@ -106,6 +106,9 @@ export default async function VenuePage({
         initialVenue={venue}
         entryId={entryId}
         initialCenter={initialCenter}
+        // 서버에서 읽어 넘긴다 — 빌드 인라인(NEXT_PUBLIC)에 기대지 않아
+        // Vercel 에 env 만 넣으면 재배포 한 번으로 백지도가 켜진다
+        vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
         saveAction={저장}
       />
     </main>

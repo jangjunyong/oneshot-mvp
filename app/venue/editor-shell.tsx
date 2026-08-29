@@ -15,6 +15,7 @@ export function EditorShell(props: {
   initialVenue: Venue;
   entryId: string | null;
   initialCenter: { lat: number; lng: number } | null;
+  vworldKey: string | null;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
   return <Editor {...props} />;
