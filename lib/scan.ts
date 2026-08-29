@@ -8,6 +8,7 @@
 // 대기열 시각화 가정(화면에도 명시): 부하 1.0 초과분 1 당 부스 깊이만큼
 // 대기열이 앞으로 자란다 (최대 4배). 이 가정 위에서만 "통로 침범"을 잰다.
 
+import { outsideSite, polygonAreaM2, siteOf } from "@/lib/venue";
 import type { Venue, VenueItem } from "@/lib/venue";
 
 export interface BoothLoad {
@@ -44,6 +45,10 @@ export interface ScanResult {
   top: string[];
   queues: QueueRect[];
   invasions: Invasion[];
+  /** 부지 경계 밖으로 나갔거나 걸친 배치. 부지를 안 그렸으면 빈 배열 */
+  outside: string[];
+  /** 부지 면적(㎡). 경계나 축척이 없으면 null */
+  siteAreaM2: number | null;
   /** 스캔 자체가 불가능한 이유 — 지어내는 대신 이걸 화면에 낸다 */
   blocked?: string;
 }
@@ -105,7 +110,21 @@ function samplePath(points: number[], step = 4): { x: number; y: number }[] {
 
 /** 전 부스·전 통로 일괄 스캔. 부스가 몇 개든 밀리초다 — 전수는 수식이 맡는다 */
 export function scanVenue(venue: Venue, surge: number | null): ScanResult {
-  const empty: ScanResult = { loads: [], top: [], queues: [], invasions: [] };
+  // 부지 판정은 배수가 없어도 된다 — 경계를 벗어난 배치는 수요와 무관하게
+  // 잘못이다. 그래서 blocked 로 돌려보내는 길에도 이 둘은 실려 나간다.
+  const site = siteOf(venue);
+  const outside = outsideSite(venue);
+  const siteAreaM2 = site?.points
+    ? polygonAreaM2(site.points, venue.mPerPx)
+    : null;
+  const empty: ScanResult = {
+    loads: [],
+    top: [],
+    queues: [],
+    invasions: [],
+    outside,
+    siteAreaM2,
+  };
 
   if (surge === null || !(surge > 0)) {
     return {
@@ -162,5 +181,5 @@ export function scanVenue(venue: Venue, surge: number | null): ScanResult {
     }
   }
 
-  return { loads, top, queues, invasions };
+  return { loads, top, queues, invasions, outside, siteAreaM2 };
 }

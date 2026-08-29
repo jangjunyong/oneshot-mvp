@@ -22,12 +22,17 @@ import {
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import {
+  freeSpot,
   metersOf,
+  outsideSite,
+  polygonAreaM2,
   scaleFromPoints,
+  siteOf,
+  sizeInPx,
   VENUE_KIND_NAME,
+  type BoxKind,
   type Venue,
   type VenueItem,
-  type VenueKind,
 } from "@/lib/venue";
 import {
   clampZoom,
@@ -42,16 +47,10 @@ import { scanVenue } from "@/lib/scan";
 import { GRADE_CUT } from "@/lib/types";
 
 
-type Mode = "select" | "scale" | "path" | "pan";
+type Mode = "select" | "scale" | "path" | "site" | "pan";
 
-/** 팔레트에서 새로 놓을 때의 기본 크기(px) */
-const DEFAULT_SIZE: Record<Exclude<VenueKind, "path">, [number, number]> = {
-  booth: [60, 40],
-  stage: [130, 80],
-  parking: [150, 100],
-  toilet: [46, 46],
-  gate: [34, 56],
-};
+/** 팔레트 순서. 크기는 여기 없다 — 실측(m)은 lib/venue.ts 의 KIND_SIZE_M 이다 */
+const PALETTE: BoxKind[] = ["booth", "stage", "parking", "toilet", "gate"];
 
 // 흑백 건축도면 룩 (사용자 승인) — 종류 구분은 색이 아니라 선·패턴으로 한다.
 const INK = "#1c1b1a";
@@ -138,6 +137,11 @@ export default function Editor({
 
   const selected = venue.items.find((it) => it.id === selectedId) ?? null;
 
+  // 부지는 하나뿐이고, 모든 면적·경계 판정의 기준이 된다
+  const site = siteOf(venue);
+  const 면적 = site?.points ? polygonAreaM2(site.points, venue.mPerPx) : null;
+  const 밖으로 = outsideSite(venue).length;
+
   // 배경 지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
   const mapStyle = venue.map?.style ?? "plan";
   const tiles = venue.map
@@ -183,7 +187,10 @@ export default function Editor({
   function layMap() {
     const lat = initialCenter?.lat ?? 37.5663; // 서울시청 — 이력 없이 들어온 경우
     const lng = initialCenter?.lng ?? 126.9779;
-    const zoom = 16;
+    // 줌 16 은 1px≈1.96m 라 캔버스가 1.7km 부지가 된다 — 축제장이 아니라
+    // 도시 한 구획이다. 18 은 1px≈0.49m, 캔버스 440m 로 축제장 규모이고
+    // 브이월드 백지도의 상한이기도 하다 (tilemap.ZOOM_LIMITS)
+    const zoom = 18;
     setVenue((v) => ({
       ...v,
       map: { lat, lng, zoom, style: "plan" },
@@ -286,14 +293,16 @@ export default function Editor({
     setSelectedId(null);
   }
 
-  function addItem(kind: Exclude<VenueKind, "path">) {
-    const [w, h] = DEFAULT_SIZE[kind];
-    const n = venue.items.length;
+  function addItem(kind: BoxKind) {
+    // 크기는 미터가 정한다 — 축척이 있으면 실측(3m 부스)이 픽셀로 옮겨지고,
+    // 없으면 밑그림용 그림 크기다. 자리는 이미 놓인 것을 피해 고른다.
+    const [w, h] = sizeInPx(kind, venue.mPerPx);
+    const { x, y } = freeSpot(venue.items, w, h, venue);
     const item: VenueItem = {
       id: newId(),
       kind,
-      x: snap(80 + (n % 6) * 30),
-      y: snap(80 + (n % 6) * 24),
+      x: snap(x),
+      y: snap(y),
       w,
       h,
       rotation: 0,
@@ -325,6 +334,31 @@ export default function Editor({
     setMode("select");
   }
 
+  /** 부지 경계를 닫는다. 세 점이 안 되면 경계가 아니다 */
+  function finishSite() {
+    if (pathPts.length >= 6) {
+      const item: VenueItem = {
+        id: newId(),
+        kind: "site",
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0,
+        rotation: 0,
+        name: "부지 경계",
+        points: pathPts,
+      };
+      // 부지는 하나뿐이다 — 새로 그리면 앞의 것을 갈아 끼운다
+      setVenue((v) => ({
+        ...v,
+        items: [...v.items.filter((it) => it.kind !== "site"), item],
+      }));
+      setSelectedId(null);
+    }
+    setPathPts([]);
+    setMode("select");
+  }
+
   function onStageMouseDown(e: KonvaEventObject<MouseEvent>) {
     const stage = e.target.getStage();
     const pos = stage?.getPointerPosition();
@@ -335,7 +369,7 @@ export default function Editor({
       setScalePts(pts.slice(0, 2));
       return;
     }
-    if (mode === "path") {
+    if (mode === "path" || mode === "site") {
       setPathPts((p) => [...p, snap(pos.x), snap(pos.y)]);
       return;
     }
@@ -444,7 +478,19 @@ export default function Editor({
             )}
 
             {venue.items.map((it) =>
-              it.kind === "path" ? (
+              it.kind === "site" ? (
+                // 부지 경계 — 도면의 대지경계선(굵은 일점쇄선 대용 파선).
+                // 채우지 않는다: 배경 지도가 보여야 어디를 잡았는지 안다
+                <Line
+                  key={it.id}
+                  points={it.points ?? []}
+                  stroke={INK}
+                  strokeWidth={2}
+                  dash={[12, 6]}
+                  closed
+                  listening={false}
+                />
+              ) : it.kind === "path" ? (
                 // 통로 — 연회색 띠 + 중심 점선 (도면의 동선 표기)
                 <Group
                   key={it.id}
@@ -631,8 +677,11 @@ export default function Editor({
             {scalePts.length === 2 && (
               <Line points={[scalePts[0].x, scalePts[0].y, scalePts[1].x, scalePts[1].y]} stroke="#b3261e" strokeWidth={2} dash={[6, 4]} />
             )}
-            {pathPts.length >= 2 && (
+            {mode === "path" && pathPts.length >= 2 && (
               <Line points={pathPts} stroke="#b3261e" strokeWidth={통로기본폭} lineCap="round" lineJoin="round" opacity={0.4} />
+            )}
+            {mode === "site" && pathPts.length >= 2 && (
+              <Line points={pathPts} stroke={ACCENT} strokeWidth={2} dash={[10, 6]} closed opacity={0.7} />
             )}
 
             <Transformer ref={trRef} rotateEnabled flipEnabled={false} boundBoxFunc={(o, n) => (n.width < 10 || n.height < 10 ? o : n)} />
@@ -652,13 +701,13 @@ export default function Editor({
 
         <h2>놓기</h2>
         <div className="palette">
-          {(Object.keys(DEFAULT_SIZE) as Exclude<VenueKind, "path">[]).map((k) => (
+          {PALETTE.map((k) => (
             <button key={k} type="button" onClick={() => addItem(k)}>
               {VENUE_KIND_NAME[k]}
             </button>
           ))}
           {mode !== "path" ? (
-            <button type="button" onClick={() => { setMode("path"); setSelectedId(null); }}>
+            <button type="button" onClick={() => { setMode("path"); setPathPts([]); setSelectedId(null); }}>
               통로 그리기
             </button>
           ) : (
@@ -666,9 +715,30 @@ export default function Editor({
               통로 끝내기 ({pathPts.length / 2}점)
             </button>
           )}
+          {mode !== "site" ? (
+            <button type="button" onClick={() => { setMode("site"); setPathPts([]); setSelectedId(null); }}>
+              부지 경계 {site ? "다시" : ""}그리기
+            </button>
+          ) : (
+            <button type="button" className="active" onClick={finishSite}>
+              경계 닫기 ({pathPts.length / 2}점)
+            </button>
+          )}
         </div>
         {mode === "path" && (
           <p className="note">도면을 눌러 통로의 꺾이는 점을 찍고, 통로 끝내기 버튼을 누르세요</p>
+        )}
+        {mode === "site" && (
+          <p className="note">
+            부지의 모서리를 차례로 눌러 찍고 경계 닫기를 누르세요 — 세 점 이상.
+            부지가 있으면 면적이 나오고, 밖으로 나간 배치를 잡아냅니다
+          </p>
+        )}
+        {site && (
+          <p className="note num">
+            부지 {면적 === null ? "면적 미정(축척 없음)" : `${Math.round(면적).toLocaleString()}㎡`}
+            {밖으로 > 0 && ` · 경계 밖 배치 ${밖으로}개`}
+          </p>
         )}
 
         <h2>배경 지도</h2>
@@ -845,6 +915,16 @@ export default function Editor({
                       부스를 옮기거나 통로를 우회시키세요
                     </li>
                   ))}
+                  {/* 부지 밖은 수요와 무관한 잘못이라 배수가 없어도 잡힌다 */}
+                  {scan.outside.map((id) => {
+                    const it = venue.items.find((x) => x.id === id);
+                    return (
+                      <li key={`out-${id}`}>
+                        ⚠ {it?.name ?? id} 가 부지 경계 밖에 있습니다 — 안으로
+                        옮기거나 경계를 다시 그리세요
+                      </li>
+                    );
+                  })}
                 </ul>
                 <p className="note">
                   가정: 대기열은 부하 1 초과분 × 부스 깊이로 그립니다 · 인력

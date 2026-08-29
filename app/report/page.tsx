@@ -234,9 +234,17 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                       통로 폭을 넓히거나 대기 공간을 따로 두세요
                     </li>
                   )}
+                  {scan.outside.length > 0 && (
+                    <li>
+                      부지 경계 밖에 놓인 것 {scan.outside.length}건 —{" "}
+                      {scan.outside.map(이름).join(" · ")}
+                    </li>
+                  )}
                 </ul>
                 {도면?.venue.mPerPx != null && (
                   <p className="note">
+                    {scan.siteAreaM2 !== null &&
+                      `부지 ${Math.round(scan.siteAreaM2).toLocaleString()}㎡ · `}
                     도면 축척 1px = {도면.venue.mPerPx.toFixed(3)}m · 도면 폭 ≈{" "}
                     {Math.round(도면.venue.width * 도면.venue.mPerPx)}m
                   </p>
