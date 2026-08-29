@@ -11,6 +11,7 @@
 // 화면의 모든 점이 실측이다.
 
 import Link from "next/link";
+import { COAST_RINGS, COAST_SOURCE } from "@/lib/coastline";
 import { FESTIVALS } from "@/lib/festivals";
 import {
   hasPlace,
@@ -34,6 +35,24 @@ const 배경점들 = 찍히는축제
     return `M${p.x} ${p.y}l0 0`;
   })
   .join("");
+
+/** 해안선 53개 링도 path 하나로. 이것도 모듈 로드 때 한 번만 */
+const 해안선 = COAST_RINGS.map(
+  (ring) =>
+    ring
+      .map((c, i) => {
+        const p = project(c[1], c[0]);
+        return `${i === 0 ? "M" : "L"}${p.x} ${p.y}`;
+      })
+      .join("") + "Z",
+).join("");
+
+/** 홀로 떨어져 있어 모양만으로는 못 알아보는 섬. 이름을 달아 준다.
+ *  좌표는 해안선과 같은 Natural Earth 링의 중심이다 */
+const 섬이름 = [
+  { name: "울릉도", lat: 37.5, lng: 130.87, anchor: "start" as const, dx: 8 },
+  { name: "독도", lat: 37.24, lng: 131.86, anchor: "end" as const, dx: -8 },
+];
 
 /** 핀 하나. 기둥 + 바닥 그림자 + 머리 — 평면 지도 위에 서 있게 보이는 최소 단서.
  *  기둥 높이는 밖에서 준다 — 이웃과 머리가 겹치면 layoutPins 가 늘려 보낸다 */
@@ -119,8 +138,25 @@ export function TwinMap({
         className="map"
         viewBox={`0 0 ${MAP_W} ${MAP_H}`}
         role="img"
-        aria-label={`닮은 과거 축제 ${matched.length}곳의 위치. 배경 점은 좌표가 있는 축제 ${찍히는축제.length}곳`}
+        aria-label={`남한 해안선 위에 찍은 닮은 과거 축제 ${matched.length}곳의 위치. 배경 점은 좌표가 있는 축제 ${찍히는축제.length}곳`}
       >
+        {/* 해안선이 먼저 — 실측 점이 그 위에 얹혀야 "어디에 찍혔는지"가 읽힌다 */}
+        <path className="map-coast" d={해안선} strokeWidth="0.9" />
+        {섬이름.map((s) => {
+          const p = project(s.lat, s.lng);
+          return (
+            <text
+              key={s.name}
+              className="map-label"
+              x={p.x + s.dx}
+              y={p.y + 3}
+              textAnchor={s.anchor}
+            >
+              {s.name}
+            </text>
+          );
+        })}
+
         <path className="map-dots" d={배경점들} strokeWidth="2.6" strokeLinecap="round" />
 
         {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
@@ -154,6 +190,8 @@ export function TwinMap({
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
           : `점 = 좌표가 있는 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · ⊕ = 이 기획안의 지역` +
             (못올린수 > 0 ? ` · 좌표가 없어 지도에 못 올린 ${못올린수}곳은 아래 목록에 있습니다` : "")}
+        <br />
+        해안선: {COAST_SOURCE}
       </figcaption>
     </figure>
   );
