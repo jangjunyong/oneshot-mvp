@@ -128,7 +128,7 @@ export const MAX_PLAN_TEXT = 8000;
 export const DAILY_EXTRACT_LIMIT = 45;
 
 /** 추출값이 어디서 왔는지. 화면에 그대로 표시해 사람이 구분하게 한다 */
-export type ExtractSource = "llm" | "sample";
+export type ExtractSource = "llm" | "sample" | "tourapi";
 
 /** 모델이 값을 채우는 항목. 인구는 여기 없다 — 문서가 아니라 데이터에서 온다 */
 export type ExtractedKey =

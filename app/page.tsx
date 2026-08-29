@@ -12,6 +12,13 @@ import {
   type Entry,
 } from "@/lib/store";
 import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
+import {
+  festivalStartDate,
+  hasTourKey,
+  searchFestivals,
+  toExtraction,
+  type TourFestival,
+} from "@/lib/tourapi";
 import { findSimilar, validatePlanInput } from "@/lib/match";
 import { grade } from "@/lib/grade";
 import {
@@ -49,6 +56,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const 입력오류 = params.err;
   const draftId = typeof params.draft === "string" ? params.draft : null;
   const 수동입력 = params.manual === "1";
+  const 검색어 = typeof params.q === "string" ? params.q.trim() : "";
 
   /** 1단계 — 기획서 텍스트에서 초안을 뽑는다. 모델을 부르는 유일한 곳이다 */
   async function 추출(formData: FormData) {
@@ -80,6 +88,38 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     } catch (e) {
       const 사유 = e instanceof Error ? e.message : "추출에 실패했습니다";
       오류로(`${사유} — 항목을 직접 넣어 주세요`, "&manual=1");
+      return;
+    }
+    redirect(`/?draft=${id}`);
+  }
+
+  /**
+   * 1단계의 다른 입구 — 검색 결과에서 축제 하나를 고르면 TourAPI 등록
+   * 정보(주소·개최일)로 초안을 만든다. 모델은 부르지 않으므로 하루 한도
+   * 밖이다. 테마·접근성은 등록 정보에 없어 사람이 확인 화면에서 채운다.
+   */
+  async function 선택(formData: FormData) {
+    "use server";
+    const contentId = String(formData.get("contentId") ?? "");
+    const title = String(formData.get("title") ?? "");
+    const addr1 = String(formData.get("addr1") ?? "");
+    if (!/^\d+$/.test(contentId)) {
+      오류로("선택한 축제를 읽지 못했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
+    }
+
+    // 개최일 조회가 죽어도 주소만으로 초안은 만들 수 있다. 죽이지 않는다.
+    let eventstartdate = "";
+    try {
+      eventstartdate = await festivalStartDate(contentId);
+    } catch {
+      eventstartdate = "";
+    }
+
+    let id: string;
+    try {
+      id = await saveDraft(toExtraction({ title, addr1, eventstartdate }));
+    } catch {
+      오류로("초안 저장에 실패했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
       return;
     }
     redirect(`/?draft=${id}`);
@@ -138,6 +178,17 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   }
   const 확인단계 = draft !== null || 수동입력;
 
+  // 축제 이름 검색 — TourAPI 가 죽어도 붙여넣기·직접 입력은 살아 있어야 한다.
+  let 검색결과: TourFestival[] = [];
+  let 검색실패 = false;
+  if (검색어 && hasTourKey() && !확인단계) {
+    try {
+      검색결과 = await searchFestivals(검색어);
+    } catch {
+      검색실패 = true;
+    }
+  }
+
   // 목록을 못 읽어도 입력 화면은 살아 있어야 한다.
   let entries: Entry[] = [];
   let 조회실패 = false;
@@ -189,6 +240,60 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <Link href="/?manual=1">직접 입력하기</Link>
             </p>
           </form>
+
+          <h2>또는 등록된 축제에서 찾기</h2>
+          {hasTourKey() ? (
+            <>
+              <p className="note">
+                한국관광공사 TourAPI 에 등록된 축제를 이름으로 찾아 지역·시기를
+                채워 드립니다. 테마·접근성은 등록 정보에 없어 직접 고릅니다.
+              </p>
+              {/* 검색은 상태를 바꾸지 않는다 — GET 으로 URL 에 남겨 새로고침해도 유지된다 */}
+              <form action="/" method="get">
+                <p>
+                  <input
+                    name="q"
+                    defaultValue={검색어}
+                    placeholder="예) 김밥축제"
+                    required
+                  />{" "}
+                  <button type="submit">축제 검색</button>
+                </p>
+              </form>
+              {검색실패 && (
+                <p className="alert" data-level="주의" role="alert">
+                  축제 검색에 실패했습니다. 잠시 후 다시 하거나{" "}
+                  <Link href="/?manual=1">직접 입력</Link>해 주세요
+                </p>
+              )}
+              {검색어 && !검색실패 && 검색결과.length === 0 && (
+                <p className="note">
+                  “{검색어}” 로 등록된 축제를 찾지 못했습니다 — 이름을 바꿔
+                  보거나 <Link href="/?manual=1">직접 입력</Link>해 주세요
+                </p>
+              )}
+              {검색결과.length > 0 && (
+                <ul>
+                  {검색결과.map((f) => (
+                    <li key={f.contentId}>
+                      <form action={선택}>
+                        <input type="hidden" name="contentId" value={f.contentId} />
+                        <input type="hidden" name="title" value={f.title} />
+                        <input type="hidden" name="addr1" value={f.addr1} />
+                        <button type="submit">{f.title}</button>{" "}
+                        <span className="note">{f.addr1 || "주소 없음"}</span>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <p className="note">
+              TOUR_API_KEY 가 없어 축제 검색을 쓸 수 없습니다 — 기획서
+              붙여넣기와 직접 입력은 그대로 됩니다
+            </p>
+          )}
         </>
       ) : (
         <>
@@ -198,6 +303,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <p className="alert" data-level="근거없음">
               모델 키가 없어 <strong>고정 샘플</strong>로 채웠습니다 — 실제
               문서에서 뽑은 값이 아닙니다
+            </p>
+          )}
+
+          {draft && draft.source === "tourapi" && (
+            <p className="note">
+              한국관광공사 TourAPI <strong>등록 정보</strong>에서 채웠습니다 —
+              기획서가 아니라 공공 등록 데이터가 출처입니다
             </p>
           )}
 
