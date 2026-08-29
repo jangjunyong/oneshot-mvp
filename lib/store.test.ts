@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deleteEntry, getVenue, HISTORY_LIMIT, list, save, saveVenue } from "@/lib/store";
+import { deleteEntry, getEntry, getVenue, HISTORY_LIMIT, list, save, saveVenue } from "@/lib/store";
 import { emptyVenue } from "@/lib/venue";
 
 assert.equal(
@@ -45,6 +45,17 @@ test("숫자가 아닌 id 는 아무것도 지우지 않는다", async () => {
   assert.equal((await list()).length, 전, "이상한 id 가 뭔가를 지웠다");
 
   await deleteEntry((await list())[0].id); // 정리
+});
+
+test("진단 한 건을 id 로 되찾는다 — 도면이 그 지역에서 시작하기 위해", async () => {
+  await save(한건);
+  const id = (await list())[0].id;
+  const entry = await getEntry(id);
+  assert.ok(entry, "저장한 진단을 못 찾는다");
+  assert.equal(entry.sigungu, "김천시");
+  assert.equal(await getEntry("999999"), null);
+  assert.equal(await getEntry("x; DROP"), null);
+  await deleteEntry(id); // 정리
 });
 
 test("도면을 저장하면 id 로 그대로 되찾는다 — 진단과의 연결 포함", async () => {

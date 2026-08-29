@@ -29,8 +29,17 @@ import {
   type VenueItem,
   type VenueKind,
 } from "@/lib/venue";
+import {
+  MAX_ZOOM,
+  metersPerPixel,
+  MIN_ZOOM,
+  panCenter,
+  TILE_ATTRIBUTION,
+  visibleTiles,
+  type Tile,
+} from "@/lib/tilemap";
 
-type Mode = "select" | "scale" | "path";
+type Mode = "select" | "scale" | "path" | "pan";
 
 /** 팔레트에서 새로 놓을 때의 기본 크기(px) */
 const DEFAULT_SIZE: Record<Exclude<VenueKind, "path">, [number, number]> = {
@@ -58,13 +67,32 @@ const newId = () => `i${Date.now().toString(36)}${(seq++).toString(36)}`;
 
 const snap = (n: number) => Math.round(n / 5) * 5;
 
+/** 타일 이미지를 내려받아 캐싱한다. 로드 완료 때만 상태를 만진다 */
+function useTileImages(tiles: Tile[]) {
+  const [imgs, setImgs] = useState<Record<string, HTMLImageElement>>({});
+  const started = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const t of tiles) {
+      if (started.current.has(t.url)) continue;
+      started.current.add(t.url);
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => setImgs((m) => ({ ...m, [t.url]: img }));
+      img.src = t.url;
+    }
+  }, [tiles]);
+  return imgs;
+}
+
 export default function Editor({
   initialVenue,
   entryId,
+  initialCenter,
   saveAction,
 }: {
   initialVenue: Venue;
   entryId: string | null;
+  initialCenter: { lat: number; lng: number } | null;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
   const [venue, setVenue] = useState<Venue>(initialVenue);
@@ -80,6 +108,80 @@ export default function Editor({
   const nodeRefs = useRef<Map<string, Konva.Node>>(new Map());
 
   const selected = venue.items.find((it) => it.id === selectedId) ?? null;
+
+  // 위성지도 타일 — 지도가 깔려 있을 때만 계산·다운로드
+  const tiles = venue.map
+    ? visibleTiles(venue.map.lat, venue.map.lng, venue.map.zoom, venue.width, venue.height)
+    : [];
+  const tileImgs = useTileImages(tiles);
+
+  /** 도형 전체를 픽셀만큼 옮긴다 — 지도를 끌면 도형이 땅에 붙어 따라온다 */
+  function shiftItems(items: VenueItem[], dx: number, dy: number): VenueItem[] {
+    return items.map((it) =>
+      it.kind === "path"
+        ? { ...it, points: (it.points ?? []).map((n, i) => n + (i % 2 === 0 ? dx : dy)) }
+        : { ...it, x: it.x + dx, y: it.y + dy },
+    );
+  }
+
+  /** 캔버스 중앙 기준으로 도형을 배율만큼 키운다 — 줌해도 땅에 붙어 있다 */
+  function zoomItems(items: VenueItem[], f: number): VenueItem[] {
+    const cx = venue.width / 2;
+    const cy = venue.height / 2;
+    return items.map((it) =>
+      it.kind === "path"
+        ? {
+            ...it,
+            w: Math.max(2, it.w * f),
+            points: (it.points ?? []).map((n, i) =>
+              i % 2 === 0 ? cx + (n - cx) * f : cy + (n - cy) * f,
+            ),
+          }
+        : {
+            ...it,
+            x: cx + (it.x - cx) * f,
+            y: cy + (it.y - cy) * f,
+            w: it.w * f,
+            h: it.h * f,
+          },
+    );
+  }
+
+  function layMap() {
+    const lat = initialCenter?.lat ?? 37.5663; // 서울시청 — 이력 없이 들어온 경우
+    const lng = initialCenter?.lng ?? 126.9779;
+    const zoom = 16;
+    setVenue((v) => ({ ...v, map: { lat, lng, zoom }, mPerPx: metersPerPixel(lat, zoom) }));
+    setMode("pan");
+  }
+
+  function changeZoom(dir: 1 | -1) {
+    const m = venue.map;
+    if (!m) return;
+    const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, m.zoom + dir));
+    if (zoom === m.zoom) return;
+    const f = 2 ** (zoom - m.zoom);
+    setVenue((v) => ({
+      ...v,
+      map: { ...m, zoom },
+      mPerPx: metersPerPixel(m.lat, zoom),
+      items: zoomItems(v.items, f),
+    }));
+  }
+
+  function onStageDragEnd(e: KonvaEventObject<DragEvent>) {
+    const stage = e.target.getStage();
+    if (!stage || e.target !== stage || !venue.map) return;
+    const dx = stage.x();
+    const dy = stage.y();
+    stage.position({ x: 0, y: 0 });
+    const m = venue.map;
+    setVenue((v) => ({
+      ...v,
+      map: { ...m, ...panCenter(m.lat, m.lng, m.zoom, dx, dy) },
+      items: shiftItems(v.items, dx, dy),
+    }));
+  }
 
   // 밑그림 dataURL → 이미지 객체. 로드는 비동기라 onload 에서만 상태를 만진다.
   useEffect(() => {
@@ -233,7 +335,7 @@ export default function Editor({
   const 축척문구 =
     venue.mPerPx === null
       ? "축척 없음 — 쏠림 검증 전에 재 두세요"
-      : `1px = ${venue.mPerPx.toFixed(3)}m · 도면 폭 ≈ ${Math.round(venue.width * venue.mPerPx)}m`;
+      : `1px = ${venue.mPerPx.toFixed(3)}m · 도면 폭 ≈ ${Math.round(venue.width * venue.mPerPx)}m${venue.map ? " (지도 줌에서 자동)" : ""}`;
 
   const selectedMeters = selected ? metersOf(selected, venue.mPerPx) : null;
 
@@ -244,10 +346,21 @@ export default function Editor({
           width={venue.width}
           height={venue.height}
           onMouseDown={onStageMouseDown}
-          style={{ cursor: mode === "select" ? "default" : "crosshair" }}
+          draggable={mode === "pan"}
+          onDragEnd={onStageDragEnd}
+          style={{ cursor: mode === "select" ? "default" : mode === "pan" ? "grab" : "crosshair" }}
         >
           <Layer>
             <Rect x={0} y={0} width={venue.width} height={venue.height} fill="#fcfbf9" stroke="#c9c4bd" listening={mode !== "select"} />
+            {tiles.map(
+              (t) =>
+                tileImgs[t.url] && (
+                  <KonvaImage key={t.url} image={tileImgs[t.url]} x={t.px} y={t.py} width={256} height={256} listening={false} />
+                ),
+            )}
+            {venue.map && (
+              <Text x={venue.width - 190} y={venue.height - 18} width={184} align="right" text={TILE_ATTRIBUTION} fontSize={10} fill="#ffffff" opacity={0.85} listening={false} />
+            )}
             {underlayImg && (
               <KonvaImage image={underlayImg} width={venue.width} height={venue.height} opacity={0.45} listening={false} />
             )}
@@ -355,11 +468,39 @@ export default function Editor({
           <p className="note">도면을 눌러 통로의 꺾이는 점을 찍고, 통로 끝내기 버튼을 누르세요</p>
         )}
 
-        <h2>밑그림 · 축척</h2>
+        <h2>배경 지도</h2>
+        {!venue.map ? (
+          <p>
+            <button type="button" onClick={layMap}>위성지도 깔기</button>{" "}
+            <span className="note">
+              {initialCenter ? "진단한 지역에서 시작합니다" : "서울에서 시작 — 끌어서 옮기세요"}
+            </span>
+          </p>
+        ) : (
+          <>
+            <p>
+              {mode !== "pan" ? (
+                <button type="button" onClick={() => { setMode("pan"); setSelectedId(null); }}>지도 이동</button>
+              ) : (
+                <button type="button" className="active" onClick={() => setMode("select")}>이동 끝 — 배치로</button>
+              )}{" "}
+              <button type="button" onClick={() => changeZoom(1)}>확대 +</button>{" "}
+              <button type="button" onClick={() => changeZoom(-1)}>축소 −</button>
+            </p>
+            <p className="note">
+              강·다리·도로가 보이는 실제 부지 위에 배치하세요. 지도를 끌거나
+              줌해도 놓은 것들은 땅에 붙어 따라옵니다
+            </p>
+          </>
+        )}
+
+        <h2>사진 밑그림 · 축척</h2>
         <p>
           <input type="file" accept="image/*" onChange={onUnderlay} />
         </p>
-        {mode !== "scale" ? (
+        {venue.map ? (
+          <p className="note num">{축척문구}</p>
+        ) : mode !== "scale" ? (
           <p>
             <button type="button" onClick={() => { setMode("scale"); setScalePts([]); setSelectedId(null); }}>
               축척 재기

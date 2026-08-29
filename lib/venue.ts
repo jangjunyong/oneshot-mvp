@@ -39,10 +39,12 @@ export interface Venue {
   /** 캔버스 크기(px) */
   width: number;
   height: number;
-  /** 축척 — 1px 가 몇 m 인가. 정하기 전엔 null */
+  /** 축척 — 1px 가 몇 m 인가. 위성지도가 깔리면 줌에서 자동 계산된다 */
   mPerPx: number | null;
   /** 밑그림(배치도 사진) dataURL. 없어도 된다 */
   underlay?: string;
+  /** 위성지도 밑그림 — 캔버스 중앙의 위경도와 줌. 타일은 열 때마다 다시 그린다 */
+  map?: { lat: number; lng: number; zoom: number };
   items: VenueItem[];
 }
 

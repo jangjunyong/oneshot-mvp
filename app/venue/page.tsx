@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getVenue, saveVenue } from "@/lib/store";
+import { getEntry, getVenue, saveVenue } from "@/lib/store";
+import { coordsOf } from "@/lib/match";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
 
@@ -66,6 +67,18 @@ export default async function VenuePage({
     }
   }
 
+  // 진단에서 넘어왔으면 그 지역 좌표에서 위성지도가 시작된다.
+  // 좌표는 619건 실측에서 온다 — 여기서도 지어내지 않는다.
+  let initialCenter: { lat: number; lng: number } | null = null;
+  if (entryId) {
+    try {
+      const entry = await getEntry(entryId);
+      if (entry) initialCenter = coordsOf(entry.sido, entry.sigungu);
+    } catch {
+      initialCenter = null;
+    }
+  }
+
   return (
     <main className="venue-main">
       <h1>행사장 도면</h1>
@@ -89,7 +102,12 @@ export default async function VenuePage({
         <p className="note">진단 이력 #{entryId} 에 연결된 도면입니다</p>
       )}
 
-      <EditorShell initialVenue={venue} entryId={entryId} saveAction={저장} />
+      <EditorShell
+        initialVenue={venue}
+        entryId={entryId}
+        initialCenter={initialCenter}
+        saveAction={저장}
+      />
     </main>
   );
 }

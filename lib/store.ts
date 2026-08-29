@@ -97,6 +97,29 @@ export async function list(): Promise<Entry[]> {
   }));
 }
 
+/** 진단 한 건. 도면 화면이 그 지역의 위성지도에서 시작할 때 쓴다 */
+export async function getEntry(id: string): Promise<Entry | null> {
+  if (!/^\d+$/.test(id)) return null;
+  if (!sql) return g.__oneshotEntries!.find((e) => e.id === id) ?? null;
+  await ready();
+  const rows = await sql`
+    SELECT id, sido, sigungu, month, theme, population, accessibility, saved_at
+    FROM entries WHERE id = ${Number(id)}
+  `;
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: String(r.id),
+    sido: r.sido as string,
+    sigungu: r.sigungu as string,
+    month: r.month as string,
+    theme: r.theme as string,
+    population: r.population as string,
+    accessibility: r.accessibility as string,
+    savedAt: new Date(r.saved_at as string).toISOString(),
+  };
+}
+
 /**
  * 진단 한 건을 지운다. 데모·시연 중 쌓인 시험 데이터를 치우기 위한 것이다.
  * id 는 폼에서 온다 — 숫자가 아니면 질의에 넣지 않고 조용히 무시한다.
