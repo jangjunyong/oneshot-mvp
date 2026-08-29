@@ -1,283 +1,255 @@
-/* 최소한의 가독성만. 회의실 프로젝터에서 읽히고 폰에서 안 깨지면 된다.
-   프레임워크는 쓰지 않는다 — 이 정도에 의존성을 늘릴 이유가 없다. */
+/* 이 앱의 화면 규칙. 색·서체·간격은 design-system.css("도면")가 이미 정했고,
+   여기서는 그 토큰으로 이 서비스에만 있는 것들만 그린다 —
+   경보 등급, 진단 이력, 도면 편집기.
 
-body {
-  margin: 0;
-  background: #fff;
-  color: #1a1a1a;
-  font-family: system-ui, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  font-size: 16px;
-  line-height: 1.7;
+   강의 규칙(0829): 색 3개(바탕/글자/강조) + 경보용 시맨틱 2색 · 폰트 1벌 ·
+   간격 8px 배수. 도면 시스템이 그 규칙을 그대로 만족한다. */
+
+:root {
+  /* 경보 시맨틱 — redline(마킹)과 구분되는 별도 축이다.
+     흑백 인쇄에서도 갈리도록 색만으로 구분하지 않는다(테두리 두께·문구 병행). */
+  --severe: #A63B22;
+  --severe-bg: #F3E4DF;
+  --caution: #8A6A1F;
+  --caution-bg: #F2EDDF;
 }
 
-main {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
+/* 폼 요소 — 도면 시스템의 직교·헤어라인 규칙을 따른다 */
+input,
+select,
+textarea {
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 0.45rem 0.6rem;
+  min-width: 0;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--ink);
+}
+textarea {
+  width: 100%;
+  line-height: 1.65;
+  resize: vertical;
+}
+input[type="file"] {
+  border: 0;
+  padding: 0;
+  font-size: var(--text-xs);
 }
 
-h1 {
-  font-size: 1.35rem;
-  line-height: 1.4;
-  margin: 0 0 0.5rem;
-}
-h2 {
-  font-size: 1.05rem;
-  margin: 2rem 0 0.75rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid #ddd;
-}
-
-/* 라벨과 입력칸을 한 줄에. min-width:0 이 없으면 좁은 화면에서 넘친다 */
+/* 라벨 + 칸 한 줄 */
 form p {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0.6rem 0;
+  gap: var(--s1);
+  margin: 0 0 var(--s2);
+  max-width: none;
 }
 form label {
-  flex: 0 0 9.5rem;
-  color: #444;
+  flex: 0 0 8.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--concrete);
 }
-input {
+form input:not([type="file"]),
+form select {
   flex: 1 1 7rem;
-  min-width: 0;
   max-width: 13rem;
-  font: inherit;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #9a9a9a;
-  border-radius: 3px;
 }
+
 button {
   font: inherit;
-  padding: 0.5rem 1.2rem;
-  border: 1px solid #222;
-  border-radius: 3px;
-  background: #222;
-  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: 0.55em 1.3em;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--surface);
   cursor: pointer;
 }
+button:hover {
+  background: transparent;
+  color: var(--ink);
+}
+/* 부차 동작(지우기·토글)은 본문 흐름에 조용히 섞인다 */
+button.note {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--concrete);
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+button.note:hover { color: var(--redline); background: none; }
 
-ul {
-  padding-left: 1.2rem;
+.note {
+  color: var(--concrete);
+  font-size: var(--text-sm);
 }
-li {
-  margin: 0.2rem 0;
-}
-details {
-  margin: 0.4rem 0;
-}
-summary {
-  cursor: pointer;
-  color: #333;
-}
+.num { font-variant-numeric: tabular-nums; }
 
-/* 배수·연도를 세로로 견주는 화면이라 자릿수가 흔들리면 안 된다 */
-.num {
-  font-variant-numeric: tabular-nums;
-}
-
-/* 조회 이력 한 건 */
-.entry {
-  margin: 1.25rem 0;
-  padding-left: 0.9rem;
-  border-left: 3px solid #e0e0e0;
-  list-style: none;
-}
-.entry > p:first-child {
-  color: #555;
-  font-size: 0.92rem;
-  margin: 0 0 0.4rem;
-}
-.entry ul {
-  list-style: disc;
-}
-
-/* 등급은 색만으로 구분하지 않는다 — 색 + 문구 + 테두리 두께 + 배경 명도.
-   흑백으로 인쇄해도 심각/주의/그 외가 갈린다. */
+/* ── 경보 ─────────────────────────────────────────────
+   색 + 문구 + 테두리 두께 + 배경 명도. 흑백으로 인쇄해도 갈린다. */
 .alert {
-  margin: 0.4rem 0;
-  padding: 0.55rem 0.8rem;
+  margin: var(--s1) 0 var(--s2);
+  padding: 0.6rem 0.9rem;
   font-weight: 700;
-  border-left: 8px solid #666;
-  background: #f2f2f2;
+  max-width: none;
+  border-left: 8px solid var(--concrete);
+  background: var(--paper);
 }
 .alert[data-level="심각"] {
-  border-left-color: #b00020;
-  background: #fbe9e9;
-  color: #7a0016;
+  border-left-color: var(--severe);
+  background: var(--severe-bg);
+  color: var(--severe);
 }
 .alert[data-level="주의"] {
   border-left-width: 5px;
-  border-left-color: #a86100;
-  background: #fdf4e3;
-  color: #7a4700;
+  border-left-color: var(--caution);
+  background: var(--caution-bg);
+  color: var(--caution);
 }
 .alert[data-level="근거없음"],
 .alert[data-level="비교불가"] {
   border-left-width: 3px;
-  border-left-color: #888;
-  background: #f4f4f4;
-  color: #333;
 }
 
 .headline {
-  margin: 0.2rem 0 0.5rem;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: 1.45;
+  margin: 0 0 var(--s2);
 }
 
-.note {
-  color: #666;
-  font-size: 0.92rem;
+/* ── 진단 이력 한 건 ── */
+.entry {
+  margin: 0;
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
 }
+.entry:first-child { border-top: 0; }
+.entry > p:first-child {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--concrete);
+  margin: 0 0 var(--s1);
+}
+.entry ul { padding-left: 1.1rem; }
+.entry details { margin: var(--s1) 0; }
+.entry summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--concrete);
+}
+.entry summary:hover { color: var(--redline); }
 
-/* 기획서를 통째로 붙여넣는 칸. 폼의 다른 칸과 달리 한 줄을 다 쓴다 */
-textarea {
-  width: 100%;
-  min-width: 0;
-  font: inherit;
-  line-height: 1.6;
-  padding: 0.6rem;
-  border: 1px solid #9a9a9a;
-  border-radius: 3px;
-  resize: vertical;
-}
-
-/* 고르는 칸도 입력칸과 같은 폭·같은 높이여야 줄이 흔들리지 않는다 */
-select {
-  flex: 1 1 7rem;
-  min-width: 0;
-  max-width: 13rem;
-  font: inherit;
-  padding: 0.35rem 0.4rem;
-  border: 1px solid #9a9a9a;
-  border-radius: 3px;
-  background: #fff;
-}
-
-/* 값이 어디서 나왔는지. 값보다 약해야 하지만 읽을 수는 있어야 한다.
-   라벨 폭(9.5rem)만큼 들여써서 어느 칸의 근거인지 눈으로 붙는다 */
-.evidence {
-  margin: -0.35rem 0 0.7rem 9.5rem;
-  padding-left: 0.6rem;
-  border-left: 2px solid #d8d8d8;
-  color: #666;
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-@media (max-width: 30rem) {
-  .evidence {
-    margin-left: 0;
-  }
-}
-
-/* 지우기처럼 조용해야 하는 버튼 — 주 동작(진단하기)과 경쟁하면 안 된다 */
-button.note {
-  background: none;
-  border: none;
-  color: #888;
-  padding: 0;
-  font-size: 0.85rem;
-  text-decoration: underline;
-}
-
-/* 지도 아래 닮은 축제 번호 목록 — 지도 마커의 번호와 짝이다 */
+/* 닮은 축제 번호 목록 — 지도 마커 번호와 짝이다 */
 ol.legend {
   list-style: none;
   padding-left: 0;
-  margin: 0.1rem 0 0.3rem;
-  font-size: 0.95rem;
+  margin: var(--s1) 0 var(--s2);
+  font-size: var(--text-sm);
 }
-ol.legend strong {
+ol.legend li { margin: 0.15rem 0; }
+ol.legend strong,
+ul.scan-findings strong {
   display: inline-block;
-  width: 1.1rem;
-  height: 1.1rem;
-  margin-right: 0.3rem;
-  border-radius: 50%;
-  background: #111;
-  color: #fff;
-  font-size: 0.75rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.35rem;
+  background: var(--ink);
+  color: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
   text-align: center;
-  line-height: 1.1rem;
+  line-height: 1.15rem;
 }
-
-/* 쏠림 스캔 발견 목록 — 지도 뱃지 번호와 짝이다 */
 ul.scan-findings {
   list-style: none;
   padding-left: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
-ul.scan-findings strong {
-  display: inline-block;
-  width: 1.05rem;
-  height: 1.05rem;
-  margin-right: 0.25rem;
-  border-radius: 50%;
-  background: #b3261e;
-  color: #fff;
-  font-size: 0.72rem;
-  text-align: center;
-  line-height: 1.05rem;
-}
+ul.scan-findings strong { background: var(--severe); }
 
-/* 닮은 축제 지도 — 실측 점 619개가 나라 모양을 그린다 */
+/* 닮은 축제 지도 — 619개 실측 점이 나라 모양을 그린다 */
 .map {
   display: block;
   width: min(15rem, 100%);
   height: auto;
-  margin: 0.5rem 0 0.2rem;
+  margin: var(--s1) 0;
 }
 
-/* ── 행사장 도면 편집기 ─────────────────────────────── */
-.venue-main {
-  max-width: 82rem; /* 캔버스+패널이 나란히 서야 해서 본문보다 넓다 */
-}
+/* ── 행사장 도면 편집기 ── */
+/* 캔버스+패널이 나란히 서야 해서 이 시트만 넓다 */
+.venue-sheet { --sheet-max: 1440px; }
+
 .venue-layout {
   display: flex;
-  gap: 1.2rem;
+  gap: var(--s3);
   align-items: flex-start;
-  margin-top: 1rem;
 }
-.venue-canvas-col {
-  flex: 0 1 auto;
-  min-width: 0;
-}
+.venue-canvas-col { flex: 0 1 auto; min-width: 0; }
 .venue-canvas {
   overflow: auto;
-  border: 1px solid #c9c4bd;
-  background: #fbfaf7;
+  border: 1px solid var(--line);
+  background: var(--surface);
   max-width: 100%;
 }
-.venue-panel {
-  flex: 1 0 17rem;
-  max-width: 21rem;
-}
+.venue-panel { flex: 1 0 17rem; max-width: 21rem; }
 .venue-panel h2 {
-  margin-top: 1.2rem;
+  font-size: var(--text-base);
+  margin: var(--s4) 0 var(--s1);
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
 }
-.venue-panel h2:first-of-type {
-  margin-top: 0;
+.venue-panel h2:first-of-type { margin-top: 0; }
+.palette { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.palette button,
+.venue-panel button {
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  padding: 0.4em 0.9em;
 }
-.palette {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.palette button {
-  padding: 0.35rem 0.7rem;
-  background: #fff;
-  color: #222;
-}
+.palette button:hover,
+.venue-panel button:hover { background: var(--ink); color: var(--surface); }
+.venue-panel button.active,
 .palette button.active {
-  background: #b3261e;
-  border-color: #b3261e;
-  color: #fff;
+  background: var(--redline);
+  border-color: var(--redline);
+  color: var(--surface);
 }
+.venue-panel button.note { background: none; border: 0; }
+
 @media (max-width: 60rem) {
-  .venue-layout {
-    flex-direction: column;
-  }
-  .venue-panel {
-    max-width: none;
-  }
+  .venue-layout { flex-direction: column; }
+  .venue-panel { max-width: none; }
+}
+
+/* 값의 출처 — 값보다 약하되 읽을 수는 있어야 한다 */
+.evidence {
+  margin: -0.3rem 0 var(--s2) 8.5rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--line);
+  color: var(--concrete);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+@media (max-width: 34rem) {
+  .evidence { margin-left: 0; }
+  form label { flex-basis: 100%; }
 }

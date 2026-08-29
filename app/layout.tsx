@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+// 개인 디자인 시스템 "도면" → 그 위에 이 앱의 화면 규칙을 얹는다. 순서가 중요하다.
+import "./design-system.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// next/font 로 셀프호스팅한다 — 구글 폰트 CDN 을 런타임에 부르지 않으므로
+// 폰트가 늦게 와서 글자가 튀는 일이 없다.
+const display = Archivo({
+  variable: "--font-display-loaded",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const body = IBM_Plex_Sans_KR({
+  variable: "--font-body-loaded",
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+const mono = IBM_Plex_Mono({
+  variable: "--font-mono-loaded",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -22,10 +32,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
     >
-      {/* Tailwind 를 쓰지 않으므로 h-full·antialiased·flex 같은 클래스는
-          아무 효과가 없다. 남겨두면 다음 사람이 있다고 착각한다. */}
       <body>{children}</body>
     </html>
   );

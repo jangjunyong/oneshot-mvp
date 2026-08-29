@@ -771,8 +771,8 @@ export default function Editor({
         <h2>쏠림 스캔</h2>
         {!scenario ? (
           <p className="note">
-            진단 이력의 "이 쏠림에 대비하기"로 들어오면 쌍둥이 축제의 실측
-            배수로 전 부스를 스캔합니다
+            진단 이력의 &ldquo;이 쏠림에 대비하기&rdquo;로 들어오면 쌍둥이 축제의
+            실측 배수로 전 부스를 스캔합니다
           </p>
         ) : scan?.blocked ? (
           <p className="alert" data-level="주의">{scan.blocked}</p>

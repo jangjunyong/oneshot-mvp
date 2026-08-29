@@ -105,13 +105,25 @@ export default async function VenuePage({
   }
 
   return (
-    <main className="venue-main">
-      <h1>행사장 도면</h1>
-      <p className="note">
-        배치도 사진을 밑그림으로 깔고, 부스·무대·출입구·통로를 그 위에
-        놓으세요. 축척(두 점 + 실거리)을 재 두면 다음 단계(쏠림 검증)가 실제
-        거리로 판정합니다. <Link href="/">← 진단으로</Link>
-      </p>
+    <div className="sheet venue-sheet">
+      <header className="topbar">
+        <span className="logo">축제 위험 경보</span>
+        <nav>
+          <Link href="/">진단</Link>
+          <Link href="/venue" aria-current="page">행사장 도면</Link>
+        </nav>
+      </header>
+
+      <main>
+        <span className="grid-ref">
+          <b>B-01</b> · 경보를 받은 뒤 · 쏠림에 대비하는 배치
+        </span>
+        <h1>행사장 도면</h1>
+        <p className="lede">
+          부지 지도를 깔고 부스·무대·출입구·통로를 놓으면, 진단에서 나온 쌍둥이
+          축제의 실측 배수로 <strong>어디가 막히는지</strong>를 그 자리에서
+          잽니다.
+        </p>
 
       {오류 && (
         <p className="alert" data-level="심각" role="alert">
@@ -137,6 +149,28 @@ export default async function VenuePage({
         scenario={scenario}
         saveAction={저장}
       />
-    </main>
+      </main>
+
+      <footer className="titleblock">
+        <div>
+          <dt>Sheet</dt>
+          <dd>행사장 배치 도면</dd>
+        </div>
+        <div>
+          <dt>Scale</dt>
+          <dd className="num">
+            {venue.mPerPx ? `1px = ${venue.mPerPx.toFixed(3)}m` : "미지정"}
+          </dd>
+        </div>
+        <div>
+          <dt>Entry</dt>
+          <dd className="num">{entryId ? `#${entryId}` : "연결 없음"}</dd>
+        </div>
+        <div>
+          <dt>Items</dt>
+          <dd className="num">{venue.items.length}개 배치</dd>
+        </div>
+      </footer>
+    </div>
   );
 }

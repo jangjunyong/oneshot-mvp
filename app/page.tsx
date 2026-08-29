@@ -234,8 +234,35 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   }
 
   return (
-    <main>
-      <h1>이 축제, 작년 그 축제처럼 무너집니다</h1>
+    <div className="sheet">
+      <header className="topbar">
+        <span className="logo">축제 위험 경보</span>
+        <nav>
+          <Link href="/" aria-current="page">진단</Link>
+          <Link href="/venue">행사장 도면</Link>
+        </nav>
+      </header>
+
+      <main>
+        <span className="grid-ref">
+          <b>A-01</b> · 지자체 축제 담당자용 · 619개 축제 실측
+        </span>
+        <h1 className="display">
+          이 축제,
+          <br />
+          작년 그 축제처럼
+          <br />
+          무너집니다
+        </h1>
+        <p className="lede">
+          기획안을 넣으면 닮은 과거 축제들이 <strong>실제로 어떻게 됐는지</strong>를
+          근거로 경보 등급을 냅니다. 방문객 수는 예측하지 않습니다 — 지진
+          조기경보처럼, 과거 중 닮은 것을 찾아 등급만 매깁니다.
+        </p>
+
+        <div className="dim">
+          <span>{확인단계 ? "SECTION B — 항목 확인" : "SECTION A — 기획안 입력"}</span>
+        </div>
 
       {/* 무엇이 안 됐는지. 입력이 짧거나, 추출이 죽었거나, 저장이 실패했거나 */}
       {입력오류 && (
@@ -442,6 +469,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </>
       )}
 
+      <div className="dim">
+        <span>SECTION C — 진단 이력</span>
+      </div>
+
       <h2>진단 이력 {조회실패 ? "" : `(${entries.length}건)`}</h2>
       {조회실패 && (
         <p role="alert">
@@ -574,8 +605,28 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         })}
       </ul>
 
-      <p className="note">저장소: {storageMode()}</p>
-    </main>
+      </main>
+
+      {/* 표제란 — 도면 시트의 title block. 이 서비스가 무엇을 근거로 삼는지 */}
+      <footer className="titleblock">
+        <div>
+          <dt>Project</dt>
+          <dd>축제 위험 경보</dd>
+        </div>
+        <div>
+          <dt>Dataset</dt>
+          <dd className="num">전국 619개 축제 실측</dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{DATA_SOURCE}</dd>
+        </div>
+        <div>
+          <dt>Storage</dt>
+          <dd>{storageMode()}</dd>
+        </div>
+      </footer>
+    </div>
   );
 }
 
