@@ -283,6 +283,24 @@ ul.scan-findings strong { background: var(--severe); }
   font-size: var(--text-sm);
   color: var(--concrete);
 }
+/* 공사 등록 정보 — 우리가 잰 것(배수·닮은 축)과 출처가 달라서 표로 가른다 */
+.pin-detail {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.15rem var(--s1);
+  margin: var(--s1) 0;
+  padding-top: var(--s1);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+.pin-detail dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--concrete);
+  padding-top: 0.15rem;
+}
+.pin-detail dd { margin: 0; }
 
 /* 요약 행의 등급 — 목록에서 훑을 때 등급이 먼저 걸리게 */
 .chip {

@@ -16,11 +16,13 @@ import {
 import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
 import {
+  festivalDetail,
   festivalStartDate,
   hasTourKey,
   searchFestivals,
   searchFestivalsInPeriod,
   toExtraction,
+  type FestivalDetail,
   type TourFestival,
 } from "@/lib/tourapi";
 import {
@@ -270,6 +272,18 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
   const 핀 = 고름?.result.matched.find((m) => m.festival.id === 고른핀) ?? null;
   const 핀번호 = 핀 && 고름 ? 고름.result.matched.indexOf(핀) + 1 : 0;
+
+  // 고른 핀의 등록 정보 — 619건은 "그 축제가 뭐였는지"를 모른다. 담당자가
+  // 벤치마킹하려면 언제 어디서 누가 열었는지를 봐야 하고 그건 공사에만 있다.
+  // 실패하면 정적 값(이름·연도·배수)만으로 카드가 그대로 선다.
+  let 핀상세: FestivalDetail | null = null;
+  if (핀 && hasTourKey()) {
+    try {
+      핀상세 = await festivalDetail(핀.festival.id);
+    } catch {
+      핀상세 = null;
+    }
+  }
 
   // 같은 시기 경쟁 — 619건이 못 하는 질문("올해 그 달에 누가 여는가")이라
   // 공사 OpenAPI 를 실시간으로 부른다. 지도에 편 한 건에 대해서만 부른다.
@@ -614,6 +628,55 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         </li>
                       ))}
                     </ul>
+
+                    {/* 배수·좌표는 우리가 쟀고, 여기부터는 공사가 등록해 둔
+                        사실이다. 못 받으면 이 줄들이 통째로 없을 뿐 카드는 선다 */}
+                    {핀상세 && (
+                      <dl className="pin-detail">
+                        {핀상세.startDate && (
+                          <>
+                            <dt>개최</dt>
+                            <dd>
+                              {dayLabel(핀상세.startDate)}
+                              {핀상세.endDate && `~${dayLabel(핀상세.endDate)}`}
+                            </dd>
+                          </>
+                        )}
+                        {핀상세.place && (
+                          <>
+                            <dt>장소</dt>
+                            <dd>{핀상세.place}</dd>
+                          </>
+                        )}
+                        {핀상세.sponsor && (
+                          <>
+                            <dt>주최</dt>
+                            <dd>{핀상세.sponsor}</dd>
+                          </>
+                        )}
+                        {핀상세.fee && (
+                          <>
+                            <dt>요금</dt>
+                            <dd>{핀상세.fee}</dd>
+                          </>
+                        )}
+                        {핀상세.homepage && (
+                          <>
+                            <dt>홈페이지</dt>
+                            <dd>
+                              <a
+                                href={핀상세.homepage}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {핀상세.homepage.replace(/^https?:\/\//, "")}
+                              </a>
+                            </dd>
+                          </>
+                        )}
+                      </dl>
+                    )}
+
                     <p>
                       <Link href={`/?entry=${고름.e.id}#twin`}>핀 선택 해제</Link>
                     </p>

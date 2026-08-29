@@ -7,7 +7,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { hasTourKey, monthFrom, parseRegion, toExtraction } from "@/lib/tourapi";
+import {
+  hasTourKey,
+  homepageUrl,
+  monthFrom,
+  parseRegion,
+  toExtraction,
+} from "@/lib/tourapi";
 import { populationOf } from "@/lib/festivals";
 
 // 키가 꽂힌 채로 테스트를 돌리면 진짜로 호출될 길이 열린다. 그건 사고다.
@@ -131,4 +137,20 @@ test("주소를 못 읽으면 지역도 인구도 비고, 무엇이 없는지 �
   assert.ok(초안.missing.includes("지역 인구"));
   // 못 찾은 항목에 근거가 붙어 있으면 그게 지어낸 것이다
   assert.equal(초안.evidence.sido, undefined);
+});
+
+test("홈페이지 — 앵커로 와도 주소만 꺼내고, 주소가 아니면 지어내지 않는다", () => {
+  // 순수 URL 로 오는 경우
+  assert.equal(homepageUrl("https://festa-namhae.co.kr/"), "https://festa-namhae.co.kr/");
+
+  // HTML 앵커로 오는 경우 — 태그째 화면에 뿌리면 글자로 보인다
+  assert.equal(
+    homepageUrl('<a href="http://www.example.kr" target="_blank">축제 홈페이지</a>'),
+    "http://www.example.kr",
+  );
+
+  // 주소가 아닌 것은 링크로 만들지 않는다
+  assert.equal(homepageUrl(""), null);
+  assert.equal(homepageUrl("준비중"), null);
+  assert.equal(homepageUrl("<a>링크 없음</a>"), null);
 });

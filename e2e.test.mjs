@@ -182,6 +182,11 @@ test("지도는 한 장이고, 핀을 누르면 그 축제의 근거가 펴진�
   ).text();
   assert.match(펴짐, /핀 선택 해제/, "핀을 눌러도 상세가 펴지지 않는다");
   assert.match(펴짐, /class="pin-card"/, "고른 축제의 근거 카드가 없다");
+
+  // 등록 정보(개최·장소·주최)는 공사 OpenAPI 몫이다. 키가 없으면 그 줄들만
+  // 빠지고 카드는 우리가 잰 값(배수·닮은 축)으로 그대로 서야 한다
+  assert.doesNotMatch(펴짐, /class="pin-detail"/, "키가 없는데 등록 정보가 떴다");
+  assert.match(펴짐, /평소 대비/, "키가 없다고 우리 실측까지 사라지면 안 된다");
   assert.equal(
     (펴짐.match(/class="map"/g) || []).length,
     1,

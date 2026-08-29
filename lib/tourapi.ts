@@ -133,6 +133,34 @@ export function toExtraction(item: {
   };
 }
 
+/**
+ * 닮은 축제 한 곳의 등록 정보. 우리 619건에는 없는 것들이다 —
+ * 배수·좌표는 우리가 재고, 이건 공사가 등록해 둔 사실이다.
+ * 못 받은 항목은 null 이고, 화면은 있는 것만 적는다.
+ */
+export interface FestivalDetail {
+  /** YYYYMMDD */
+  startDate: string | null;
+  endDate: string | null;
+  place: string | null;
+  sponsor: string | null;
+  /** "무료" 같은 이용요금 표기 */
+  fee: string | null;
+  homepage: string | null;
+}
+
+/**
+ * homepage 필드는 순수 URL 로 올 때도 있고 `<a href="...">…</a>` 로 올 때도
+ * 있다. 앵커째 화면에 뿌리면 태그가 글자로 보인다 — 주소만 꺼낸다.
+ * 주소를 못 찾으면 지어내지 않고 null.
+ */
+export function homepageUrl(raw: string): string | null {
+  if (raw.trim() === "") return null;
+  const href = raw.match(/href=["']([^"']+)["']/i)?.[1];
+  const url = (href ?? raw).trim();
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
 // ── 여기부터는 네트워크. 테스트는 여기를 부르지 않는다 ──────────────
 //
 // serviceKey 는 발급 시점에 이미 URL 인코딩된 문자열이다. URLSearchParams
@@ -234,6 +262,52 @@ export async function searchFestivalsInPeriod(
         f.lat !== 0 &&
         f.lng !== 0,
     );
+}
+
+/**
+ * 닮은 축제 한 곳의 등록 정보.
+ *
+ * 우리 619건은 배수·좌표·분류까지다. "그래서 그 축제가 뭐였는데"는 답하지
+ * 못한다 — 담당자가 벤치마킹하려면 언제 어디서 누가 열었는지를 봐야 한다.
+ * 그건 공사 등록 정보에만 있다.
+ *
+ * 두 엔드포인트를 병렬로 부르고 **한쪽이 죽어도 나머지는 쓴다**. 둘 다
+ * 죽으면 null 이고, 화면은 정적 값(이름·연도·배수)만으로 그대로 선다.
+ */
+export async function festivalDetail(
+  contentId: string,
+): Promise<FestivalDetail | null> {
+  const [intro, common] = await Promise.allSettled([
+    call("detailIntro2", { contentId, contentTypeId: "15" }) as Promise<
+      {
+        eventstartdate?: string;
+        eventenddate?: string;
+        eventplace?: string;
+        sponsor1?: string;
+        usetimefestival?: string;
+      }[]
+    >,
+    call("detailCommon2", { contentId }) as Promise<{ homepage?: string }[]>,
+  ]);
+
+  const i = intro.status === "fulfilled" ? intro.value[0] : undefined;
+  const c = common.status === "fulfilled" ? common.value[0] : undefined;
+  if (i === undefined && c === undefined) return null;
+
+  // 빈 문자열은 "없음"이다. 화면에 빈 칸을 만들지 않는다
+  const 값 = (v: string | undefined) => {
+    const s = String(v ?? "").trim();
+    return s === "" ? null : s;
+  };
+
+  return {
+    startDate: 값(i?.eventstartdate),
+    endDate: 값(i?.eventenddate),
+    place: 값(i?.eventplace),
+    sponsor: 값(i?.sponsor1),
+    fee: 값(i?.usetimefestival),
+    homepage: c?.homepage ? homepageUrl(String(c.homepage)) : null,
+  };
 }
 
 /** 선택한 축제의 개최 시작일(YYYYMMDD). 없으면 빈 문자열 */
