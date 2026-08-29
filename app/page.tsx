@@ -14,6 +14,7 @@ import {
   type Entry,
 } from "@/lib/store";
 import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
+import { extractPdfText } from "@/lib/pdf";
 import {
   festivalStartDate,
   hasTourKey,
@@ -21,7 +22,8 @@ import {
   toExtraction,
   type TourFestival,
 } from "@/lib/tourapi";
-import { findSimilar, validatePlanInput } from "@/lib/match";
+import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
+import { FestivalMap } from "@/app/festival-map";
 import { grade } from "@/lib/grade";
 import {
   ACCESSIBILITY_LABEL,
@@ -63,7 +65,27 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   /** 1단계 — 기획서 텍스트에서 초안을 뽑는다. 모델을 부르는 유일한 곳이다 */
   async function 추출(formData: FormData) {
     "use server";
-    const planText = String(formData.get("planText") ?? "").trim();
+    let planText = String(formData.get("planText") ?? "").trim();
+
+    // PDF 가 오면 글자를 뽑아 붙여넣기를 대신한다. 파일이 우선이다 —
+    // 올렸다는 건 그걸 읽어 달라는 뜻이다. 스캔본(글자 없는 이미지)은
+    // 뽑히는 게 없으므로 지어내지 않고 되돌려보낸다.
+    const pdf = formData.get("planPdf");
+    if (pdf instanceof File && pdf.size > 0) {
+      let pdfText = "";
+      try {
+        pdfText = await extractPdfText(new Uint8Array(await pdf.arrayBuffer()));
+      } catch (e) {
+        오류로(e instanceof Error ? e.message : "PDF 를 읽지 못했습니다");
+      }
+      if (pdfText.length < 20) {
+        오류로(
+          "PDF 에서 글자를 거의 찾지 못했습니다 — 스캔본이면 텍스트를 직접 붙여넣어 주세요",
+        );
+      }
+      planText = pdfText;
+    }
+
     if (planText.length < 20) {
       오류로("기획서 내용을 붙여넣어 주세요 — 너무 짧습니다");
     }
@@ -232,18 +254,29 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </p>
           <form action={추출}>
             <p>
+              {/* required 는 뺐다 — PDF 만 올리고 제출하는 경로가 있다.
+                  빈 제출은 서버 액션이 한국어 사유와 함께 되돌려보낸다 */}
               <textarea
                 id="planText"
                 name="planText"
                 rows={10}
                 maxLength={MAX_PLAN_TEXT}
-                required
                 placeholder={"예) 제1회 김천김밥축제 추진계획\n○ 개최기간: 2024년 10월 중 3일간\n○ 개최장소: 경상북도 김천시 일원\n○ 주요내용: 지역 특산물인 김밥을 주제로 한 음식 축제\n○ 교통: KTX 김천구미역에서 차량 20분, 전용 주차장 400면"}
               />
             </p>
+            <p>
+              <label htmlFor="planPdf">또는 PDF 기획서 올리기</label>{" "}
+              <input
+                id="planPdf"
+                name="planPdf"
+                type="file"
+                accept="application/pdf"
+              />
+            </p>
             <p className="note">
-              최대 {MAX_PLAN_TEXT.toLocaleString()}자 · 하루{" "}
-              {DAILY_EXTRACT_LIMIT}건까지
+              PDF 를 올리면 글자를 뽑아 같은 방식으로 읽습니다 (10MB 까지 ·
+              스캔본 제외) · 텍스트는 최대 {MAX_PLAN_TEXT.toLocaleString()}자 ·
+              하루 {DAILY_EXTRACT_LIMIT}건까지
               {hasModelKey()
                 ? ` · ${modelName()}`
                 : " · 키가 없어 고정 샘플로 채웁니다"}
@@ -254,9 +287,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           </form>
 
-          <h2>또는 등록된 축제에서 찾기</h2>
-          {hasTourKey() ? (
+          {/* 키가 없으면 섹션째 숨긴다. 담당자에게 환경변수 이름을 보여주는 건
+              안내가 아니라 소음이다 — 붙여넣기·직접 입력은 그대로 있으니
+              없는 기능을 광고하지 않는 쪽이 낫다. */}
+          {hasTourKey() && (
             <>
+              <h2>또는 등록된 축제에서 찾기</h2>
               <p className="note">
                 한국관광공사 TourAPI 에 등록된 축제를 이름으로 찾아 지역·시기를
                 채워 드립니다. 테마·접근성은 등록 정보에 없어 직접 고릅니다.
@@ -301,11 +337,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 </ul>
               )}
             </>
-          ) : (
-            <p className="note">
-              TOUR_API_KEY 가 없어 축제 검색을 쓸 수 없습니다 — 기획서
-              붙여넣기와 직접 입력은 그대로 됩니다
-            </p>
           )}
         </>
       ) : (
@@ -486,44 +517,53 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         : "비교 대상 없음"}
                   </p>
                   <p className="headline">{g.headline}</p>
+
+                  {/* 어디서 벌어졌던 일인지 한눈에. 점 하나하나가 전부 실측이다.
+                      결론(어느 축제가 몇 배)은 접지 않는다 — 접는 건 "왜"뿐이다 */}
+                  {result.matched.length > 0 && (
+                    <>
+                      <FestivalMap
+                        matched={result.matched}
+                        origin={coordsOf(e.sido, e.sigungu)}
+                      />
+                      <ol className="legend">
+                        {result.matched.map((m, i) => (
+                          <li key={m.festival.id} className="num">
+                            <strong>{i + 1}</strong> {m.festival.name} (
+                            {m.festival.sido} {m.festival.sigungu}) · {m.year}년
+                            · 평소 대비 {m.festival.actualVisitSurge.toFixed(2)}
+                            배
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="note">
+                        회색 점 = 잰 축제 619곳 전부 · 붉은 ✕ = 이 기획안의
+                        지역 · 출처: {DATA_SOURCE}
+                      </p>
+                    </>
+                  )}
                 </>
               )}
 
-              {/* 근거는 접어둔다 */}
+              {/* 결론(누가 몇 배)은 위에 펼쳐져 있다. 접는 건 "왜"뿐이다 */}
               {result.matched.length > 0 && (
-                <>
-                  <details>
-                    <summary>왜 닮았나</summary>
-                    <ul>
-                      {result.matched.map((m) => (
-                        <li key={m.festival.id}>
-                          {m.festival.name}
-                          <ul>
-                            {m.axes.map((a) => (
-                              <li key={a.axis}>
-                                {a.label} — {a.detail}
-                              </li>
-                            ))}
-                          </ul>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-
-                  <details>
-                    <summary>그들이 겪은 것</summary>
-                    <ul>
-                      {result.matched.map((m) => (
-                        <li key={m.festival.id} className="num">
-                          {m.festival.name} ({m.festival.sido}{" "}
-                          {m.festival.sigungu}) · {m.year}년 · 평소 대비{" "}
-                          {m.festival.actualVisitSurge.toFixed(2)}배
-                        </li>
-                      ))}
-                    </ul>
-                    <p>출처: {DATA_SOURCE}</p>
-                  </details>
-                </>
+                <details>
+                  <summary>왜 닮았나</summary>
+                  <ul>
+                    {result.matched.map((m) => (
+                      <li key={m.festival.id}>
+                        {m.festival.name}
+                        <ul>
+                          {m.axes.map((a) => (
+                            <li key={a.axis}>
+                              {a.label} — {a.detail}
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               )}
             </li>
           );

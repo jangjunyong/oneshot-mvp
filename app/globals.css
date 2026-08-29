@@ -170,3 +170,41 @@ select {
     margin-left: 0;
   }
 }
+
+/* 지우기처럼 조용해야 하는 버튼 — 주 동작(진단하기)과 경쟁하면 안 된다 */
+button.note {
+  background: none;
+  border: none;
+  color: #888;
+  padding: 0;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+/* 지도 아래 닮은 축제 번호 목록 — 지도 마커의 번호와 짝이다 */
+ol.legend {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.1rem 0 0.3rem;
+  font-size: 0.95rem;
+}
+ol.legend strong {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.1rem;
+}
+
+/* 닮은 축제 지도 — 실측 점 619개가 나라 모양을 그린다 */
+.map {
+  display: block;
+  width: min(15rem, 100%);
+  height: auto;
+  margin: 0.5rem 0 0.2rem;
+}
