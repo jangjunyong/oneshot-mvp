@@ -3,7 +3,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   countExtractsToday,
+  deleteEntry,
   getDraft,
+  HISTORY_LIMIT,
   list,
   save,
   saveDraft,
@@ -164,6 +166,17 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       오류로("저장에 실패했습니다. 잠시 후 저장을 다시 눌러 주세요.", "&manual=1");
     }
 
+    revalidatePath("/");
+  }
+
+  /** 이력 한 건 지우기 — 데모 중 쌓인 시험 데이터를 치우는 용도 */
+  async function 지운다(formData: FormData) {
+    "use server";
+    try {
+      await deleteEntry(String(formData.get("entryId") ?? ""));
+    } catch {
+      오류로("지우지 못했습니다. 잠시 후 다시 눌러 주세요.");
+    }
     revalidatePath("/");
   }
 
@@ -411,6 +424,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           축제와 경보 등급이 여기에 쌓입니다.
         </p>
       )}
+      {/* 상한을 숨기면 "저장했는데 사라졌다"가 된다. 화면이 먼저 말한다 */}
+      {!조회실패 && entries.length >= HISTORY_LIMIT && (
+        <p className="note">
+          최근 {HISTORY_LIMIT}건까지만 보입니다 — 더 오래된 진단은 화면에
+          나오지 않습니다
+        </p>
+      )}
       <ul>
         {entries.map((e) => {
           const result = findSimilar({
@@ -432,6 +452,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 {ACCESSIBILITY_LABEL[Number(e.accessibility)] ?? e.accessibility}{" "}
                 · {한국시각(e.savedAt)}
               </p>
+
+              {/* 시연 중 쌓인 시험 데이터를 그 자리에서 치운다. 확인창은 안 띄운다
+                  — 진단은 다시 넣으면 그만이고, 모달은 폰 데모를 끊는다 */}
+              <form action={지운다}>
+                <input type="hidden" name="entryId" value={e.id} />
+                <button type="submit" className="note">
+                  이 진단 지우기
+                </button>
+              </form>
 
               {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
                   둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}

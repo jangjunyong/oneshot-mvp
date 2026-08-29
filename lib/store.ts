@@ -71,12 +71,19 @@ export async function save(e: Omit<Entry, "id" | "savedAt">): Promise<void> {
   `;
 }
 
+/**
+ * 화면에 보여주는 이력의 상한. 이 너머는 화면에서 안 보인다 — 그 사실을
+ * 숨기지 않고 화면이 "최근 N건까지"라고 말한다 (docs/screens.md 구멍 B).
+ */
+export const HISTORY_LIMIT = 50;
+
 export async function list(): Promise<Entry[]> {
-  if (!sql) return g.__oneshotEntries!;
+  // 메모리도 같은 상한을 지킨다. 저장소마다 개수가 다르면 화면이 거짓말한다.
+  if (!sql) return g.__oneshotEntries!.slice(0, HISTORY_LIMIT);
   await ready();
   const rows = await sql`
     SELECT id, sido, sigungu, month, theme, population, accessibility, saved_at
-    FROM entries ORDER BY id DESC LIMIT 50
+    FROM entries ORDER BY id DESC LIMIT ${HISTORY_LIMIT}
   `;
   return rows.map((r) => ({
     id: String(r.id),
@@ -88,6 +95,20 @@ export async function list(): Promise<Entry[]> {
     accessibility: r.accessibility as string,
     savedAt: new Date(r.saved_at as string).toISOString(),
   }));
+}
+
+/**
+ * 진단 한 건을 지운다. 데모·시연 중 쌓인 시험 데이터를 치우기 위한 것이다.
+ * id 는 폼에서 온다 — 숫자가 아니면 질의에 넣지 않고 조용히 무시한다.
+ */
+export async function deleteEntry(id: string): Promise<void> {
+  if (!/^\d+$/.test(id)) return;
+  if (!sql) {
+    g.__oneshotEntries = g.__oneshotEntries!.filter((e) => e.id !== id);
+    return;
+  }
+  await ready();
+  await sql`DELETE FROM entries WHERE id = ${Number(id)}`;
 }
 
 // 배포본에서 어느 저장소를 쓰고 있는지 화면으로 확인하기 위한 진단용.

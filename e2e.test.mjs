@@ -124,6 +124,26 @@ test("핵심 흐름 — 조건을 저장하면 목록에 남고 경보 등급이
   const 본문 = 뒤.replace(/<[^>]+>/g, " ");
   assert.doesNotMatch(본문, /\d+\s*명\s*(예상|올)/, "방문객 수 예측이 화면에 있다");
   assert.doesNotMatch(본문, /안전합니다|안전한/, "안전 판정을 하고 있다");
+
+  // 5. 시연 중 쌓인 것을 그 자리에서 지울 수 있다 (screens.md 구멍 B-1)
+  const entryId = 뒤.match(/name="entryId" value="(\d+)"/)?.[1];
+  assert.ok(entryId, "지우기 폼이 이력에 없다");
+  const 지우기폼 = 뒤
+    .split("<form")
+    .find((c) => c.includes(`name="entryId" value="${entryId}"`));
+  const 지우기액션 = 지우기폼?.match(/\$ACTION_ID_([0-9a-f]+)/)?.[1];
+  assert.ok(지우기액션, "지우기 폼에서 Server Action id 를 찾지 못했다");
+
+  const fd = new FormData();
+  fd.set(`$ACTION_ID_${지우기액션}`, "");
+  fd.set("entryId", entryId);
+  const 삭제 = await fetch(BASE + "/", {
+    method: "POST",
+    body: fd,
+    redirect: "manual",
+  });
+  assert.ok(삭제.status < 500, `지우기가 서버 오류로 끝났다 (${삭제.status})`);
+  assert.equal(await 건수(), 전건수, "지웠는데 건수가 돌아오지 않았다");
 });
 
 test("잘못된 값은 저장되지 않는다", async () => {
