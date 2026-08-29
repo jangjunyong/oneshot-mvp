@@ -13,6 +13,7 @@ import { coordsOf, findSimilar } from "@/lib/match";
 import { grade } from "@/lib/grade";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
+import { scanSeason } from "@/lib/season";
 import { scanVenue } from "@/lib/scan";
 import { VENUE_KIND_NAME } from "@/lib/venue";
 import {
@@ -104,6 +105,31 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     result.matched.map((m) => m.festival.actualVisitSurge),
     기준?.surge ?? null,
   );
+
+  // 시기 민감도 — A4 한 장이라 12행을 다 못 싣는다. 최저·기획안의 달·최고만.
+  // 같은 달이 여러 역할이면 중복을 걷고 달 순서로 되돌린다
+  const 시기 = result.invalid
+    ? null
+    : scanSeason({
+        sido: entry.sido,
+        sigungu: entry.sigungu,
+        month: Number(entry.month),
+        themeCode: Number(entry.theme),
+        populationManMyeong: Number(entry.population),
+        accessibility: Number(entry.accessibility),
+      });
+  const 시기요약 = 시기
+    ? [
+        ...new Set([
+          ...시기.quietest.slice(0, 2),
+          시기.planMonth,
+          ...시기.busiest.slice(0, 2),
+        ]),
+      ]
+        .sort((a, b) => a - b)
+        .map((mm) => 시기.months.find((x) => x.month === mm)!)
+        .filter(Boolean)
+    : [];
   const 이름 = (id: string) =>
     도면?.venue.items.find((it) => it.id === id)?.name ?? id;
 
@@ -266,11 +292,69 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         </>
       )}
 
-      {/* 근거 넷 — 결론. "왜 물량을 3배로 잡았습니까"에 대한 답이 여기 있다.
+      {/* 근거 넷 — 시기 민감도. A4 한 장을 지키려고 12행을 다 싣지 않고
+          최저·기획안의 달·최고만 싣는다. 제목이 "N월에 열면"이 아닌 이유는
+          lib/season.ts 머리말 */}
+      {시기 && 시기.months.length > 0 && (
+        <section className="report-season">
+          <h2>근거 4 — 시기 민감도</h2>
+          {시기.flat ? (
+            <p className="num">
+              달을 바꿔도 쌍둥이 배수 폭이 {시기.spread?.toFixed(2)}배 안에
+              머뭅니다 — 이 조건에서 시기는 갈리지 않습니다.
+            </p>
+          ) : (
+            <>
+              <table className="report-table">
+                <thead>
+                  <tr>
+                    <th>물은 달</th>
+                    <th>쌍둥이</th>
+                    <th>배수</th>
+                    <th>중앙</th>
+                    <th>등급</th>
+                    <th>쌍둥이가 실제로 열린 달</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {시기요약.map((m) => (
+                    <tr key={m.month}>
+                      <td className="num">
+                        {m.month}월{m.month === 시기.planMonth ? " (기획안)" : ""}
+                      </td>
+                      <td className="num">{m.matched}곳</td>
+                      <td className="num">
+                        {m.loSurge === null
+                          ? "—"
+                          : `${m.loSurge.toFixed(2)}~${m.hiSurge!.toFixed(2)}`}
+                      </td>
+                      <td className="num">{m.medianSurge?.toFixed(2) ?? "—"}</td>
+                      <td>{m.level}</td>
+                      <td className="num">
+                        {m.twinMonths.map((tm) => `${tm}월`).join(" ") || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          <p className="num">
+            이 표는 <strong>시기의 효과가 아니라 매칭의 시기 민감도</strong>입니다.
+            닮음을 재는 다섯 축에서 개최 시기의 비중은 10%뿐이라, 물은 달에 실제로
+            열린 쌍둥이는 {Math.round(시기.monthMatchRate * 100)}%뿐입니다.
+            &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
+            {!시기.robust &&
+              " 또 쌍둥이를 3곳이 아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
+          </p>
+        </section>
+      )}
+
+      {/* 근거 다섯 — 결론. "왜 물량을 3배로 잡았습니까"에 대한 답이 여기 있다.
           개수가 아니라 구간을 낸다 (lib/capacity.ts 머리말) */}
       {감당 && (
         <section className="report-capacity">
-          <h2>근거 4 — 감당 범위</h2>
+          <h2>근거 5 — 감당 범위</h2>
           {감당.baseSurge !== null && 기준 ? (
             <>
               <p className="num">

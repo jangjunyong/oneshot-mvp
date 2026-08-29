@@ -36,6 +36,7 @@ import {
 import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
+import { scanSeason, type SeasonScan } from "@/lib/season";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
@@ -844,6 +845,18 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   );
                 })()}
 
+                {/* 시기 민감도. 이름을 조심해서 붙였다 — "N월에 열면"이 아니라
+                    "N월로 물으면 어떤 쌍둥이가 뽑히나"다. 요청월과 쌍둥이
+                    실제 개최월이 19%만 일치하기 때문이다(lib/season.ts 머리말) */}
+                {!고름.result.invalid && <SeasonTable scan={scanSeason({
+                  sido: 고름.e.sido,
+                  sigungu: 고름.e.sigungu,
+                  month: Number(고름.e.month),
+                  themeCode: Number(고름.e.theme),
+                  populationManMyeong: Number(고름.e.population),
+                  accessibility: Number(고름.e.accessibility),
+                })} />}
+
                 {/* 결재에서 반드시 받는 질문 — "그게 맞는 건 어떻게 압니까".
                     619건 leave-one-out 자기검증을 숫자로 낸다. 한계(재현율)도
                     같이 낸다 — 맞은 것만 세면 그것도 지어낸 것이다.
@@ -964,6 +977,96 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <dd>{storageMode()}</dd>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * 시기 민감도 표.
+ *
+ * 제목이 "N월에 열면"이 아닌 이유가 이 컴포넌트의 전부다 — 요청월과 쌍둥이
+ * 실제 개최월은 19%만 일치한다. 그래서 각 행에 **쌍둥이가 실제로 열린 달**을
+ * 찍어 표가 스스로 한계를 말하게 한다 (lib/season.ts 머리말).
+ */
+function SeasonTable({ scan }: { scan: SeasonScan }) {
+  if (scan.months.length === 0) return null;
+
+  return (
+    <div className="season">
+      <h3>달을 바꾸면 어떤 쌍둥이가 뽑히나</h3>
+
+      {scan.flat ? (
+        <p className="season-head num">
+          달을 바꿔도 쌍둥이 배수 폭이{" "}
+          <strong>
+            {Math.min(
+              ...scan.months.map((m) => m.medianSurge ?? Infinity),
+            ).toFixed(2)}
+            ~
+            {Math.max(...scan.months.map((m) => m.medianSurge ?? 0)).toFixed(2)}배
+          </strong>{" "}
+          안에 머뭅니다 — 이 조건에서 시기는 갈리지 않습니다
+        </p>
+      ) : (
+        <p className="season-head num">
+          가장 낮았던 달은 <strong>{scan.quietest.join("·")}월</strong>, 가장
+          높았던 달은 <strong>{scan.busiest.join("·")}월</strong>입니다 (폭{" "}
+          {scan.spread?.toFixed(2)}배)
+        </p>
+      )}
+
+      <table className="season-table">
+        <thead>
+          <tr>
+            <th>물은 달</th>
+            <th>쌍둥이</th>
+            <th>배수</th>
+            <th>중앙</th>
+            <th>등급</th>
+            <th>쌍둥이가 실제로 열린 달</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scan.months.map((m) => (
+            <tr key={m.month} data-plan={m.month === scan.planMonth || undefined}>
+              <th scope="row" className="num">
+                {m.month}월
+              </th>
+              <td className="num">{m.matched}곳</td>
+              <td className="num">
+                {m.loSurge === null
+                  ? "—"
+                  : `${m.loSurge.toFixed(2)}~${m.hiSurge!.toFixed(2)}`}
+              </td>
+              <td className="num">{m.medianSurge?.toFixed(2) ?? "—"}</td>
+              <td>{m.level}</td>
+              <td className="num season-twinmonths">
+                {m.twinMonths.length === 0
+                  ? "—"
+                  : m.twinMonths
+                      .map((tm) => (tm === m.month ? `${tm}월✓` : `${tm}월`))
+                      .join(" ")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <p className="note">
+        <strong>이 표는 시기의 효과가 아니라 매칭의 시기 민감도입니다.</strong>{" "}
+        닮음을 재는 다섯 축에서 개최 시기의 비중은 10%뿐이라, 달을 바꿔도 같은
+        지역 축제 몇 곳이 순위만 바꿔 재배열됩니다. 실제로 물은 달에 열린
+        쌍둥이는 <strong>{Math.round(scan.monthMatchRate * 100)}%</strong>({" "}
+        <span className="season-twinmonths">✓</span> 표시)뿐입니다 — 나머지는 다른
+        달 축제입니다. &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
+        {!scan.robust && (
+          <>
+            {" "}또 이 표는 <strong>표본 수에 흔들립니다</strong> — 쌍둥이를 3곳이
+            아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다. 3곳짜리 중앙값이라
+            한 건만 교체돼도 컷을 넘습니다.
+          </>
+        )}
+      </p>
     </div>
   );
 }

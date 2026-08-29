@@ -174,6 +174,44 @@ button.note:hover { color: var(--ink); background: none; }
 }
 .capacity .note { margin: 0.25rem 0; }
 
+/* ── 시기 민감도 ──
+   12행 표라 밀도가 높다. 도면 시트의 데이터 표처럼 선은 최소로, 숫자는
+   등폭으로. 기획안의 달만 배경으로 짚어 준다 */
+.season { margin: var(--s2) 0; }
+.season h3 {
+  margin: 0 0 var(--s1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--concrete);
+}
+.season-head { margin: 0 0 var(--s1); font-size: var(--text-sm); font-weight: 500; }
+.season-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+}
+.season-table th,
+.season-table td {
+  padding: 0.2rem 0.4rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.season-table thead th {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--concrete);
+  border-bottom: 1px solid var(--line-strong);
+}
+.season-table tbody th { font-weight: 500; }
+/* 기획안이 적어 낸 달 — 표에서 자기 자리를 못 찾으면 표가 안 읽힌다 */
+.season-table tr[data-plan] { background: var(--raised); }
+.season-table tr[data-plan] th { color: var(--redline); }
+/* 요청월과 실제 개최월이 다르다는 것이 이 표의 한계다. 눈에 띄어야 한다 */
+.season-twinmonths { color: var(--concrete); }
+
 /* ── 자기검증 ──
    "그게 맞는 건 어떻게 압니까"에 대한 답. 근거(닮은 이유)와 성격이 달라
    접어 두되, 펼치면 한계까지 같이 읽히도록 배경을 깔아 묶는다 */
@@ -584,3 +622,7 @@ ul.scan-findings strong { background: var(--severe); }
   .evidence { margin-left: 0; }
   form label { flex-basis: 100%; }
 }
+
+/* 시기 민감도 — 근거 표와 같은 밀도. A4 한 장이라 행을 골라 싣는다 */
+.report-season p { font-size: 9pt; margin: 0.15rem 0; color: var(--concrete); }
+.report-season strong { color: var(--ink); }
