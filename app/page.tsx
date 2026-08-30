@@ -37,6 +37,7 @@ import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { scanSeason, type SeasonScan } from "@/lib/season";
+import { peerContext } from "@/lib/peer";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
@@ -644,6 +645,35 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       : "비교 대상 없음"}
                 </p>
                 <p className="headline">{고름.g.headline}</p>
+
+                {/* "평소 대비 2.7배"가 무슨 뜻인지 화면 어디에도 없었다.
+                    분모가 무엇인지 모르면 그 숫자는 못 쓴다.
+                    그리고 그 분모 때문에 인구가 적을수록 배수가 커진다
+                    (log(인구) vs 배수 r = -0.486). 숨기지 않고 또래 맥락을 준다 */}
+                {고름.g.medianSurge !== null &&
+                  (() => {
+                    const 또래 = peerContext(
+                      Number(고름.e.population),
+                      고름.g.medianSurge!,
+                    );
+                    return (
+                      <p className="basis num">
+                        <strong>평소 대비</strong>란 축제 기간에 그 시군구를 찾은{" "}
+                        <strong>외지인 방문자</strong>가 평상시의 몇 배였나입니다
+                        (KT 이동통신 실측 · 한국관광 데이터랩). 방문객 총수가
+                        아닙니다.
+                        {또래 && (
+                          <>
+                            {" "}이 분모는 지역이 작을수록 작아서{" "}
+                            <strong>인구가 적을수록 배수가 커집니다.</strong> 같은
+                            규모(인구 {또래.label}) 축제 {또래.n}곳과 견주면 이
+                            기획안은 <strong>상위 {또래.topPercent}%</strong>이고,
+                            그 또래의 배수 중앙값은 {또래.median.toFixed(2)}배입니다.
+                          </>
+                        )}
+                      </p>
+                    );
+                  })()}
 
                 {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
                     잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는

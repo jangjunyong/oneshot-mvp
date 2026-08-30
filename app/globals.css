@@ -688,3 +688,15 @@ ul.scan-findings strong { background: var(--severe); }
 /* 시기 민감도 — 근거 표와 같은 밀도. A4 한 장이라 행을 골라 싣는다 */
 .report-season p { font-size: 9pt; margin: 0.15rem 0; color: var(--concrete); }
 .report-season strong { color: var(--ink); }
+
+/* ── 배수의 뜻과 또래 맥락 ──
+   "평소 대비 2.7배"의 분모가 무엇인지, 그리고 그 분모 때문에 생기는 인구
+   편향을 같은 자리에서 말한다. 결론(headline) 바로 아래라 조용해야 한다 */
+.basis {
+  margin: calc(var(--s2) * -1) 0 var(--s2);
+  font-size: var(--text-sm);
+  color: var(--concrete);
+  line-height: 1.6;
+  max-width: 44rem;
+}
+.basis strong { color: var(--ink); }
