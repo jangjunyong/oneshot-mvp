@@ -766,11 +766,22 @@ ul.scan-findings strong { background: var(--severe); }
   color: var(--ink);
   text-decoration: none;
 }
-/* 기준은 누르는 것이 아니라 읽는 것이다. 테두리로 성격을 가른다 */
+/* 감당 범위의 기준이 된 쌍둥이. 칸을 따로 세우면 같은 축제가 두 번 나오므로
+   그 카드 자체에 표를 얹는다 (2026-08-30 사용자 지시) */
 .twin-card[data-role="base"] {
   border-left: 3px solid var(--ink);
   background: var(--raised);
 }
+.twin-card-base {
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+/* 넷째 칸은 읽는 것이지 누르는 것이 아니다 — 배경을 빼서 성격을 가른다 */
+.twin-card[data-role="how"] { background: none; border-style: dashed; }
 a.twin-card:hover { border-color: var(--ink); }
 a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .twin-card[data-current] { border-color: var(--severe); }

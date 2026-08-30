@@ -46,6 +46,7 @@ import {
   ACCESSIBILITY_LABEL,
   DAILY_EXTRACT_LIMIT,
   DATA_SOURCE,
+  DISTANCE_THRESHOLD,
   MAX_PLAN_TEXT,
   THEME_NAME,
   type MatchedFestival,
@@ -664,6 +665,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   matched={고름.result.matched}
                   baseline={기준}
                   selectedPin={핀?.festival.id ?? null}
+                  scope={고름.result.searchedScope}
                 />
                 {고름.g.medianSurge !== null &&
                   (() => {
@@ -1099,44 +1101,65 @@ function TwinCards({
   matched,
   baseline,
   selectedPin,
+  scope,
 }: {
   entryId: string;
   matched: MatchedFestival[];
   baseline: { id: string; name: string; year: string; surge: number } | null;
   selectedPin: string | null;
+  scope: string;
 }) {
   if (matched.length === 0) return null;
 
-  const 기준번호 = baseline
-    ? matched.findIndex((m) => m.festival.id === baseline.id) + 1
-    : 0;
   const 배수폭 = matched.map((m) => m.festival.actualVisitSurge);
+  const 거리 = matched.map((m) => m.distance);
+  const 가까움 = Math.min(...거리).toFixed(2);
+  const 멂 = Math.max(...거리).toFixed(2);
 
   return (
     <div className="twin-cards">
-      <div className="twin-card" data-role="base">
-        <p className="twin-card-label">감당 범위의 기준</p>
-        {baseline ? (
-          <>
-            <p className="twin-card-name">{baseline.name}</p>
+      {matched.map((m, i) => {
+        const 기준인가 = baseline?.id === m.festival.id;
+        return (
+          <Link
+            key={m.festival.id}
+            className="twin-card"
+            data-role={기준인가 ? "base" : undefined}
+            data-current={m.festival.id === selectedPin ? "1" : undefined}
+            href={`/?entry=${entryId}&pin=${m.festival.id}#twin`}
+          >
+            <p className="twin-card-label">
+              <strong>{i + 1}</strong> 닮은 축제
+            </p>
+            <p className="twin-card-name">{m.festival.name}</p>
             <p className="twin-card-meta num">
-              {baseline.year}년 · 같은 시군구, 같은 달
+              {m.festival.sido} {m.festival.sigungu} · {m.year}년
             </p>
             <p className="twin-card-surge num">
-              평소 대비 <strong>{baseline.surge.toFixed(2)}배</strong>
+              평소 대비 <strong>{m.festival.actualVisitSurge.toFixed(2)}배</strong>
             </p>
+            {/* 기준은 언제나 이 셋 중 하나다. 칸을 따로 세우면 같은 축제가 두 번
+                나오므로 그 카드에 표를 얹는다 (2026-08-30 사용자 지시) */}
+            {기준인가 && (
+              <p className="twin-card-base">
+                같은 시군구, 같은 달 · 감당 범위의 기준
+              </p>
+            )}
             <p className="twin-card-foot">
-              {기준번호 > 0
-                ? `닮은 축제 ${기준번호}번이기도 합니다`
-                : "같은 자리의 실측입니다"}
+              {m.festival.id === selectedPin ? "지금 펼친 축제" : "눌러서 근거 보기"}
             </p>
-          </>
-        ) : (
+          </Link>
+        );
+      })}
+
+      {/* 넷째 칸 — 셋을 다 채우고 남는 자리.
+          기준을 못 찾았으면 그 사실이 급하다(오른쪽 감당 범위의 숫자가 어디서
+          왔는지 담당자가 알아야 한다). 찾았으면 그 자리는 카드에 얹혔으니,
+          화면 어디에도 없던 값을 낸다 — 이 셋이 얼마나 닮았는가. */}
+      <div className="twin-card" data-role="how">
+        {baseline === null ? (
           <>
-            {/* 기준을 못 찾았다. 빈 칸으로 두지 않고 **무엇이 대신 쓰였는지**를
-                적는다 — 담당자가 오른쪽 감당 범위의 숫자가 어디서 왔는지
-                알아야 한다 (불문율 4번). 긴 설명은 오른쪽 감당 범위 블록의
-                몫이다. 여기서 되풀이하면 같은 문장이 한 화면에 두 번 선다 */}
+            <p className="twin-card-label">감당 범위의 기준</p>
             <p className="twin-card-name">못 찾았습니다</p>
             <p className="twin-card-meta">
               같은 시군구·같은 달의 축제가 619건에 없습니다
@@ -1149,31 +1172,24 @@ function TwinCards({
             </p>
             <p className="twin-card-foot">없는 것이 아니라 못 찾은 것입니다</p>
           </>
+        ) : (
+          <>
+            <p className="twin-card-label">어떻게 골랐나</p>
+            <p className="twin-card-name">{scope}에서 {matched.length}곳</p>
+            <p className="twin-card-meta">
+              지역·인구·접근성·시기·테마 다섯 축으로 쟀습니다
+            </p>
+            <p className="twin-card-surge num">
+              닮음 거리{" "}
+              <strong>{가까움 === 멂 ? 가까움 : `${가까움}~${멂}`}</strong> ·
+              임계값 {DISTANCE_THRESHOLD}
+            </p>
+            <p className="twin-card-foot">
+              임계값 밖은 실측이 보증하지 않아 쓰지 않습니다
+            </p>
+          </>
         )}
       </div>
-
-      {matched.map((m, i) => (
-        <Link
-          key={m.festival.id}
-          className="twin-card"
-          data-current={m.festival.id === selectedPin ? "1" : undefined}
-          href={`/?entry=${entryId}&pin=${m.festival.id}#twin`}
-        >
-          <p className="twin-card-label">
-            <strong>{i + 1}</strong> 닮은 축제
-          </p>
-          <p className="twin-card-name">{m.festival.name}</p>
-          <p className="twin-card-meta num">
-            {m.festival.sido} {m.festival.sigungu} · {m.year}년
-          </p>
-          <p className="twin-card-surge num">
-            평소 대비 <strong>{m.festival.actualVisitSurge.toFixed(2)}배</strong>
-          </p>
-          <p className="twin-card-foot">
-            {m.festival.id === selectedPin ? "지금 펼친 축제" : "눌러서 근거 보기"}
-          </p>
-        </Link>
-      ))}
     </div>
   );
 }
