@@ -54,12 +54,24 @@ export interface SeasonScan {
   planMonth: number;
   /** 항상 12개. 입력이 틀리면 빈 배열 */
   months: MonthOutlook[];
-  /** 12달 중앙 배수의 최고 − 최저 */
+  /** 12달 중 **실제로 잰** 달 수(쌍둥이가 하나라도 나온 달). 0~12 */
+  measured: number;
+  /** 잰 달들의 중앙 배수 최고 − 최저 */
   spread: number | null;
-  /** spread 가 FLAT_SPREAD 미만 — "달을 바꿔도 그게 그거" */
+  /**
+   * spread 가 FLAT_SPREAD 미만 — "달을 바꿔도 그게 그거".
+   *
+   * **12달을 다 재야만 참이 될 수 있다.** 예전에는 잰 달끼리만 폭을 재서,
+   * 1달만 잰 조건에서 spread=0 이 되어 flat 이 참이 됐다. 화면은 그걸 받아
+   * "달을 바꿔도 폭이 0.00배 안에 머뭅니다 — 시기는 갈리지 않습니다"라고
+   * 적었다. 11달은 평평한 게 아니라 **재지 못한** 것이다.
+   */
   flat: boolean;
-  /** 요청월과 쌍둥이 실제 개최월이 같았던 칸의 비율. 화면에 그대로 낸다 */
-  monthMatchRate: number;
+  /**
+   * 요청월과 쌍둥이 실제 개최월이 같았던 칸의 비율. 화면에 그대로 낸다.
+   * 잰 칸이 없으면 null — 0 으로 두면 "0% 일치"라는 잰 값처럼 읽힌다.
+   */
+  monthMatchRate: number | null;
   /** 표본 수(3·5·7)를 바꿔도 달별 등급이 그대로인가 */
   robust: boolean;
   /** 배수 중앙값이 가장 낮았던 달(동률 포함). 잰 달이 없으면 빈 배열 */
@@ -97,9 +109,10 @@ export function scanSeason(input: PlanInput): SeasonScan {
     return {
       planMonth: input.month,
       months: [],
+      measured: 0,
       spread: null,
       flat: false,
-      monthMatchRate: 0,
+      monthMatchRate: null,
       robust: false,
       quietest: [],
       busiest: [],
@@ -124,9 +137,15 @@ export function scanSeason(input: PlanInput): SeasonScan {
 
   // 표본 수를 바꿔도 달별 등급이 그대로인가. 3개짜리 중앙값은 한 건 교체로
   // 컷을 넘기 때문에, 흔들리는 신호를 단단한 척 내보내지 않으려고 잰다.
-  const robust = ROBUST_LIMITS.slice(1).every((lim) =>
-    months.every((m) => outlookFor(input, m.month, lim).level === m.level),
-  );
+  //
+  // 잰 달이 하나도 없으면 "단단하다"가 아니라 **잴 것이 없었다**이다. 안 잰
+  // 달은 어느 limit 에서나 "비교불가"라 저절로 일치하므로, 게이트가 없으면
+  // 결측이 많을수록 robust 가 참이 된다 — 안심하는 쪽으로 기운다.
+  const robust =
+    meds.length > 0 &&
+    ROBUST_LIMITS.slice(1).every((lim) =>
+      months.every((m) => outlookFor(input, m.month, lim).level === m.level),
+    );
 
   // 잰 달이 하나도 없으면 최저도 최고도 없다.
   //
@@ -145,9 +164,11 @@ export function scanSeason(input: PlanInput): SeasonScan {
   return {
     planMonth: input.month,
     months,
+    measured: meds.length,
     spread,
-    flat: spread !== null && spread < FLAT_SPREAD,
-    monthMatchRate: 칸 === 0 ? 0 : 일치 / 칸,
+    // 12달을 다 재야만 "달을 바꿔도 그게 그거"라고 말할 수 있다
+    flat: spread !== null && spread < FLAT_SPREAD && meds.length === months.length,
+    monthMatchRate: 칸 === 0 ? null : 일치 / 칸,
     robust,
     quietest: 고른달(최저),
     busiest: 고른달(최고),

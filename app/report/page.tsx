@@ -98,6 +98,21 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     }
   }
 
+  // 진단서에 이름을 적을 경쟁 축제.
+  //
+  // `competitorsNear` 는 **거리순**으로 주는데 `competitionHeadline` 은
+  // **배수가 가장 큰** 곳을 지목한다. 가까운 순으로 잘라 실으면 헤드라인이
+  // "그중 하나는 평소의 2.38배를 불렀습니다"라고 말해 놓고 그 축제가 목록에
+  // 없는 종이가 나간다. 지목된 곳을 맨 앞으로 당겨 반드시 싣는다.
+  const 지목 = 경쟁.reduce<Competitor | null>(
+    (a, c) => (c.surge !== null && (a === null || c.surge > a.surge!) ? c : a),
+    null,
+  );
+  const 실을경쟁 = [
+    ...(지목 ? [지목] : []),
+    ...경쟁.filter((c) => c !== 지목),
+  ].slice(0, REPORT_RIVALS);
+
   // 도면이 있으면 그 배치의 쏠림 스캔까지 한 장에 담는다.
   // 배수는 grade 가 이미 낸 것을 쓴다 — 여기서 중앙값을 다시 세면 짝수 개일 때
   // 위/아래가 갈려 **같은 문서 안에서 등급과 스캔이 다른 배수**를 쓰게 된다
@@ -242,7 +257,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                 <p>{competitionHeadline(창.year, Number(entry.month), 경쟁)}</p>
                 {경쟁.length > 0 && (
                   <ul className="report-list">
-                    {경쟁.slice(0, REPORT_RIVALS).map((c) => (
+                    {실을경쟁.map((c) => (
                       <li key={c.contentId}>
                         {c.title} · {dayLabel(c.startDate)}~{dayLabel(c.endDate)} ·{" "}
                         {c.distanceKm.toFixed(0)}km
@@ -250,8 +265,10 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                       </li>
                     ))}
                     {/* 자르고 말 안 하면 "네 곳뿐"으로 읽힌다. 몇 곳을 뺐는지 적는다 */}
-                    {경쟁.length > REPORT_RIVALS && (
-                      <li>외 {경쟁.length - REPORT_RIVALS}곳 (화면에서 전부 볼 수 있습니다)</li>
+                    {경쟁.length > 실을경쟁.length && (
+                      <li>
+                        외 {경쟁.length - 실을경쟁.length}곳 (화면에서 전부 볼 수 있습니다)
+                      </li>
                     )}
                   </ul>
                 )}
@@ -376,9 +393,12 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
           {시기.quietest.length > 0 && (
           <p className="num">
             이 표가 재는 것은 시기의 효과가 아니라 매칭이 시기에 얼마나
-            흔들리는가입니다. 물은 달에 실제로 열린 쌍둥이는{" "}
-            {Math.round(시기.monthMatchRate * 100)}%뿐이라 &ldquo;그 달로 옮기면
-            이렇게 된다&rdquo;로 읽으면 안 됩니다.
+            흔들리는가입니다.{" "}
+            {시기.measured < 시기.months.length &&
+              `12달 중 ${시기.measured}달만 잴 수 있었고, `}
+            물은 달에 실제로 열린 쌍둥이는{" "}
+            {Math.round((시기.monthMatchRate ?? 0) * 100)}%뿐이라 &ldquo;그 달로
+            옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
             {!시기.robust && " 쌍둥이를 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
           </p>
           )}
@@ -393,15 +413,16 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
           {감당.baseSurge !== null && 기준 ? (
             <>
               <p className="num">
-                작년 물량이 감당한 수준의{" "}
-                <strong>
-                  {ratioText(감당.lo!)} ~ {ratioText(감당.hi!)}
-                </strong>{" "}
-                구간을 보십시오. 기준으로 삼은 것은 {기준.name}({기준.year}년)의{" "}
-                {기준.surge.toFixed(2)}배이고, 닮은 축제 3곳은{" "}
+                {기준.year}년 물량이 감당한 수준의{" "}
+                <strong>최대 {ratioText(감당.hi!)}</strong>까지 보십시오. 기준으로
+                삼은 것은 {기준.name}({기준.year}년)의 {기준.surge.toFixed(2)}배이고,
+                닮은 축제 {result.matched.length}곳은{" "}
                 {감당.twinLo.toFixed(2)}~{감당.twinHi.toFixed(2)}배였습니다.
-                {감당.floored &&
-                  " 하단은 1배에서 끊었습니다. 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+              </p>
+              {/* 하한은 잰 값이 아니라 항등식이다 (lib/capacity.ts 의 floored) */}
+              <p className="num">
+                하한은 언제나 1배입니다. 기준으로 삼는 축제를 닮은 축제 안에서
+                고르기 때문에 계산상 그렇게 됩니다. 잰 값이 아닙니다.
               </p>
               <p className="num">
                 같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다. 품목별 개수는

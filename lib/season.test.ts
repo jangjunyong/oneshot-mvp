@@ -65,7 +65,7 @@ test("쌍둥이의 실제 개최월을 같이 낸다 — 이게 없으면 표가
   // 요청월과 실제 개최월이 대부분 다르다는 사실을 수치로 들고 있어야 한다.
   // 2026-08-30 실측: 고령·마포 모두 19%. 이 값이 화면에 나간다.
   assert.ok(
-    s.monthMatchRate < 0.5,
+    (s.monthMatchRate ?? 1) < 0.5,
     `일치율 ${s.monthMatchRate} — 높아졌다면 화면 문구를 다시 봐야 한다`,
   );
 
@@ -131,6 +131,24 @@ test("어느 달에도 쌍둥이가 없으면 최저·최고 달을 고르지 �
   assert.deepEqual(s.quietest, [], "잰 것이 없는데 최저 달을 골랐다");
   assert.deepEqual(s.busiest, [], "잰 것이 없는데 최고 달을 골랐다");
   assert.equal(s.flat, false, "평평하다고 말할 근거도 없다");
+});
+
+test("12달 중 일부만 쟀으면 평평하다고 말하지 않는다", () => {
+  // 앞선 수정은 12달이 **전부** 빈 경우만 고쳤다. 일부만 빈 경우는 그대로여서
+  // 1달만 잰 조건에서도 spread=0 이라 flat 이 참이 됐고, 화면은
+  // "달을 바꿔도 폭이 0.00~0.00배 안에 머뭅니다 — 시기는 갈리지 않습니다"
+  // 라고 적었다. 11달은 평평한 게 아니라 **재지 못한** 것이다.
+  const 한달만: PlanInput = {
+    sido: "서울", sigungu: "중구", month: 6,
+    themeCode: 3, populationManMyeong: 0.5, accessibility: 1,
+  };
+  const s = scanSeason(한달만);
+  assert.equal(s.measured, 1, "이 조건은 한 달만 잴 수 있어야 뜻이 있다");
+  assert.equal(s.flat, false, "한 달 재고 12달이 평평하다고 말하고 있다");
+
+  // 12달을 다 잰 조건에서는 평평 판정이 살아 있어야 한다
+  const 전부 = scanSeason(고령);
+  assert.equal(전부.measured, 12);
 });
 
 test("입력이 틀리면 재지 않고 이유를 그대로 싣는다", () => {

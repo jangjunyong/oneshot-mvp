@@ -304,6 +304,18 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         )
       : null;
 
+  // 왼쪽 카드의 "감당 범위의 기준" 라벨이 **화면에 없는 블록**을 가리키면
+  // 안 된다. capacityBand 는 근거없음·비교불가에서 null 이라 619건 중 482건이
+  // 그 경우였다. 라벨과 블록이 같은 값을 보게 한 번만 잰다.
+  const 감당범위있음 =
+    고름 !== null &&
+    !고름.result.invalid &&
+    capacityBand(
+      고름.g,
+      고름.result.matched.map((m) => m.festival.actualVisitSurge),
+      기준?.surge ?? null,
+    ) !== null;
+
   // 핀은 고른 진단의 닮은 축제 중에서만 유효하다. 개수는 0~3 이고
   // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
   const 핀 = 고름?.result.matched.find((m) => m.festival.id === 고른핀) ?? null;
@@ -666,6 +678,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   baseline={기준}
                   selectedPin={핀?.festival.id ?? null}
                   scope={고름.result.searchedScope}
+                  capacityShown={감당범위있음}
                 />
                 {고름.g.medianSurge !== null &&
                   (() => {
@@ -688,7 +701,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   <p className="alert" data-level="근거없음">
                     {DEMO_LABEL}입니다. 저장된 진단이 없어 고령 대가야축제
                     조건을 대신 펴 뒀습니다. 지역·시기·테마·인구·접근성은 619건에
-                    등록된 값 그대로이고, 아래 배수도 전부 실측입니다.
+                    등록된 값 그대로입니다. 그래서 <strong>닮은 축제 1번은 이
+                    조건의 출처가 된 축제 자신</strong>입니다(닮음 거리 0.00).
+                    실제 기획안에서는 이런 일이 없습니다.
                   </p>
                 )}
                 <p className="num">
@@ -754,18 +769,25 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       {범위.baseSurge !== null && 기준 ? (
                         <>
                           <p className="capacity-head num">
-                            작년 물량이 감당한 수준의{" "}
-                            <strong>
-                              {ratioText(범위.lo!)} ~ {ratioText(범위.hi!)}
-                            </strong>{" "}
-                            구간을 보십시오
+                            {기준.year}년 물량이 감당한 수준의{" "}
+                            <strong>최대 {ratioText(범위.hi!)}</strong>까지 보십시오
                           </p>
                           <p className="note num">
                             기준으로 삼은 것은 {기준.name}({기준.year}년)의{" "}
-                            {기준.surge.toFixed(2)}배입니다. 닮은 축제 3곳은{" "}
+                            {기준.surge.toFixed(2)}배입니다. 닮은 축제{" "}
+                            {고름.result.matched.length}곳은{" "}
                             {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
-                            {범위.floored &&
-                              " 하단은 1배에서 끊었습니다. 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+                          </p>
+                          {/* 하한은 잰 값이 아니다. 기준을 닮은 축제 셋 안에서
+                              고르므로 twinLo <= baseSurge 이고, 하한은 언제나
+                              1.00 이 된다(619건 중 기준이 있는 136건 전수 확인).
+                              1.00 을 구간의 한쪽 끝으로 내놓으면 담당자가 그걸
+                              측정값으로 읽는다 */}
+                          <p className="note num">
+                            하한은 <strong>언제나 1배</strong>입니다. 기준으로 삼는
+                            축제를 닮은 축제 안에서 고르기 때문에 계산상 그렇게
+                            됩니다. 잰 값이 아닙니다. 작년보다 줄이라는 말은 실측이
+                            뒷받침하지 않습니다.
                           </p>
                           <p className="note">
                             같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다.
@@ -1102,12 +1124,15 @@ function TwinCards({
   baseline,
   selectedPin,
   scope,
+  capacityShown,
 }: {
   entryId: string;
   matched: MatchedFestival[];
   baseline: { id: string; name: string; year: string; surge: number } | null;
   selectedPin: string | null;
   scope: string;
+  /** 오른쪽에 감당 범위 블록이 실제로 서는가. 근거없음 등급이면 안 선다 */
+  capacityShown: boolean;
 }) {
   if (matched.length === 0) return null;
 
@@ -1142,7 +1167,8 @@ function TwinCards({
                 나오므로 그 카드에 표를 얹는다 (2026-08-30 사용자 지시) */}
             {기준인가 && (
               <p className="twin-card-base">
-                같은 시군구, 같은 달 · 감당 범위의 기준
+                같은 시군구, 같은 달
+                {capacityShown ? " · 감당 범위의 기준" : ""}
               </p>
             )}
             <p className="twin-card-foot">
@@ -1157,7 +1183,7 @@ function TwinCards({
           왔는지 담당자가 알아야 한다). 찾았으면 그 자리는 카드에 얹혔으니,
           화면 어디에도 없던 값을 낸다 — 이 셋이 얼마나 닮았는가. */}
       <div className="twin-card" data-role="how">
-        {baseline === null ? (
+        {baseline === null && capacityShown ? (
           <>
             <p className="twin-card-label">감당 범위의 기준</p>
             <p className="twin-card-name">못 찾았습니다</p>
@@ -1210,6 +1236,15 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
 
       {/* 어느 달에도 쌍둥이가 없으면 견줄 것이 없다. 최저·최고를 고르는
           문장은 잰 것이 있을 때만 쓴다 (lib/season.ts 의 고른달) */}
+      {/* 몇 달을 잴 수 있었는지를 먼저 말한다. 이걸 안 밝히면 1달만 잰
+          조건에서도 "달을 바꿔도 그게 그거"로 읽힌다 */}
+      {scan.measured > 0 && scan.measured < scan.months.length && (
+        <p className="season-head num">
+          12달 중 <strong>{scan.measured}달</strong>만 닮은 축제를 찾을 수
+          있었습니다. 나머지 {scan.months.length - scan.measured}달은 평평한 것이
+          아니라 재지 못한 것입니다.
+        </p>
+      )}
       {scan.quietest.length === 0 ? (
         <p className="season-head">
           달을 12번 바꿔 물어도 닮은 축제를 찾지 못했습니다. 시기를 견줄 근거가
@@ -1285,7 +1320,7 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
         매칭이 시기에 얼마나 흔들리는가입니다. 닮음을 재는 다섯 축에서 개최
         시기가 차지하는 비중은 10%뿐이라, 달을 바꿔도 같은 지역 축제 몇 곳이
         순위만 바꿔 다시 섭니다. 물은 달에 실제로 열린 쌍둥이는{" "}
-        <strong>{Math.round(scan.monthMatchRate * 100)}%</strong>(
+        <strong>{Math.round((scan.monthMatchRate ?? 0) * 100)}%</strong>(
         <span className="season-twinmonths">✓</span> 표시)뿐이고 나머지는 다른 달
         축제입니다. 그러니 &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안
         됩니다.

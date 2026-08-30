@@ -185,15 +185,22 @@ export async function saveVenue(
   venue: Venue,
   entryId: string | null = null,
 ): Promise<string> {
+  // 읽기 경로만 시연용 id 를 가로채고 쓰기 경로는 안 가로챘다. 그래서
+  // 시연 도면을 저장하면 entry_id 에 `Number("demo")` = NaN 이 실려
+  // Postgres 가 22P02 로 거절했고(BIGINT 는 NaN 을 못 받는다), 화면은
+  // "잠시 후 다시 눌러 주세요"라며 **영원히 성공하지 않을 재시도**를
+  // 안내하면서 편집 중이던 배치를 통째로 잃었다.
+  // 숫자가 아닌 id 는 연결 없는 도면으로 남긴다 — 저장은 되게 한다.
+  const 연결 = /^\d+$/.test(entryId ?? "") ? entryId : null;
   if (!sql) {
     const id = String(gv.__oneshotVenues!.length + 1);
-    gv.__oneshotVenues!.unshift({ id, entryId, venue });
+    gv.__oneshotVenues!.unshift({ id, entryId: 연결, venue });
     return id;
   }
   await venueReady();
   const rows = await sql`
     INSERT INTO venues (entry_id, payload)
-    VALUES (${entryId === null ? null : Number(entryId)}, ${JSON.stringify(venue)})
+    VALUES (${연결 === null ? null : Number(연결)}, ${JSON.stringify(venue)})
     RETURNING id
   `;
   return String(rows[0].id);

@@ -127,6 +127,23 @@ test("비교 기준은 같은 시군구·같은 달의 쌍둥이다 — 이름�
   assert.equal(localBaseline({ sido: "경남", sigungu: "산청군", month: 3 }, 목록), null);
 });
 
+test("하한은 측정값이 아니라 항등식이다 — 화면이 그렇게 말해야 한다", () => {
+  // localBaseline 은 **matched 안에서** 고른다(capacity.ts:102). 그래서
+  // baseSurge 는 언제나 twinSurges 의 한 원소이고, twinLo <= baseSurge 다.
+  // 즉 rawLo = twinLo/baseSurge <= 1 이라 lo 는 **항상 RATIO_FLOOR**.
+  // 619건 전수로 재 보니 기준이 있는 136건 전부 하한이 1.00 이었다.
+  // 이걸 "1.00배 ~ 1.44배 구간"이라고 내면 담당자는 1.00 을 잰 값으로 읽는다.
+  const 쌍둥이배수 = [1.53, 2.27, 3.28];
+  for (const base of 쌍둥이배수) {
+    const b = capacityBand(등급("심각", 2.27), 쌍둥이배수, base)!;
+    assert.equal(b.lo, RATIO_FLOOR, `기준 ${base} 에서 하한이 1 이 아니다`);
+  }
+  // 기준이 쌍둥이 중 최솟값이면 rawLo 가 정확히 1 이다. 예전 `<` 판정에서는
+  // floored 가 거짓이라 해명 문장조차 안 떴다(136건 중 40건). 이제 늘 뜬다.
+  const 최솟값기준 = capacityBand(등급("심각", 2.27), 쌍둥이배수, 1.53)!;
+  assert.equal(최솟값기준.floored, true, "하한이 항등식인데 화면이 침묵한다");
+});
+
 test("순수 — 같은 입력에 같은 결과", () => {
   const a = capacityBand(등급("심각", 2.58), [1.76, 2.58, 3.28], 2.27);
   const b = capacityBand(등급("심각", 2.58), [1.76, 2.58, 3.28], 2.27);

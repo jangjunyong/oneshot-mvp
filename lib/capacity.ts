@@ -78,7 +78,13 @@ export function capacityBand(
     twinHi,
     lo: Math.max(RATIO_FLOOR, rawLo),
     hi: Math.max(RATIO_FLOOR, rawHi),
-    floored: rawLo < RATIO_FLOOR,
+    // `<` 가 아니라 `<=` 인 이유 — `localBaseline` 이 **matched 안에서** 고르므로
+    // baseSurge 는 언제나 twinSurges 의 한 원소다. 즉 twinLo <= baseSurge 이고
+    // rawLo <= 1 이라 **하한은 늘 1.00 이다**(619건 중 기준이 있는 136건 전수
+    // 확인). 기준이 쌍둥이 중 최솟값이면 rawLo 가 정확히 1 이라 예전 `<` 로는
+    // floored 가 거짓이 됐고, 화면이 1.00 을 잰 값처럼 내놓으면서 해명 문장은
+    // 안 띄웠다(136건 중 40건). 하한은 측정이 아니라 항등식이므로 언제나 밝힌다.
+    floored: rawLo <= RATIO_FLOOR,
   };
 }
 

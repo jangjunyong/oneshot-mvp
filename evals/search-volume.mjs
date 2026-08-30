@@ -8,9 +8,9 @@
 // 연령 필터(11 = 60세 이상)로 테마별 고령층 비중을 잰다.
 //
 // ── 쓰는 법 ──
-//   1. developers.naver.com 에서 앱 등록 → 데이터랩(검색어트렌드) 선택 → 키 발급
-//      (네이버 클라우드 플랫폼의 Search Trend 는 2026-07-23 종료됐다.
-//       콘솔에서 신청할 수 없다 — lib/searchvolume.ts 머리말)
+//   1. NCP 콘솔 → **NAVER API HUB** → Subscription 이용 신청 →
+//      Application 등록에서 Data Lab 검색어트렌드 선택 → 인증 정보
+//      (AI·NAVER API 메뉴가 아니다 — lib/searchvolume.ts 머리말)
 //   2. .env.local 에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET
 //   3. node --env-file=.env.local --experimental-strip-types --no-warnings \
 //        --import ./test-loader.mjs evals/search-volume.mjs [표본수]
@@ -67,14 +67,26 @@ function spearman(xs, ys) {
   return pearson(rank(xs), rank(ys));
 }
 
-// 배수가 고른 표본을 뽑는다 — 높은 것만 보면 상관이 부풀려진다
+// 배수가 고른 표본을 뽑는다 — 높은 것만 보면 상관이 부풀려진다.
+//
+// 처음엔 `filter(i % 간격 === 0).slice(0, N)` 이었는데 **틀렸다.** 619건에
+// N=120 이면 간격 5 라 filter 가 124건을 만들고 slice 가 뒤 4건을 잘랐다.
+// 배수 오름차순이라 잘린 것이 가장 높은 쪽(2.27·2.37·2.56·2.77)이었고,
+// 표본 최대가 2.20 인데 전체 최대는 3.28 이었다. 제품이 정작 관심 있는
+// 고배수 구간이 빠진 채로 상관을 잰 셈이다 — 범위 제한은 상관을 **낮은
+// 쪽으로 끌어내린다.** 양 끝을 반드시 포함하도록 자리를 직접 계산한다.
 const 정렬 = [...FESTIVALS].sort((a, b) => a.actualVisitSurge - b.actualVisitSurge);
-const 간격 = Math.max(1, Math.floor(정렬.length / N));
-const 표본 = 정렬.filter((_, i) => i % 간격 === 0).slice(0, N);
+const 뽑을수 = Math.min(N, 정렬.length);
+const 자리 = new Set();
+for (let k = 0; k < 뽑을수; k++) {
+  자리.add(뽑을수 === 1 ? 0 : Math.round((k * (정렬.length - 1)) / (뽑을수 - 1)));
+}
+const 표본 = [...자리].map((i) => 정렬[i]);
 
 console.log(`표본 ${표본.length}건 · 개최 전 ${LEAD_DAYS}일 vs 평소 ${BASELINE_WEEKS}주\n`);
 
 const rows = [];
+const 건너뜀 = [];
 for (const f of 표본) {
   const 개최 = 날짜(f.eventStartDate);
   const 시작 = new Date(개최);
@@ -92,6 +104,9 @@ for (const f of 표본) {
 
     const lr = leadRatio(전체, f.eventStartDate, LEAD_DAYS);
     if (lr === null) {
+      // 건너뛴 것도 세어 둔다. 검색량이 0 인 축제가 특정 배수 구간에
+      // 몰려 있으면 남은 표본으로 잰 상관은 그만큼 거짓이다(생존 편향).
+      건너뜀.push(f.actualVisitSurge);
       console.log(`  건너뜀 ${f.name} — 표본 부족(검색량이 거의 0)`);
       continue;
     }
@@ -127,6 +142,19 @@ const ys = rows.map((r) => r.surge);
 console.log(`\n=== 검색량 배수 vs 실측 방문 배수 (n=${rows.length}) ===`);
 console.log(`  피어슨   r = ${pearson(xs, ys)?.toFixed(3) ?? "—"}`);
 console.log(`  스피어만 ρ = ${spearman(xs, ys)?.toFixed(3) ?? "—"}`);
+
+const 요약 = (a) => {
+  if (a.length === 0) return "없음";
+  const s = [...a].sort((x, y) => x - y);
+  return `n=${s.length} · 중앙 ${s[Math.floor(s.length / 2)].toFixed(2)}배 · ` +
+    `2.0 이상 ${s.filter((v) => v >= 2).length}건`;
+};
+console.log(
+  "\n=== 생존 편향 점검 ===\n" +
+    `  상관에 든 것        ${요약(rows.map((r) => r.surge))}\n` +
+    `  검색량 0 이라 뺀 것  ${요약(건너뜀)}\n` +
+    "  뺀 쪽이 고배수에 몰려 있으면 위 상관은 그만큼 못 믿는다.",
+);
 
 const 고령있음 = rows.filter((r) => r.oldRatio !== null);
 if (고령있음.length >= 3) {

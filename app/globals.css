@@ -699,12 +699,22 @@ ul.scan-findings strong { background: var(--severe); }
   .report-list { font-size: 8.5pt; }
   /* 한계 고지는 짧은 항목 넷이라 두 단으로 접으면 줄지 않고 자리만 아낀다.
      한 항목이 두 단에 걸치면 못 읽으므로 통째로 넘긴다 */
-  .report-limits .report-list { font-size: 8pt; columns: 2; column-gap: var(--s2); }
-  .report-limits .report-list li { break-inside: avoid; }
+  /* 두 단으로 접어 자리를 아낀다. columns 대신 grid 를 쓰는 이유 —
+     다단은 분할(fragmentation)이라 브라우저마다 항목이 열에 걸치고,
+     마커 자리(padding-left 1.1rem)가 column-gap 1rem 보다 넓어 둘째 단
+     글머리표가 첫 단 글자에 닿는다. grid 는 그 문제가 아예 없다 */
+  .report-limits .report-list {
+    font-size: 8pt;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 var(--s2);
+  }
   .report-capacity p { font-size: 8.5pt; }
   .report-capacity strong { font-size: 9.5pt; }
   .report-selfcheck p { font-size: 8pt; }
-  .report-season p { font-size: 8pt; }
+  /* 화면 규칙(.report .report-season p)이 특정도가 더 높아 여기서도 맞춘다.
+     예전엔 소스 순서에서 뒤에 있는 화면 규칙이 이겨 인쇄 축소가 안 먹었다 */
+  .report .report-season p { font-size: 8pt; }
   /* 근거가 페이지 경계에서 잘리면 결재자가 앞뒤를 뒤져야 한다 */
   .report section,
   .report-table,
@@ -727,7 +737,7 @@ ul.scan-findings strong { background: var(--severe); }
 }
 
 /* 시기 민감도 — 근거 표와 같은 밀도. A4 한 장이라 행을 골라 싣는다 */
-.report-season p { font-size: 9pt; margin: 0.15rem 0; color: var(--concrete); }
+.report .report-season p { font-size: 9pt; margin: 0.15rem 0; color: var(--concrete); }
 .report-season strong { color: var(--ink); }
 
 /* ── 배수의 뜻과 또래 맥락 ──
@@ -783,6 +793,7 @@ ul.scan-findings strong { background: var(--severe); }
 /* 넷째 칸은 읽는 것이지 누르는 것이 아니다 — 배경을 빼서 성격을 가른다 */
 .twin-card[data-role="how"] { background: none; border-style: dashed; }
 a.twin-card:hover { border-color: var(--ink); }
+a.twin-card[data-current]:hover { border-color: var(--severe); }
 a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .twin-card[data-current] { border-color: var(--severe); }
 .twin-card p { margin: 0; max-width: none; }
