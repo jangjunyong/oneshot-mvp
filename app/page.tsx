@@ -48,6 +48,7 @@ import {
   DATA_SOURCE,
   MAX_PLAN_TEXT,
   THEME_NAME,
+  type MatchedFestival,
 } from "@/lib/types";
 
 // 저장한 것이 바로 보여야 하므로 캐시하지 않는다
@@ -287,6 +288,20 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 지도는 페이지에 하나뿐이다 — 이력마다 썸네일을 깔면 어느 것도 못 읽는다.
   // 고른 게 없으면 가장 최근 진단을 편다(list 는 최신순).
   const 고름 = 진단들.find((d) => d.e.id === 고른id) ?? 진단들[0] ?? null;
+
+  // 감당 범위의 기준이 되는 "같은 시군구·같은 달" 실측.
+  // 지도 아래 카드와 감당 범위 블록이 **같은 것**을 가리켜야 하니 한 번만 고른다.
+  const 기준 =
+    고름 && !고름.result.invalid
+      ? localBaseline(
+          {
+            sido: 고름.e.sido,
+            sigungu: 고름.e.sigungu,
+            month: Number(고름.e.month),
+          },
+          고름.result.matched,
+        )
+      : null;
 
   // 핀은 고른 진단의 닮은 축제 중에서만 유효하다. 개수는 0~3 이고
   // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
@@ -633,8 +648,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
           ) : (
             <>
-              {/* 왼쪽 열 — 지도와 그 아래 또래 분포. 오른쪽 본문이 훨씬 길어
-                  지도 밑이 비어 있었다. 그 자리에 인구 편향을 그림으로 답한다 */}
+              {/* 왼쪽 열 — 지도, 지도가 가리키는 넉 장, 또래 분포.
+                  오른쪽 본문이 훨씬 길어 지도 밑이 비어 있었다 (2026-08-30
+                  사용자 지적). 그 자리에 근거를 옮겨 담는다 */}
               <div className="twin-left">
                 <TwinMap
                   matched={고름.result.matched}
@@ -642,6 +658,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   entryId={고름.e.id}
                   selectedPin={핀?.festival.id ?? null}
                   scope={고름.result.searchedScope}
+                />
+                <TwinCards
+                  entryId={고름.e.id}
+                  matched={고름.result.matched}
+                  baseline={기준}
+                  selectedPin={핀?.festival.id ?? null}
                 />
                 {고름.g.medianSurge !== null &&
                   (() => {
@@ -718,14 +740,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
                     같은 화면에서 충돌한다 (docs/DECISIONS.md) */}
                 {(() => {
-                  const 기준 = localBaseline(
-                    {
-                      sido: 고름.e.sido,
-                      sigungu: 고름.e.sigungu,
-                      month: Number(고름.e.month),
-                    },
-                    고름.result.matched,
-                  );
                   const 범위 = capacityBand(
                     고름.g,
                     고름.result.matched.map((m) => m.festival.actualVisitSurge),
@@ -778,8 +792,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   );
                 })()}
 
-                {/* 핀을 눌렀으면 그 한 곳을 깊게, 아니면 닮은 곳 전부를 얕게.
-                    번호는 지도의 핀 번호와 같은 것이어야 짝이 읽힌다 */}
+                {/* 핀을 눌렀을 때만 그 한 곳을 깊게 편다. 닮은 곳 전부를 얕게
+                    보여 주던 목록은 지도 아래 카드로 옮겼다 — 같은 것을 두 열에
+                    쓰면 오른쪽만 길어지고 왼쪽 아래는 계속 빈다 */}
                 {핀 ? (
                   <div className="pin-card">
                     <p className="num">
@@ -850,24 +865,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       <Link href={`/?entry=${고름.e.id}#twin`}>핀 선택 해제</Link>
                     </p>
                   </div>
-                ) : (
-                  고름.result.matched.length > 0 && (
-                    <ol className="legend">
-                      {고름.result.matched.map((m, i) => (
-                        <li key={m.festival.id} className="num">
-                          <Link
-                            href={`/?entry=${고름.e.id}&pin=${m.festival.id}#twin`}
-                          >
-                            <strong>{i + 1}</strong> {m.festival.name} (
-                            {m.festival.sido} {m.festival.sigungu}) · {m.year}년
-                            · 평소 대비 {m.festival.actualVisitSurge.toFixed(2)}
-                            배
-                          </Link>
-                        </li>
-                      ))}
-                    </ol>
-                  )
-                )}
+                ) : null}
 
                 {/* 결론(누가 몇 배)은 위에 펼쳐져 있다. 접는 건 "왜"뿐이다 */}
                 {고름.result.matched.length > 0 && (
@@ -1080,6 +1078,102 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <dd>{storageMode()}</dd>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * 지도 아래 넉 장 — 감당 범위의 **기준** 하나와 **닮은 축제** 셋.
+ *
+ * 왜 여기 있나. 오른쪽 본문이 왼쪽 지도보다 훨씬 길어 지도 아래가 늘 비어
+ * 있었다(2026-08-30 사용자 지적). 닮은 축제 목록은 원래 오른쪽에 한 줄씩
+ * 있었는데, 그건 지도의 핀 1·2·3 을 설명하는 것이라 지도 옆에 있는 편이 맞다.
+ *
+ * 기준 카드는 겹칠 수 있다. `localBaseline` 은 **닮은 축제 셋 중에서** 같은
+ * 시군구·같은 달인 것을 고르므로, 기준이 있으면 그것은 반드시 셋 중 하나다.
+ * 숨기지 않고 "닮은 축제 ①이기도 합니다"라고 카드에 적는다 — 감당 범위가
+ * 무엇에 대고 잰 값인지는 닮음과 다른 질문이라 칸을 따로 둘 값어치가 있다.
+ */
+function TwinCards({
+  entryId,
+  matched,
+  baseline,
+  selectedPin,
+}: {
+  entryId: string;
+  matched: MatchedFestival[];
+  baseline: { id: string; name: string; year: string; surge: number } | null;
+  selectedPin: string | null;
+}) {
+  if (matched.length === 0) return null;
+
+  const 기준번호 = baseline
+    ? matched.findIndex((m) => m.festival.id === baseline.id) + 1
+    : 0;
+  const 배수폭 = matched.map((m) => m.festival.actualVisitSurge);
+
+  return (
+    <div className="twin-cards">
+      <div className="twin-card" data-role="base">
+        <p className="twin-card-label">감당 범위의 기준</p>
+        {baseline ? (
+          <>
+            <p className="twin-card-name">{baseline.name}</p>
+            <p className="twin-card-meta num">
+              {baseline.year}년 · 같은 시군구, 같은 달
+            </p>
+            <p className="twin-card-surge num">
+              평소 대비 <strong>{baseline.surge.toFixed(2)}배</strong>
+            </p>
+            <p className="twin-card-foot">
+              {기준번호 > 0
+                ? `닮은 축제 ${기준번호}번이기도 합니다`
+                : "같은 자리의 실측입니다"}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* 기준을 못 찾았다. 빈 칸으로 두지 않고 **무엇이 대신 쓰였는지**를
+                적는다 — 담당자가 오른쪽 감당 범위의 숫자가 어디서 왔는지
+                알아야 한다 (불문율 4번). 긴 설명은 오른쪽 감당 범위 블록의
+                몫이다. 여기서 되풀이하면 같은 문장이 한 화면에 두 번 선다 */}
+            <p className="twin-card-name">못 찾았습니다</p>
+            <p className="twin-card-meta">
+              같은 시군구·같은 달의 축제가 619건에 없습니다
+            </p>
+            <p className="twin-card-surge num">
+              대신 닮은 축제 {matched.length}곳의{" "}
+              <strong>
+                {Math.min(...배수폭).toFixed(2)}~{Math.max(...배수폭).toFixed(2)}배
+              </strong>
+            </p>
+            <p className="twin-card-foot">없는 것이 아니라 못 찾은 것입니다</p>
+          </>
+        )}
+      </div>
+
+      {matched.map((m, i) => (
+        <Link
+          key={m.festival.id}
+          className="twin-card"
+          data-current={m.festival.id === selectedPin ? "1" : undefined}
+          href={`/?entry=${entryId}&pin=${m.festival.id}#twin`}
+        >
+          <p className="twin-card-label">
+            <strong>{i + 1}</strong> 닮은 축제
+          </p>
+          <p className="twin-card-name">{m.festival.name}</p>
+          <p className="twin-card-meta num">
+            {m.festival.sido} {m.festival.sigungu} · {m.year}년
+          </p>
+          <p className="twin-card-surge num">
+            평소 대비 <strong>{m.festival.actualVisitSurge.toFixed(2)}배</strong>
+          </p>
+          <p className="twin-card-foot">
+            {m.festival.id === selectedPin ? "지금 펼친 축제" : "눌러서 근거 보기"}
+          </p>
+        </Link>
+      ))}
     </div>
   );
 }

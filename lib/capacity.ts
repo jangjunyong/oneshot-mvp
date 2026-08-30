@@ -98,7 +98,7 @@ export const ratioText = (n: number) => `${n.toFixed(2)}배`;
 export function localBaseline(
   input: Pick<PlanInput, "sido" | "sigungu" | "month">,
   matched: readonly MatchedFestival[],
-): { name: string; year: string; surge: number } | null {
+): { id: string; name: string; year: string; surge: number } | null {
   const hit = matched.find(
     (m) =>
       m.festival.sido === input.sido &&
@@ -106,6 +106,14 @@ export function localBaseline(
       monthOf(m.festival) === input.month,
   );
   return hit
-    ? { name: hit.festival.name, year: hit.year, surge: hit.festival.actualVisitSurge }
+    ? {
+        // 기준은 언제나 닮은 축제 셋 중 하나다. 화면이 "닮은 축제 ①이기도
+        // 합니다"라고 짚으려면 어느 것인지 알아야 하고, 이름으로 맞추면 같은
+        // 이름의 다른 축제에 붙는다.
+        id: hit.festival.id,
+        name: hit.festival.name,
+        year: hit.year,
+        surge: hit.festival.actualVisitSurge,
+      }
     : null;
 }
