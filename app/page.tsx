@@ -46,7 +46,6 @@ import {
   ACCESSIBILITY_LABEL,
   DAILY_EXTRACT_LIMIT,
   DATA_SOURCE,
-  DISTANCE_THRESHOLD,
   MAX_PLAN_TEXT,
   THEME_NAME,
   type MatchedFestival,
@@ -1138,9 +1137,6 @@ function TwinCards({
   if (matched.length === 0) return null;
 
   const 배수폭 = matched.map((m) => m.festival.actualVisitSurge);
-  const 거리 = matched.map((m) => m.distance);
-  const 가까움 = Math.min(...거리).toFixed(2);
-  const 멂 = Math.max(...거리).toFixed(2);
 
   return (
     <div className="twin-cards">
@@ -1206,13 +1202,15 @@ function TwinCards({
             <p className="twin-card-meta">
               지역·인구·접근성·시기·테마 다섯 축으로 쟀습니다
             </p>
-            <p className="twin-card-surge num">
-              닮음 거리{" "}
-              <strong>{가까움 === 멂 ? 가까움 : `${가까움}~${멂}`}</strong> ·
-              임계값 {DISTANCE_THRESHOLD}
-            </p>
+            {/* 닮음 거리(0.09 같은 값)를 여기 내던 것을 걷어냈다.
+                담당자가 그 숫자로 할 수 있는 일이 없다 — 결재에서
+                "닮음 거리가 0.09였습니다"라고 답할 수 없고, 척도가 없으면
+                0.11 이 0.27 의 절반이라는 것도 뜻을 못 만든다.
+                불문율 3 이 금지한 "유사도 점수만 던지기"가 바로 이것이고,
+                왜 닮았는지는 아래 details 와 핀 카드가 축별로 낸다 */}
             <p className="twin-card-foot">
-              임계값 밖은 실측이 보증하지 않아 쓰지 않습니다
+              다섯 축이 충분히 가깝지 않으면 쓰지 않습니다. 억지로 가장 가까운
+              것을 내놓지 않습니다.
             </p>
           </>
         )}
