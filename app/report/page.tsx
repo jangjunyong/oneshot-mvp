@@ -35,6 +35,16 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * 진단서에 이름을 적는 경쟁 축제 수.
+ *
+ * A4 한 장이 이 문서의 규격이라 목록 길이가 곧 장수다. 그리고 이 목록만
+ * 길이에 상한이 없다 — 그 달에 반경 50km 안에서 열린 축제가 열 곳이면 열
+ * 줄이 된다. 여섯 곳까지 싣던 것을 셋으로 줄이고, 자른 만큼은 "외 N곳"으로
+ * 적는다. 실측: 이 상한에서 진단서가 최악일 때 269mm, A4 가용은 273mm.
+ */
+const REPORT_RIVALS = 3;
+
 /** 문서에 찍는 시각. 서버는 UTC 라 그대로 두면 9시간 틀린 진단서가 나간다 */
 function 발행시각(): string {
   return new Date().toLocaleString("ko-KR", {
@@ -107,7 +117,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     기준?.surge ?? null,
   );
 
-  // 시기 민감도 — A4 한 장이라 12행을 다 못 싣는다. 최저·기획안의 달·최고만.
+  // 시기 민감도 — A4 한 장이라 12행을 다 못 싣는다. 최저 한 달·기획안의 달·
+  // 최고 한 달만 싣는다(전에는 최저·최고를 두 달씩 실어 다섯 행이었다).
   // 같은 달이 여러 역할이면 중복을 걷고 달 순서로 되돌린다
   const 시기 = result.invalid
     ? null
@@ -122,9 +133,9 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   const 시기요약 = 시기
     ? [
         ...new Set([
-          ...시기.quietest.slice(0, 2),
+          ...시기.quietest.slice(0, 1),
           시기.planMonth,
-          ...시기.busiest.slice(0, 2),
+          ...시기.busiest.slice(0, 1),
         ]),
       ]
         .sort((a, b) => a - b)
@@ -231,13 +242,17 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                 <p>{competitionHeadline(창.year, Number(entry.month), 경쟁)}</p>
                 {경쟁.length > 0 && (
                   <ul className="report-list">
-                    {경쟁.slice(0, 6).map((c) => (
+                    {경쟁.slice(0, REPORT_RIVALS).map((c) => (
                       <li key={c.contentId}>
                         {c.title} · {dayLabel(c.startDate)}~{dayLabel(c.endDate)} ·{" "}
                         {c.distanceKm.toFixed(0)}km
                         {c.surge !== null && ` · 평소 ${c.surge.toFixed(2)}배`}
                       </li>
                     ))}
+                    {/* 자르고 말 안 하면 "네 곳뿐"으로 읽힌다. 몇 곳을 뺐는지 적는다 */}
+                    {경쟁.length > REPORT_RIVALS && (
+                      <li>외 {경쟁.length - REPORT_RIVALS}곳 (화면에서 전부 볼 수 있습니다)</li>
+                    )}
                   </ul>
                 )}
               </>
@@ -355,14 +370,16 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
               </table>
             </>
           )}
+          {/* A4 한 장을 지키려고 문장을 줄였다. 남긴 두 가지는 못 뺀다 —
+              이 표가 무엇을 재는지, 그리고 요청월과 실제 개최월이 얼마나
+              어긋나는지 (docs/DECISIONS.md 의 3번) */}
           {시기.quietest.length > 0 && (
           <p className="num">
-            이 표가 재는 것은 시기의 효과가 아니라 매칭이 시기에 얼마나 흔들리는가입니다.
-            닮음을 재는 다섯 축에서 개최 시기가 차지하는 비중은 10%뿐이라, 물은 달에
-            실제로 열린 쌍둥이는 {Math.round(시기.monthMatchRate * 100)}%뿐입니다.
-            &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
-            {!시기.robust &&
-              " 또 쌍둥이를 3곳이 아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
+            이 표가 재는 것은 시기의 효과가 아니라 매칭이 시기에 얼마나
+            흔들리는가입니다. 물은 달에 실제로 열린 쌍둥이는{" "}
+            {Math.round(시기.monthMatchRate * 100)}%뿐이라 &ldquo;그 달로 옮기면
+            이렇게 된다&rdquo;로 읽으면 안 됩니다.
+            {!시기.robust && " 쌍둥이를 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
           </p>
           )}
         </section>

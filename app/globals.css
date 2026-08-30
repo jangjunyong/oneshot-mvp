@@ -668,11 +668,43 @@ ul.scan-findings strong { background: var(--severe); }
   .no-print,
   .topbar,
   .titleblock { display: none !important; }
+
+  /* ── A4 한 장을 지키는 밀도 ──
+     근거가 3종에서 5종 + 자기검증으로 늘면서 실측 329mm 가 됐다. A4 가용
+     높이는 273mm(297 − 위아래 12mm)라 두 장으로 넘어갔다.
+     여기서 줄인 것은 **여백과 자간이지 근거가 아니다** — 문장을 지우면
+     "출처를 다 낸다"는 이 문서의 존재 이유가 깎인다. 시기 표만 행을
+     3개로 줄였다(app/report/page.tsx 의 시기요약). */
   .report {
     max-width: none;
     padding: 0;
-    font-size: 9.5pt;
+    font-size: 9pt;
+    line-height: 1.38;
   }
+  .report h1 { font-size: 14pt; }
+  .report h2 { margin: 0.35rem 0 0.2rem; font-size: 9pt; }
+  .report p { margin-bottom: 0.25rem; }
+  .report-verdict { margin-top: 0.5rem; }
+  /* 결론만은 안 줄인다 — 결재자가 멈추는 자리다 */
+  .report-verdict .headline { font-size: 12pt; }
+  .report-table th,
+  .report-table td { padding: 0.1rem 0.35rem; }
+  .report-list li { margin: 0; }
+  .report-foot { margin-top: 0.5rem; }
+
+  /* 근거의 활자를 1pt 씩 내린다. 화면에서는 그대로다 */
+  .report-head .num { font-size: 8pt; }
+  .report-table { font-size: 8pt; }
+  .report-table th { font-size: 7.5pt; }
+  .report-list { font-size: 8.5pt; }
+  /* 한계 고지는 짧은 항목 넷이라 두 단으로 접으면 줄지 않고 자리만 아낀다.
+     한 항목이 두 단에 걸치면 못 읽으므로 통째로 넘긴다 */
+  .report-limits .report-list { font-size: 8pt; columns: 2; column-gap: var(--s2); }
+  .report-limits .report-list li { break-inside: avoid; }
+  .report-capacity p { font-size: 8.5pt; }
+  .report-capacity strong { font-size: 9.5pt; }
+  .report-selfcheck p { font-size: 8pt; }
+  .report-season p { font-size: 8pt; }
   /* 근거가 페이지 경계에서 잘리면 결재자가 앞뒤를 뒤져야 한다 */
   .report section,
   .report-table,
