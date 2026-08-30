@@ -698,11 +698,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     어디서 왔는지를 결과보다 먼저 적는다 (불문율 4번) */}
                 {고름.e.id === DEMO_ENTRY_ID && (
                   <p className="alert" data-level="근거없음">
-                    {DEMO_LABEL}입니다. 저장된 진단이 없어 고령 대가야축제
-                    조건을 대신 펴 뒀습니다. 지역·시기·테마·인구·접근성은 619건에
-                    등록된 값 그대로입니다. 그래서 <strong>닮은 축제 1번은 이
-                    조건의 출처가 된 축제 자신</strong>입니다(닮음 거리 0.00).
-                    실제 기획안에서는 이런 일이 없습니다.
+                    {DEMO_LABEL}입니다. 저장된 진단이 없어 예시 기획안 하나를
+                    대신 펴 뒀습니다. 강원 횡성군에서 6월에 음악·공연 축제를 새로
+                    연다고 가정한 것입니다. 지역·인구·접근성은 619건에 등록된
+                    횡성군 값이고, <strong>아래 배수는 전부 실측</strong>입니다.
                   </p>
                 )}
                 <p className="num">

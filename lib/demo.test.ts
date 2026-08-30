@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import {
   DEMO_ENTRY,
   DEMO_ENTRY_ID,
-  DEMO_FESTIVAL_ID,
+  DEMO_REGION_FESTIVAL_ID,
   DEMO_VENUE_ID,
   demoVenue,
 } from "@/lib/demo";
@@ -33,16 +33,22 @@ const 입력 = {
   accessibility: Number(DEMO_ENTRY.accessibility),
 };
 
-test("시연 조건은 619건에 있는 그 축제의 등록값 그대로다", () => {
-  const f = FESTIVALS.find((x) => x.id === DEMO_FESTIVAL_ID);
-  assert.ok(f, `619건에 ${DEMO_FESTIVAL_ID} 가 없다 — 시연 사례가 근거를 잃었다`);
+test("시연 조건의 지역값은 619건에서 온다 — 지어낸 값이 아니다", () => {
+  const f = FESTIVALS.find((x) => x.id === DEMO_REGION_FESTIVAL_ID);
+  assert.ok(
+    f,
+    `619건에 ${DEMO_REGION_FESTIVAL_ID} 가 없다 — 시연 사례가 근거를 잃었다`,
+  );
 
+  // 지역·인구·접근성은 그 지역의 실측이다
   assert.equal(입력.sido, f!.sido);
   assert.equal(입력.sigungu, f!.sigungu);
-  assert.equal(입력.themeCode, f!.themeCode);
   assert.equal(입력.populationManMyeong, f!.populationManMyeong);
   assert.equal(입력.accessibility, f!.accessibility);
+  // 시기가 같아야 감당 범위의 기준이 잡힌다
   assert.equal(입력.month, Number(f!.eventStartDate.slice(4, 6)));
+  // 테마는 기획안이 고르는 값이다. **달라야** 자기 자신을 안 집는다
+  assert.notEqual(입력.themeCode, f!.themeCode, "조건이 그 축제와 똑같아졌다");
 });
 
 test("시연 id 는 숫자가 아니다 — 실제 이력 id 와 겹치지 않는다", () => {
@@ -61,12 +67,12 @@ test("시연 진단은 심각 등급과 감당 범위를 낸다", () => {
   assert.equal(g.level, "심각", "시연에서 보여 주려던 경보 등급이 아니다");
 
   // 감당 범위는 같은 시군구·같은 달의 실측을 못 찾으면 기준 없이 나온다.
-  // 시연에서는 기준까지 있는 화면을 보여 주려던 것이었다.
+  // 시연에서는 기준까지 있는 화면을 보여 주려던 것이었다. 기준은 같은 군
+  // 같은 달의 **다른** 축제여야 한다 — 그게 lib/capacity.ts 가 말하는
+  // "같은 자리의 실측"의 원래 뜻이다.
   //
-  // **주의** — 아래 두 단언은 계약이 아니라 알림이다. 시연 조건이 619건에
-  // 있는 축제의 등록값 그대로라 쌍둥이 1번이 그 축제 자신이고, 기준도
-  // 자기 자신이다. `findSimilar` 에 자기 제외를 넣으면 여기가 깨진다 —
-  // 그때 고칠 것은 이 테스트가 아니라 **시연 사례**다.
+  // **주의** — 아래 단언들은 계약이 아니라 알림이다. 619건이 갱신되거나
+  // 가중치가 바뀌어 깨지면, 고칠 것은 이 테스트가 아니라 **시연 사례**다.
   const 기준 = localBaseline(
     { sido: 입력.sido, sigungu: 입력.sigungu, month: 입력.month },
     r.matched,
@@ -79,23 +85,30 @@ test("시연 진단은 심각 등급과 감당 범위를 낸다", () => {
     기준!.surge,
   );
   assert.ok(범위, "감당 범위가 안 뜬다");
-  assert.ok(범위!.baseSurge !== null, "작년 기준 없이 나왔다");
+  assert.ok(범위!.baseSurge !== null, "기준 없이 나왔다");
+  assert.equal(
+    기준!.id,
+    DEMO_REGION_FESTIVAL_ID,
+    "기준이 같은 군·같은 달의 그 축제가 아니다",
+  );
+  // 상한이 1 에 붙으면 화면이 "최대 1.00배까지"라고 말해 아무 뜻이 없다
+  assert.ok(범위!.hi! > 1.5, `상한 ${범위!.hi} 로는 시연이 아무 말도 못 한다`);
 });
 
-test("시연이 자기 자신을 쌍둥이로 집는다는 사실을 테스트가 알고 있다", () => {
-  // 감추지 않고 못 박는다. 조건이 619건 등록값 그대로라 거리 0 이 나온다.
-  // 화면 배너가 이 사실을 적어야 하고(app/page.tsx), 이 단언이 깨지면
-  // 배너 문구도 같이 고쳐야 한다.
+test("시연이 자기 자신을 쌍둥이로 집지 않는다", () => {
+  // 이 파일에서 제일 중요한 단언이다.
+  //
+  // 앞선 시연 사례는 619건에 있는 축제의 등록값 그대로여서 `findSimilar` 가
+  // 그 축제 자신을 거리 0.00 으로 집었다. 같은 화면의 자기검증 블록은
+  // "맞힐 때 그 축제 자신은 뺐습니다"라고 적혀 있는데 바로 위에서는 안 뺀
+  // 셈이었다 — `lib/eval.ts` 머리말이 금지한 바로 그것이다.
   const r = findSimilar(입력);
-  assert.equal(
-    r.matched[0].festival.id,
-    DEMO_FESTIVAL_ID,
-    "시연 쌍둥이 1번이 더는 자기 자신이 아니다 — 배너 문구를 고칠 것",
-  );
-  assert.ok(
-    r.matched[0].distance < 1e-9,
-    `자기 자신인데 거리가 ${r.matched[0].distance} 다`,
-  );
+  for (const m of r.matched) {
+    assert.ok(
+      m.distance > 0.01,
+      `${m.festival.name} 이 거리 ${m.distance.toFixed(4)} 로 사실상 자기 자신이다`,
+    );
+  }
 });
 
 test("시연 도면은 그대로 저장해도 통과하고 축척과 부지가 있다", () => {

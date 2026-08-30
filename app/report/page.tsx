@@ -187,8 +187,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         {/* 인쇄본이 손을 떠나면 이 표시가 유일한 구분이다. 종이에도 남긴다 */}
         {entry.id === DEMO_ENTRY_ID && (
           <p className="report-demo">
-            <strong>{DEMO_LABEL}</strong> · 고령 대가야축제 등록값으로 만든
-            견본입니다. 결재에 쓸 문서가 아닙니다.
+            <strong>{DEMO_LABEL}</strong> · 예시 기획안으로 만든 견본입니다.
+            결재에 쓸 문서가 아닙니다.
           </p>
         )}
         <p className="num">
