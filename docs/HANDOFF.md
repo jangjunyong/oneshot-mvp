@@ -13,7 +13,8 @@
 그래서 정확도가 아니라 **출처**가 값어치다.
 
 - 배포 https://oneshot-mvp.vercel.app · 저장소 https://github.com/jangjunyong/oneshot-mvp
-- 현재 `main` = `de293d0` (배포됨). 백업 브랜치 `backup/2026-08-30-야간작업`.
+- 마지막 **코드** 변경 = `de293d0` (배포됨). 그 뒤는 문서 커밋이다.
+  지금 값은 `git log --oneline -5`. 백업 브랜치 `backup/2026-08-30-야간작업`.
 - 검증: 유닛 **170** + 무JS e2e **8** (`npm test` · `npm run test:e2e`)
 
 ## 지금 겨누는 것
