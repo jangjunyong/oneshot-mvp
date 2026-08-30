@@ -27,8 +27,12 @@ export function hasTourKey(): boolean {
 }
 
 /**
- * 주소 첫 토큰(법정 시도명) → 619건 데이터의 축약 표기.
+ * 법정 시도명 → 619건 데이터의 축약 표기.
  * 2023년 특별자치도 개편 전후 표기를 모두 받는다.
+ *
+ * **여기가 이 표의 유일한 자리다.** TourAPI 주소 파싱과 기획서 추출(LLM)이
+ * 둘 다 이 표를 쓴다. 복제하면 언젠가 갈리고, 갈리면 한쪽 경로에서만
+ * `coordsOf` 가 null 이 되어 **지역 축이 조용히 빠진 진단**이 나간다.
  */
 const SIDO_SHORT: Record<string, string> = {
   서울특별시: "서울",
@@ -52,6 +56,15 @@ const SIDO_SHORT: Record<string, string> = {
   제주도: "제주",
   제주특별자치도: "제주",
 };
+
+/**
+ * 시도 한 값을 619건 표기로 옮긴다. 이미 축약형이거나 모르는 이름이면
+ * **그대로 돌려준다** — 지어내지 않는다. 사람이 확인 화면에서 고친다.
+ */
+export function shortSido(name: string | null): string | null {
+  if (name === null) return null;
+  return SIDO_SHORT[name.trim()] ?? name;
+}
 
 /**
  * TourAPI 주소(addr1)를 데이터의 시도·시군구 표기로 옮긴다.

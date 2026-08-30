@@ -20,18 +20,37 @@ import {
   type Extraction,
 } from "@/lib/types";
 import { populationOf } from "@/lib/festivals";
+import { shortSido } from "@/lib/tourapi";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 /**
- * 무료 모델. 크레딧을 넣지 않으면 청구 자체가 불가능하다.
+ * 기본 모델.
  *
- * 무료 + structured outputs 를 둘 다 만족하는 5개 중 한국어에 가장 낫다.
- * 대안 — nvidia/nemotron-3-super-120b-a12b:free
- * 품질이 모자라면 OPENROUTER_MODEL 로 갈아끼운다
- * (google/gemini-3.7-flash 약 3원/건 · anthropic/claude-sonnet-5 약 16원/건).
+ * 무료 `z-ai/glm-5.2:free` 를 쓰다가 2026-08-31 유료로 바꿨다. 무료 모델이
+ * 계속 429 를 뱉었고, 1차 심사는 **심사위원이 직접 이 버튼을 누르는**
+ * 기능심사다. 첫 관문이 실패하면 "구동 안정성"이 그 자리에서 깎인다.
+ *
+ * 후보를 실제로 돌려서 골랐다(같은 김천 기획서, 2026-08-31 실측).
+ *
+ *   google/gemini-2.5-flash-lite   1.0초  5축 정확      약 1.1원/건  <- 채택
+ *   upstage/solar-pro4            15.0초  5축 정확      약 0.3원/건
+ *   openai/gpt-oss-120b           16.2초  대부분 못 뽑음
+ *   openai/gpt-5-nano                 —   우리 스키마를 거절(400)
+ *
+ * 값보다 **1초**가 컸다. 심사위원이 기다리지 않는다.
+ * 비용 상한은 셋으로 잠근다 — 입력 길이(MAX_PLAN_TEXT) · 응답 길이
+ * (MAX_OUTPUT_TOKENS) · 하루 호출 수(DAILY_EXTRACT_LIMIT).
+ * 그 위에 오픈라우터 대시보드의 **키별 지출 상한**을 걸어 둘 것(코드 밖).
  */
-const DEFAULT_MODEL = "z-ai/glm-5.2:free";
+const DEFAULT_MODEL = "google/gemini-2.5-flash-lite";
+
+/**
+ * 응답 길이 상한. 우리가 받는 것은 5축 + 근거 문장 몇 줄짜리 JSON 하나다.
+ * 없으면 모델이 길게 뱉는 만큼 그대로 돈이 된다. 스키마가 이미 모양을
+ * 잡지만, 값이 아니라 **한도**로도 잠가 둔다.
+ */
+const MAX_OUTPUT_TOKENS = 700;
 
 const KOREAN_NAME: Record<ExtractedKey, string> = {
   sido: "시도",
@@ -133,6 +152,9 @@ const SAMPLE: ModelOutput = {
   },
 };
 
+/** 시도 표기 정규화. 정의는 lib/tourapi.ts 에 하나뿐이고 여기서 다시 내보낸다 */
+export { shortSido };
+
 /** 키가 있으면 진짜로 부르고, 없으면 샘플로 떨어진다 */
 export function hasModelKey(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
@@ -143,16 +165,27 @@ export function modelName(): string {
 }
 
 function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
+  // 시도를 619건 표기로 먼저 옮긴다.
+  //
+  // 스키마에 "예: 경북, 전남" 이라고 적어 뒀는데도 모델은 법정 이름을 준다
+  // (2026-08-31 실측: gemini-2.5-flash-lite 가 "경상북도"). 안 옮기면
+  // populationOf 도 coordsOf 도 못 찾아서 **지역 축이 통째로 빠진 채**
+  // 조용히 진단이 나간다. 무료 모델이 계속 429 라 이 길을 아무도 안 지나가
+  // 여태 안 드러났다.
+  const normalized: ModelOutput = { ...out, sido: shortSido(out.sido) };
+
   const missing = (Object.keys(KOREAN_NAME) as ExtractedKey[])
-    .filter((k) => out[k] === null || out[k] === undefined)
+    .filter((k) => normalized[k] === null || normalized[k] === undefined)
     .map((k) => KOREAN_NAME[k]);
 
   // 인구는 지역이 정해져야 찾을 수 있다. 지역이 비면 인구도 빈다.
   const population =
-    out.sido && out.sigungu ? populationOf(out.sido, out.sigungu) : null;
+    normalized.sido && normalized.sigungu
+      ? populationOf(normalized.sido, normalized.sigungu)
+      : null;
   if (population === null) missing.push("지역 인구");
 
-  return { ...out, populationManMyeong: population, missing, source };
+  return { ...normalized, populationManMyeong: population, missing, source };
 }
 
 /**
@@ -219,6 +252,10 @@ export async function extractPlan(planText: string): Promise<Extraction> {
         type: "json_schema",
         json_schema: { name: "festival_plan", strict: true, schema: SCHEMA },
       },
+      max_tokens: MAX_OUTPUT_TOKENS,
+      // 항목을 옮겨 적는 일이라 창의성이 필요 없다. 낮을수록 같은 기획서에
+      // 같은 답이 나오고, 그래야 시연을 두 번 돌려도 화면이 안 바뀐다
+      temperature: 0,
     }),
   });
 

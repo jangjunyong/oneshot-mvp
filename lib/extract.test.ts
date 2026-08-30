@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { extractPlan, extractFailureMessage, hasModelKey } from "@/lib/extract";
+import { extractPlan, extractFailureMessage, hasModelKey, shortSido } from "@/lib/extract";
 import { populationOf } from "@/lib/festivals";
 import { findSimilar } from "@/lib/match";
 import { ACCESSIBILITY_LABEL, MAX_PLAN_TEXT, THEME_NAME } from "@/lib/types";
@@ -64,6 +64,24 @@ test("인구는 모델이 아니라 619건 데이터에서 온다", async () => 
     populationOf(초안.sido!, 초안.sigungu!),
     "인구는 데이터 조회값과 같아야 한다 — 모델이 지어내면 안 된다",
   );
+});
+
+test("모델이 법정 시도명을 주면 619건 표기로 옮긴다", () => {
+  // 실측(2026-08-31): gemini-2.5-flash-lite 가 김천 기획서에서 시도를
+  // **"경상북도"** 로 돌려줬다. 619건은 "경북"을 쓴다. 안 옮기면 coordsOf 가
+  // null 이 되어 **지역 축이 통째로 빠진 채** 조용히 진단이 나간다.
+  //
+  // 무료 모델이 계속 429 라 이 길을 아무도 안 지나가서 여태 안 드러났다.
+  assert.equal(shortSido("경상북도"), "경북");
+  assert.equal(shortSido("강원특별자치도"), "강원");
+  assert.equal(shortSido("전북특별자치도"), "전북");
+  assert.equal(shortSido("서울특별시"), "서울");
+  // 이미 축약형이면 그대로 둔다
+  assert.equal(shortSido("경북"), "경북");
+  assert.equal(shortSido("서울"), "서울");
+  // 모르는 것은 지어내지 않고 그대로 넘긴다 — 사람이 확인 화면에서 고친다
+  assert.equal(shortSido("없는도"), "없는도");
+  assert.equal(shortSido(null), null);
 });
 
 test("모르는 지역은 인구를 지어내지 않고 null 을 돌려준다", () => {
