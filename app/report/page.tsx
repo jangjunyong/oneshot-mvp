@@ -440,7 +440,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
               </p>
               <p className="num">
                 같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다. 품목별 개수는
-                내지 않습니다. 작년 대장의 수량에 이 구간을 곱하는 것은 담당 부서의
+                내지 않습니다. 그해 대장의 수량에 이 배수를 곱하는 것은 담당 부서의
                 판단입니다.
               </p>
             </>

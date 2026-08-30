@@ -392,8 +392,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <li>
             <b>등급과 감당 범위를 냅니다</b>
             <span>
-              이를테면 &ldquo;심각, 작년 물량의 1.0~1.4배 구간&rdquo;. 품목별
-              개수는 내지 않습니다
+              이를테면 &ldquo;심각, 기준 축제가 감당한 수준의 최대 1.4배까지&rdquo;.
+              품목별 개수는 내지 않습니다
             </span>
           </li>
         </ol>
@@ -791,7 +791,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                           <p className="note">
                             같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다.
                             이 축제가 아니라면 기준이 아닙니다. 품목별 개수는 내지
-                            않습니다. 작년 대장의 수량에 이 구간을 곱하는 것은
+                            않습니다. 그해 대장의 수량에 이 배수를 곱하는 것은
                             담당자가 할 일입니다.
                           </p>
                         </>
