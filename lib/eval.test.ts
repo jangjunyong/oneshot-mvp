@@ -10,8 +10,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { leaveOneOut, LOO_PUBLISHED, WITHIN_BAND } from "@/lib/eval";
+import { WEIGHT } from "@/lib/match";
 import { FESTIVALS } from "@/lib/festivals";
-import { GRADE_CUT } from "@/lib/types";
+import { DISTANCE_THRESHOLD, GRADE_CUT } from "@/lib/types";
 
 test("화면에 나가는 검증 숫자는 619건에서 다시 나온다", () => {
   const r = leaveOneOut();
@@ -65,6 +66,43 @@ test("절대오차는 배수 단위이고, 밴드 비율은 그 밴드 안에 �
   assert.ok(r.medianAbsErr >= 0 && r.medianAbsErr < 1, `중앙 절대오차 ${r.medianAbsErr}`);
   assert.ok(r.withinRatio > 0 && r.withinRatio <= 1);
   assert.ok(WITHIN_BAND > 0, "밴드 폭이 화면에 그대로 나가므로 상수여야 한다");
+});
+
+test("테마 가중치 0.15 는 데이터가 고른 값이다 — 되돌리면 나빠진다", () => {
+  // 사용자 지적("테마가 달라도 통과하는 건 문제")에서 시작해 감으로 올리지 않고
+  // leave-one-out 으로 골랐다. 이 테스트가 그 근거를 코드에 남긴다.
+  const 지금 = leaveOneOut();
+
+  // 옛 가중치(테마 0.10)
+  const 옛 = leaveOneOut({
+    accessibility: 0.3, population: 0.3, region: 0.2, month: 0.1, theme: 0.1,
+  });
+  assert.ok(
+    지금.lift > 옛.lift,
+    `테마 0.15 리프트 ${지금.lift.toFixed(2)} 가 0.10 의 ${옛.lift.toFixed(2)} 보다 낫지 않다`,
+  );
+  assert.ok(지금.precision > 옛.precision, "정밀도가 안 나아졌다");
+
+  // 테마를 임계값보다 크게 주면 "테마 다름"만으로 탈락한다 = 사실상 필수화.
+  // 그러면 진짜 닮은 축제까지 버려 재현율이 떨어진다 — 그래서 안 한다.
+  const 필수 = leaveOneOut({
+    accessibility: 0.25, population: 0.25, region: 0.15, month: 0.05, theme: 0.3,
+  });
+  assert.ok(
+    지금.recall > 필수.recall,
+    `테마 필수화가 재현율에서 더 낫다(${필수.recall.toFixed(3)}) — 설계를 다시 볼 것`,
+  );
+  assert.ok(지금.lift > 필수.lift, "테마 필수화가 리프트에서 더 낫다 — 설계를 다시 볼 것");
+});
+
+test("가중치 합은 1 이다 — 임계값의 의미가 여기 묶여 있다", () => {
+  const 합 = Object.values(WEIGHT).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(합 - 1) < 1e-9, `가중치 합 ${합}`);
+  // 테마 단독으로는 탈락시키지 못해야 한다. 넘으면 그건 필수 조건이지 가중치가 아니다
+  assert.ok(
+    WEIGHT.theme < DISTANCE_THRESHOLD,
+    `테마 가중치 ${WEIGHT.theme} 가 임계값 ${DISTANCE_THRESHOLD} 를 넘어 사실상 필수 조건이 됐다`,
+  );
 });
 
 test("순수 — 같은 데이터에 항상 같은 결과", () => {

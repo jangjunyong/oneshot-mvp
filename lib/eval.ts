@@ -12,7 +12,7 @@
 // 방문객 수 예측이 아니다. 재는 것은 "평소 대비 배수"라는 같은 축 위의
 // 맞음/틀림뿐이다 (불문율 1번).
 
-import { findSimilar } from "@/lib/match";
+import { findSimilar, WEIGHT, type AxisWeight } from "@/lib/match";
 import { FESTIVALS } from "@/lib/festivals";
 import { GRADE_CUT, type Festival } from "@/lib/types";
 
@@ -53,7 +53,7 @@ function median(values: number[]): number {
 }
 
 /** 그 축제 자신을 뺀 쌍둥이들의 배수 중앙값. 못 찾으면 null */
-function predictSurge(f: Festival): number | null {
+function predictSurge(f: Festival, weights: AxisWeight): number | null {
   // 자기 자신이 1위로 뽑히므로 한 칸 더 받아 와서 제외한다
   const r = findSimilar(
     {
@@ -65,6 +65,7 @@ function predictSurge(f: Festival): number | null {
       accessibility: f.accessibility,
     },
     TWIN_LIMIT + 3,
+    weights,
   );
   const 남 = r.matched
     .filter((m) => m.festival.id !== f.id)
@@ -79,7 +80,7 @@ function predictSurge(f: Festival): number | null {
  * 런타임에 부르지 않는다(619 × findSimilar 는 화면에 얹을 비용이 아니다).
  * 화면은 LOO_PUBLISHED 상수를 쓰고, 테스트가 이 함수로 그 상수를 다시 잰다.
  */
-export function leaveOneOut(): LooReport {
+export function leaveOneOut(weights: AxisWeight = WEIGHT): LooReport {
   let tp = 0;
   let fp = 0;
   let fn = 0;
@@ -88,7 +89,7 @@ export function leaveOneOut(): LooReport {
 
   for (const f of FESTIVALS) {
     const 실제위험 = 위험한가(f.actualVisitSurge);
-    const 예측 = predictSurge(f);
+    const 예측 = predictSurge(f, weights);
 
     if (예측 === null) {
       unjudged += 1;
@@ -127,16 +128,17 @@ export function leaveOneOut(): LooReport {
  * 화면·진단서에 나가는 값. **`leaveOneOut()` 을 돌려 나온 그대로**이고,
  * eval.test.ts 가 매번 다시 재서 어긋나면 실패한다.
  *
- * 2026-08-30 측정. 임계값 0.27(DISTANCE_THRESHOLD) 기준.
+ * 2026-08-30 측정. 임계값 0.27(DISTANCE_THRESHOLD) · 테마 가중치 0.15 재보정 후.
+ * (재보정 전에는 정밀도 56.8% · 재현율 54.1% · 리프트 2.41 · 중앙오차 0.130 이었다)
  */
 export const LOO_PUBLISHED: LooReport = {
   n: 619,
   baseRate: 0.2358642972536349,
-  precision: 0.5683453237410072,
-  recall: 0.541095890410959,
-  lift: 2.4096284616142705,
-  medianAbsErr: 0.1299999999999999,
-  withinRatio: 0.778675282714055,
+  precision: 0.6015037593984962,
+  recall: 0.547945205479452,
+  lift: 2.550211144299104,
+  medianAbsErr: 0.1200000000000001,
+  withinRatio: 0.7883683360258481,
   unjudged: 0,
 };
 
