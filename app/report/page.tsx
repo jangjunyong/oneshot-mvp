@@ -460,6 +460,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         <p className="num">
           재현율이 {pct(LOO_PUBLISHED.recall)}이니 절반 가까이는 놓칩니다.
           경보이지 보증이 아닙니다.
+          {/* 종이는 자리가 비싸다. 화면에는 같은 뜻의 긴 문장이 있다 */}{" "}
+          가중치와 임계값도 이 619건으로 골랐습니다(별도 시험 표본 없음).
         </p>
       </section>
 

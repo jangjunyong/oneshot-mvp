@@ -406,7 +406,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
           정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
           {pct(LOO_PUBLISHED.recall)}. 절반 가까이는 놓칩니다. 경보이지 보증이
-          아닙니다.
+          아닙니다. 가중치와 임계값도 이 619건으로 골랐기 때문에 따로 떼어 둔 시험 표본이 없고, 그만큼 후하게 나온 값입니다.
         </p>
 
         <div className="dim">
@@ -1004,7 +1004,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <p className="note">
                       맞힐 때 그 축제 자신은 뺐습니다. 안 그러면 정답을 보고 답을
                       쓰는 셈입니다. 재현율이 {pct(LOO_PUBLISHED.recall)}이니
-                      절반 가까이는 놓칩니다. 경보이지 보증이 아닙니다.
+                      절반 가까이는 놓칩니다. 경보이지 보증이 아닙니다.{" "}
+                      가중치와 임계값도 이 619건으로 골랐기 때문에 따로 떼어 둔 시험 표본이 없고, 그만큼 후하게 나온 값입니다.
                     </p>
                   </details>
                 )}
