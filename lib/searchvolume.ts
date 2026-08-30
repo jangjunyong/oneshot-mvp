@@ -145,23 +145,35 @@ export function elderlyShare(byAge: Record<string, number>): number | null {
 }
 
 /**
- * 네이버 **클라우드 플랫폼**의 API Gateway. 개발자센터(openapi.naver.com)가 아니다.
+ * 네이버 **개발자센터**의 데이터랩 문.
  *
- * 2026-08-30 사용자 확인 — 키를 발급하는 곳은 네이버 클라우드 플랫폼이고
- * 검색어트렌드는 거기 Search Trend 상품이다. 처음엔 개발자센터 주소로 짜 뒀다가
- * 여기로 옮겼다. 본문 형식(startDate·endDate·timeUnit·keywordGroups·ages)은 같고
- * **문과 인증 헤더만 다르다.**
+ * ── 왜 여기인가, 그리고 왜 한 번 옮겼다가 돌아왔나 (2026-08-31) ──
+ *
+ * 사용자가 "키 발급처는 네이버 클라우드 플랫폼"이라고 해서 NCP 의
+ * `naveropenapi.apigw.ntruss.com/datalab/v1/search` 로 옮겼다가 되돌렸다.
+ * 콘솔에 직접 들어가 확인한 결과 **그 상품을 신청할 수가 없다**:
+ *
+ *   - AI·NAVER API > Application 등록에 Search Trend 가 없다 (CLOVA 둘뿐)
+ *   - 플랫폼 Classic 은 잠겨 있다 ("선택하신 리전에서는 VPC만 제공하고 있습니다")
+ *   - 콘솔 검색에 Search Trend 가 안 잡히고, 상품 소개 페이지는 404 다
+ *   - NCP Search Trend 는 2026-07-23 종료됐다
+ *
+ * 두 문 다 키 없이 두드리면 401 이라 **살아 있는지로는 못 가른다.** 가르는
+ * 것은 "어느 문 열쇠를 받을 수 있나"이고, 그건 개발자센터뿐이다.
  */
-export const ENDPOINT = "https://naveropenapi.apigw.ntruss.com/datalab/v1/search";
+export const ENDPOINT = "https://openapi.naver.com/v1/datalab/search";
 
 /**
  * 인증 헤더. 이름을 틀리면 401 만 돌아오고 이유를 안 알려준다 —
  * 그래서 테스트가 이름을 못 박는다.
+ *
+ * NCP 문으로 착각하면 `X-NCP-APIGW-API-KEY-ID` 를 쓰게 되는데, 그러면
+ * 개발자센터는 "Not Exist Client ID" 만 돌려주고 왜인지는 말해 주지 않는다.
  */
 export function authHeaders(): Record<string, string> {
   return {
-    "X-NCP-APIGW-API-KEY-ID": process.env.NAVER_CLIENT_ID ?? "",
-    "X-NCP-APIGW-API-KEY": process.env.NAVER_CLIENT_SECRET ?? "",
+    "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID ?? "",
+    "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET ?? "",
     "Content-Type": "application/json",
   };
 }
