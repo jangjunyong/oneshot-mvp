@@ -57,6 +57,17 @@ export default async function VenuePage({
     redirect(`/venue?id=${id}&saved=1`);
   }
 
+  /**
+   * 위성 배경을 뺐다(2026-08-30 — 고를 일이 없는 토글이 자리만 차지했다).
+   * 그 전에 저장된 도면이 style:"satellite" 로 들어올 수 있고, 위성은 z19 까지
+   * 열려 있어 브이월드 백지도(z18 상한)에서는 **빈 캔버스**가 된다.
+   * 그래서 불러오는 자리에서 조용히 데려온다.
+   */
+  const 도면정규화 = (v: Venue): Venue =>
+    v.map && (v.map.style ?? "plan") !== "plan"
+      ? { ...v, map: { ...v.map, style: "plan", zoom: Math.min(v.map.zoom, 18) } }
+      : v;
+
   // 못 불러와도 빈 도면으로 화면은 살아 있어야 한다.
   let venue = emptyVenue(900, 620);
   let entryId = entryParam;
@@ -64,7 +75,7 @@ export default async function VenuePage({
     try {
       const row = await getVenue(venueId);
       if (row) {
-        venue = row.venue;
+        venue = 도면정규화(row.venue);
         entryId = row.entryId ?? entryParam;
       }
     } catch {
@@ -75,7 +86,7 @@ export default async function VenuePage({
     // 매번 빈 캔버스가 뜨면 담당자는 자기가 그린 배치가 사라진 줄 안다.
     try {
       const row = await latestVenueForEntry(entryParam);
-      if (row) venue = row.venue;
+      if (row) venue = 도면정규화(row.venue);
     } catch {
       // 빈 도면으로 진행
     }

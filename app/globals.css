@@ -700,3 +700,38 @@ ul.scan-findings strong { background: var(--severe); }
   max-width: 44rem;
 }
 .basis strong { color: var(--ink); }
+
+/* ── 또래 분포 띠 ──
+   지도 아래 왼쪽 열의 빈 자리. 차트 라이브러리 없이 눈금과 선 몇 개다.
+   "상위 5%"라는 숫자를 그림으로 되풀이해 인구 편향을 눈으로 납득시킨다 */
+.twin-left { flex: 0 0 auto; width: min(34rem, 100%); }
+.twin-left .twin-map { width: 100%; }
+.peer-strip { margin: var(--s2) 0 0; }
+.peer-strip svg { display: block; width: 100%; height: auto; }
+.peer-strip figcaption {
+  margin-top: var(--s1);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--concrete);
+}
+.peer-strip figcaption strong { color: var(--ink); }
+/* 또래 한 곳 = 눈금 하나. 겹치면 겹친 채로 둔다 — 겹친 곳이 곧 밀집이다 */
+.peer-tick { stroke: var(--concrete); stroke-width: 1; opacity: 0.4; }
+.peer-axis { stroke: var(--ink); stroke-width: 0.8; }
+/* 등급 컷 — 어디를 넘으면 경보인지가 그림에 있어야 한다 */
+.peer-cut { stroke: var(--line-strong); stroke-width: 0.8; stroke-dasharray: 3 3; }
+.peer-cutlabel,
+.peer-tip {
+  fill: var(--concrete);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+/* 이 기획안 — 화면에서 유일하게 굵고 붉다 */
+.peer-me line { stroke: var(--severe); stroke-width: 2; }
+.peer-me circle { fill: var(--severe); }
+.peer-melabel {
+  fill: var(--severe);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+}

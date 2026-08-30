@@ -39,7 +39,6 @@ import {
   type VenueItem,
 } from "@/lib/venue";
 import {
-  clampZoom,
   metersPerPixel,
   panCenter,
   tileAttribution,
@@ -48,6 +47,7 @@ import {
   type Tile,
 } from "@/lib/tilemap";
 import { scanVenue } from "@/lib/scan";
+import { presetLayout, PRESET_SITE_M } from "@/lib/preset";
 import { GRADE_CUT } from "@/lib/types";
 
 
@@ -169,12 +169,18 @@ export default function Editor({
     // 도시 한 구획이다. 18 은 1px≈0.49m, 캔버스 440m 로 축제장 규모이고
     // 브이월드 백지도의 상한이기도 하다 (tilemap.ZOOM_LIMITS)
     const zoom = 18;
+    const mPerPx = metersPerPixel(lat, zoom);
     setVenue((v) => ({
       ...v,
       map: { lat, lng, zoom, style: "plan", view: 1 },
-      mPerPx: metersPerPixel(lat, zoom),
+      mPerPx,
+      // 빈 캔버스로 시작하면 담당자는 축척·부지·부스를 다 세운 뒤에야 쏠림
+      // 스캔을 한 번 본다. 그 사이에 아무 피드백이 없다. 그래서 예시를 같이
+      // 깐다 — 지우거나 옮기면서 시작하는 편이 훨씬 쉽다.
+      // 이미 그린 게 있으면 건드리지 않는다.
+      items: v.items.length === 0 ? presetLayout(v, mPerPx) : v.items,
     }));
-    setMode("pan");
+    setMode("select");
   }
 
   /** 배경이 실제로 주는 줌 범위. 배경마다 다르다 (tilemap.ZOOM_LIMITS) */
@@ -223,19 +229,6 @@ export default function Editor({
     applyView(fit.view, fit.factor, fit.dx, fit.dy);
     setMode("select");
     set알림(null);
-  }
-
-  /** 배경을 바꾼다. 새 배경에 없는 줌이면 가장 가까운 줌으로 데려온다 —
-   *  안 그러면 위성 z19 에서 도면으로 바꾸는 순간 화면이 빈 캔버스가 된다 */
-  function setMapStyle(style: "plan" | "satellite") {
-    const m = venue.map;
-    if (!m) return;
-    const z = clampZoom(m.zoom, style, vworldKey !== null);
-    if (z === m.zoom) {
-      setVenue((v) => (v.map ? { ...v, map: { ...v.map, style } } : v));
-      return;
-    }
-    goZoom(z, style);
   }
 
   function changeZoom(dir: 1 | -1) {
@@ -785,7 +778,9 @@ export default function Editor({
           <p>
             <button type="button" onClick={layMap}>부지 지도 깔기</button>{" "}
             <span className="note">
-              {initialCenter ? "진단한 지역에서 시작합니다" : "서울에서 시작 — 끌어서 옮기세요"}
+              {initialCenter ? "진단한 지역" : "서울"}에서 시작하고,{" "}
+              {PRESET_SITE_M.w}×{PRESET_SITE_M.h}m <strong>예시 배치</strong>가 같이
+              깔립니다 — 지우거나 옮기면서 고치세요
             </span>
           </p>
         ) : (
@@ -816,25 +811,12 @@ export default function Editor({
                 줌 {venue.map?.zoom} / {줌범위.min}~{줌범위.max}
               </span>
             </p>
-            <p>
-              <button
-                type="button"
-                className={mapStyle === "plan" ? "active" : undefined}
-                onClick={() => setMapStyle("plan")}
-              >
-                도면 스타일
-              </button>{" "}
-              <button
-                type="button"
-                className={mapStyle === "satellite" ? "active" : undefined}
-                onClick={() => setMapStyle("satellite")}
-              >
-                위성 확인
-              </button>
-            </p>
+            {/* 위성 토글을 뺐다(2026-08-30 사용자 판단: "위성 지도의 필요성을
+                잘 못 느끼겠다"). 설계는 조용한 백지도 위에서 하고, 위성은
+                고를 일이 없는데 자리만 차지했다. tilemap 의 satellite 스타일은
+                남겨 둔다 — 지우면 줌 범위 표(ZOOM_LIMITS)의 실측 근거가 깨진다 */}
             <p className="note">
-              설계는 조용한 도면 위에서, 강·다리·지형 확인은 위성으로. 지도를
-              끌거나 줌해도 놓은 것들은 땅에 붙어 따라옵니다.
+              지도를 끌거나 줌해도 놓은 것들은 땅에 붙어 따라옵니다.
               {(venue.map?.zoom ?? 0) >= 줌범위.max && site && (
                 <>
                   {" "}확대가 여기서 막히면 <strong>부지에 맞춰 보기</strong>로 더

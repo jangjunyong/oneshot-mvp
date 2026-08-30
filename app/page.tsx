@@ -37,7 +37,8 @@ import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { scanSeason, type SeasonScan } from "@/lib/season";
-import { peerContext } from "@/lib/peer";
+import { peerContext, peerSurges } from "@/lib/peer";
+import { PeerStrip } from "@/app/peer-strip";
 import { TwinMap } from "@/app/twin-map";
 import { grade } from "@/lib/grade";
 import {
@@ -618,13 +619,29 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
           ) : (
             <>
-              <TwinMap
-                matched={고름.result.matched}
-                origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
-                entryId={고름.e.id}
-                selectedPin={핀?.festival.id ?? null}
-                scope={고름.result.searchedScope}
-              />
+              {/* 왼쪽 열 — 지도와 그 아래 또래 분포. 오른쪽 본문이 훨씬 길어
+                  지도 밑이 비어 있었다. 그 자리에 인구 편향을 그림으로 답한다 */}
+              <div className="twin-left">
+                <TwinMap
+                  matched={고름.result.matched}
+                  origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
+                  entryId={고름.e.id}
+                  selectedPin={핀?.festival.id ?? null}
+                  scope={고름.result.searchedScope}
+                />
+                {고름.g.medianSurge !== null &&
+                  (() => {
+                    const pop = Number(고름.e.population);
+                    const peer = peerContext(pop, 고름.g.medianSurge!);
+                    return peer ? (
+                      <PeerStrip
+                        peer={peer}
+                        surges={peerSurges(pop)}
+                        surge={고름.g.medianSurge!}
+                      />
+                    ) : null;
+                  })()}
+              </div>
 
               <div className="twin-detail">
                 <p className="num">

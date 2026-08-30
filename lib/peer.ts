@@ -67,6 +67,23 @@ const 구간찾기 = (pop: number) =>
   POPULATION_BUCKETS.find((b) => pop >= b.min && pop < b.max) ?? null;
 
 /**
+ * 그 인구 구간에 든 619건의 배수 전부(오름차순).
+ *
+ * 숫자 하나("상위 5%")보다 분포를 보는 편이 빠르다 — 또래가 어디 몰려 있고
+ * 우리가 어디 서 있는지가 한눈에 들어온다. 화면이 이걸 눈금으로 그린다.
+ */
+export function peerSurges(populationManMyeong: number): number[] {
+  if (!Number.isFinite(populationManMyeong) || populationManMyeong < 0) return [];
+  const bucket = 구간찾기(populationManMyeong);
+  if (bucket === null) return [];
+  return FESTIVALS.filter(
+    (f) => f.populationManMyeong >= bucket.min && f.populationManMyeong < bucket.max,
+  )
+    .map((f) => f.actualVisitSurge)
+    .sort((a, b) => a - b);
+}
+
+/**
  * 같은 인구 구간 축제들 사이에서 이 배수가 어디쯤인가.
  *
  * 배수를 바꾸지 않는다. 세기만 한다.
