@@ -54,6 +54,21 @@ function 발행시각(): string {
   });
 }
 
+/**
+ * 이 진단이 저장된 시각.
+ *
+ * 지금까지 종이에는 **인쇄한 순간**만 찍혔다. 그래서 시연용 견본을 인쇄해도
+ * 오늘 날짜가 박혀 방금 낸 진단처럼 보였다 — `lib/demo.ts` 가 저장 시각을
+ * 굳이 고정해 둔 이유가 바로 그것이었는데, 진단서는 그 값을 안 썼다.
+ */
+function 진단시각(iso: string): string {
+  return new Date(iso).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 export default async function ReportPage({ searchParams }: PageProps<"/report">) {
   const params = await searchParams;
   const entryId = typeof params.entry === "string" ? params.entry : null;
@@ -172,9 +187,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         {/* 인쇄본이 손을 떠나면 이 표시가 유일한 구분이다. 종이에도 남긴다 */}
         {entry.id === DEMO_ENTRY_ID && (
           <p className="report-demo">
-            <strong>{DEMO_LABEL}</strong> · 저장된 진단이 아니라 고령
-            대가야축제의 등록값으로 만든 견본입니다. 배수와 도면 치수는 실측이지만
-            결재에 쓸 문서는 아닙니다.
+            <strong>{DEMO_LABEL}</strong> · 고령 대가야축제 등록값으로 만든
+            견본입니다. 결재에 쓸 문서가 아닙니다.
           </p>
         )}
         <p className="num">
@@ -488,7 +502,12 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       </section>
 
       <footer className="report-foot">
-        <span>발행 {발행시각()}</span>
+        {/* 머리말이 잘려도 종이가 견본임을 말하게 한다 */}
+        {entry.id === DEMO_ENTRY_ID && (
+          <span className="report-foot-demo">{DEMO_LABEL} · 결재용 아님</span>
+        )}
+        <span>진단 {진단시각(entry.savedAt)}</span>
+        <span>인쇄 {발행시각()}</span>
         <span>출처 {DATA_SOURCE}</span>
         <span>같은 시기 경쟁: 한국관광공사 OpenAPI 실시간 조회 · 반경 {NEARBY_RADIUS_KM}km</span>
         <span>축제 위험 경보 · 전국 619개 축제 실측</span>

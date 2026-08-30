@@ -592,14 +592,27 @@ ul.scan-findings strong { background: var(--severe); }
 }
 .report-head .num { margin: 0; font-size: 9pt; color: var(--concrete); }
 /* 시연용 견본 표시. 인쇄본이 손을 떠나면 이 줄이 유일한 구분이라 종이에도 남는다 */
+/* 시연용 견본 표시.
+   8.5pt 회색 한 줄이었는데, 그건 흑백 복사 한 번이면 사라지는 표시다.
+   이 종이가 결재판에 잘못 올라가는 것을 막는 유일한 장치이므로 경보와 같은
+   무게로 그린다 — 굵은 테두리는 배경색과 달리 기본 인쇄 설정에서도 남는다 */
 .report-demo {
-  margin: 0.2rem 0 0;
-  padding: 0.2rem 0.45rem;
-  border-left: 3px solid var(--concrete);
+  margin: 0.3rem 0 0;
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid var(--ink);
+  border-left-width: 6px;
   font-size: 8.5pt;
-  color: var(--concrete);
+  font-weight: 500;
+  color: var(--ink);
 }
-.report-demo strong { color: var(--ink); }
+.report-demo strong { text-transform: uppercase; letter-spacing: 0.04em; }
+/* 머리말이 잘려도 꼬리말이 말한다 */
+.report-foot-demo {
+  font-weight: 700;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 0 0.3rem;
+}
 .report-verdict { margin-top: var(--s2); }
 .report-verdict .alert { margin: 0 0 0.3rem; padding: 0.35rem 0.6rem; }
 .report-verdict .headline { margin: 0; font-size: 13pt; }
