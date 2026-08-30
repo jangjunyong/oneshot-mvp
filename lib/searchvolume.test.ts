@@ -10,13 +10,39 @@ import assert from "node:assert/strict";
 
 import {
   AGE_LABEL,
+  authHeaders,
   buildTrendBody,
   elderlyShare,
+  ENDPOINT,
   leadRatio,
   type TrendPoint,
 } from "@/lib/searchvolume";
 
 const 점 = (period: string, ratio: number): TrendPoint => ({ period, ratio });
+
+test("문을 틀리지 않는다 — 네이버 클라우드 플랫폼의 Search Trend", () => {
+  // 키를 발급하는 곳이 개발자센터가 아니라 네이버 클라우드 플랫폼이다
+  // (2026-08-30 사용자 확인). 문이 다르면 인증 헤더 이름도 다르고, 틀리면
+  // 401 만 돌아오고 이유를 안 알려준다. 그래서 여기에 못 박는다.
+  assert.match(ENDPOINT, /^https:\/\/naveropenapi\.apigw\.ntruss\.com\//);
+  assert.doesNotMatch(ENDPOINT, /openapi\.naver\.com/, "옛 개발자센터 주소다");
+
+  const 원래 = {
+    id: process.env.NAVER_CLIENT_ID,
+    secret: process.env.NAVER_CLIENT_SECRET,
+  };
+  try {
+    process.env.NAVER_CLIENT_ID = "아이디";
+    process.env.NAVER_CLIENT_SECRET = "시크릿";
+    const h = authHeaders();
+    assert.equal(h["X-NCP-APIGW-API-KEY-ID"], "아이디");
+    assert.equal(h["X-NCP-APIGW-API-KEY"], "시크릿");
+    assert.equal(h["X-Naver-Client-Id"], undefined, "옛 헤더가 남아 있다");
+  } finally {
+    process.env.NAVER_CLIENT_ID = 원래.id;
+    process.env.NAVER_CLIENT_SECRET = 원래.secret;
+  }
+});
 
 test("요청 본문 — 일 단위이고 연령 필터를 그대로 싣는다", () => {
   const b = buildTrendBody("김천김밥축제", "2025-10-01", "2025-10-31", ["11"]);

@@ -16,7 +16,8 @@
 //     지역을 특정한다
 //
 // 두 가지가 남아 화면에는 안 붙인다.
-//   1. **키가 없다.** 네이버 개발자센터 앱 등록은 사용자만 할 수 있다
+//   1. **키가 없다.** 네이버 클라우드 플랫폼 콘솔에서 Search Trend 를 신청하는
+//      일은 계정 주인만 할 수 있다 (2026-08-30 확인 — 개발자센터가 아니다)
 //   2. **검증이 안 됐다.** 검색량 배수가 619건 실측 배수를 설명하는지 아직
 //      모른다. 상관도 안 재 보고 숫자를 올리면 불문율 4번을 어긴다
 //
@@ -143,7 +144,27 @@ export function elderlyShare(byAge: Record<string, number>): number | null {
   return (byAge[ELDERLY_CODE] ?? 0) / 합;
 }
 
-const ENDPOINT = "https://openapi.naver.com/v1/datalab/search";
+/**
+ * 네이버 **클라우드 플랫폼**의 API Gateway. 개발자센터(openapi.naver.com)가 아니다.
+ *
+ * 2026-08-30 사용자 확인 — 키를 발급하는 곳은 네이버 클라우드 플랫폼이고
+ * 검색어트렌드는 거기 Search Trend 상품이다. 처음엔 개발자센터 주소로 짜 뒀다가
+ * 여기로 옮겼다. 본문 형식(startDate·endDate·timeUnit·keywordGroups·ages)은 같고
+ * **문과 인증 헤더만 다르다.**
+ */
+export const ENDPOINT = "https://naveropenapi.apigw.ntruss.com/datalab/v1/search";
+
+/**
+ * 인증 헤더. 이름을 틀리면 401 만 돌아오고 이유를 안 알려준다 —
+ * 그래서 테스트가 이름을 못 박는다.
+ */
+export function authHeaders(): Record<string, string> {
+  return {
+    "X-NCP-APIGW-API-KEY-ID": process.env.NAVER_CLIENT_ID ?? "",
+    "X-NCP-APIGW-API-KEY": process.env.NAVER_CLIENT_SECRET ?? "",
+    "Content-Type": "application/json",
+  };
+}
 
 /**
  * 실제 조회. 키가 없으면 부르지 않는다 — 없는 기능을 광고하지 않는다.
@@ -154,11 +175,7 @@ export async function fetchTrend(body: TrendBody): Promise<TrendPoint[]> {
 
   const res = await fetch(ENDPOINT, {
     method: "POST",
-    headers: {
-      "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID!,
-      "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET!,
-      "Content-Type": "application/json",
-    },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`데이터랩 응답 ${res.status}`);

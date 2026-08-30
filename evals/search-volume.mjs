@@ -8,7 +8,9 @@
 // 연령 필터(11 = 60세 이상)로 테마별 고령층 비중을 잰다.
 //
 // ── 쓰는 법 ──
-//   1. developers.naver.com 에서 앱 등록 → 검색어트렌드 선택 → 키 발급
+//   1. 네이버 **클라우드 플랫폼** 콘솔에서 Services → AI·NAVER API →
+//      Search Trend 이용 신청 → Application 등록 → Client ID / Secret 발급
+//      (개발자센터 developers.naver.com 이 아니다 — 2026-08-30 확인)
 //   2. .env.local 에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET
 //   3. node --env-file=.env.local --experimental-strip-types --no-warnings \
 //        --import ./test-loader.mjs evals/search-volume.mjs [표본수]
