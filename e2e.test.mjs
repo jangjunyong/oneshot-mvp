@@ -91,6 +91,41 @@ async function 건수() {
   return Number(m[1]);
 }
 
+// 이 테스트는 저장소가 비어 있어야 뜻이 있다. 파일 맨 앞에 두는 이유다 —
+// 뒤 테스트들이 진단을 쌓고 나면 시연 세트는 더 이상 안 선다(그게 맞다).
+test("이력이 0건이면 시연용 예시 한 벌이 대신 선다", async () => {
+  const 홈 = await (await fetch(BASE + "/")).text();
+  assert.equal(await 건수(), 0, "이 테스트는 빈 저장소가 전제다");
+
+  // 텅 빈 화면이 아니라 결과 한 벌이 서 있어야 한다
+  assert.match(홈, /class="map"/, "예시의 지도가 없다");
+  assert.match(홈, /고령군/, "예시 진단이 안 보인다");
+  assert.match(홈, /경보/, "예시에 등급이 없다");
+
+  // 지어낸 데이터로 보이면 안 된다 (불문율 4번)
+  assert.match(홈, /시연용 예시/, "예시라는 표시가 없다");
+  // 그러면서 이력은 여전히 0건이라고 말해야 한다
+  assert.match(홈, /아직 진단한 기획안이 없습니다/, "0건이라고 말하지 않는다");
+
+  // 진단서 근거 3(도면 쏠림)은 도면을 따로 저장해야만 채워지던 칸이다.
+  // 시연 세트에는 도면이 붙어 있으므로 손작업 없이 채워져야 한다.
+  const 진단서 = await (await fetch(BASE + "/report?entry=demo")).text();
+  assert.match(진단서, /축제 위험 경보 진단서/, "예시 진단서가 안 나온다");
+  assert.match(진단서, /시연용 예시/, "진단서에 예시 표시가 없다");
+  assert.doesNotMatch(
+    진단서,
+    /연결된 도면이 아직 없습니다/,
+    "근거 3 이 비어 있다 — 도면이 안 붙었다",
+  );
+  // 값 사이에 React 가 <!-- --> 를 끼우므로 문구 쪽을 본다
+  assert.match(진단서, /인력을 늘리거나 나누세요/, "쏠림 스캔 결과가 없다");
+
+  // 도면 화면도 그 예시로 열려야 한다
+  const 도면 = await fetch(BASE + "/venue?entry=demo");
+  assert.equal(도면.status, 200);
+  assert.match(await 도면.text(), /시연용 예시/, "도면에 예시 표시가 없다");
+});
+
 test("핵심 흐름 — 조건을 저장하면 목록에 남고 경보 등급이 보인다", async () => {
   // 1. 이력이 비어 있으면 무엇을 하면 되는지 알려준다
   const 전건수 = await 건수();

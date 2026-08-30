@@ -13,6 +13,7 @@ import {
   type Draft,
   type Entry,
 } from "@/lib/store";
+import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
 import {
@@ -264,7 +265,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
   // 이력마다 한 번만 잰다. 지도(한 건)와 요약 행이 같은 결과를 봐야
   // 목록의 등급과 지도의 등급이 갈리지 않는다.
-  const 진단들 = entries.map((e) => {
+  const 진단한다 = (e: Entry) => {
     const result = findSimilar({
       sido: e.sido,
       sigungu: e.sigungu,
@@ -274,7 +275,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       accessibility: Number(e.accessibility),
     });
     return { e, result, g: grade(result) };
-  });
+  };
+  const 이력진단 = entries.map(진단한다);
+
+  // 이력이 0건이면 결과 화면이 통째로 빈다. 서버를 새로 띄운 직후가 늘
+  // 그렇다(메모리 저장소). 그 자리에 시연용 예시를 편다 — 이력 건수에는
+  // 넣지 않는다. 저장된 진단은 여전히 0건이고, 화면이 그렇게 말해야 한다.
+  const 시연중 = !조회실패 && entries.length === 0;
+  const 진단들 = 시연중 ? [진단한다(DEMO_ENTRY)] : 이력진단;
 
   // 지도는 페이지에 하나뿐이다 — 이력마다 썸네일을 깔면 어느 것도 못 읽는다.
   // 고른 게 없으면 가장 최근 진단을 편다(list 는 최신순).
@@ -596,7 +604,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       {!조회실패 && entries.length === 0 && (
         <p>
           아직 진단한 기획안이 없습니다. 위에 기획서를 붙여넣으면 닮은 과거
-          축제와 경보 등급이 여기에 쌓입니다.
+          축제와 경보 등급이 여기에 쌓입니다. 그때까지는 아래에{" "}
+          <strong>{DEMO_LABEL}</strong> 한 건을 펴 둡니다.
         </p>
       )}
       {/* 상한을 숨기면 "저장했는데 사라졌다"가 된다. 화면이 먼저 말한다 */}
@@ -649,6 +658,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               </div>
 
               <div className="twin-detail">
+                {/* 지어낸 데이터로 보이면 안 된다. 무엇이 예시이고 그 값이
+                    어디서 왔는지를 결과보다 먼저 적는다 (불문율 4번) */}
+                {고름.e.id === DEMO_ENTRY_ID && (
+                  <p className="alert" data-level="근거없음">
+                    {DEMO_LABEL}입니다. 저장된 진단이 없어 고령 대가야축제
+                    조건을 대신 펴 뒀습니다. 지역·시기·테마·인구·접근성은 619건에
+                    등록된 값 그대로이고, 아래 배수도 전부 실측입니다.
+                  </p>
+                )}
                 <p className="num">
                   {고름.e.sido} {고름.e.sigungu} · {고름.e.month}월 ·{" "}
                   {THEME_NAME[Number(고름.e.theme)] ?? 고름.e.theme} · 인구{" "}
@@ -985,8 +1003,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </section>
       )}
 
+      {/* 목록은 저장된 이력만이다 — 시연용 예시는 위 지도에만 편다.
+          여기 끼우면 "0건"이라고 말해 놓고 한 줄이 서서 화면이 거짓말한다 */}
       <ul>
-        {진단들.map(({ e, result, g }) => {
+        {이력진단.map(({ e, result, g }) => {
           const 대표 = result.matched[0];
           const 펴진것 = 고름?.e.id === e.id;
 

@@ -8,6 +8,12 @@
 // 배포본에는 DATABASE_URL 이 꽂혀 있으므로 Postgres 로 간다.
 
 import { neon } from "@neondatabase/serverless";
+import {
+  DEMO_ENTRY,
+  DEMO_ENTRY_ID,
+  DEMO_VENUE_ID,
+  demoVenue,
+} from "@/lib/demo";
 
 export interface Entry {
   id: string;
@@ -99,6 +105,9 @@ export async function list(): Promise<Entry[]> {
 
 /** 진단 한 건. 도면 화면이 그 지역의 위성지도에서 시작할 때 쓴다 */
 export async function getEntry(id: string): Promise<Entry | null> {
+  // 시연용 예시는 저장소가 아니라 코드에 있다 (lib/demo.ts). 진단서·도면
+  // 링크가 이력이 빈 상태에서도 열려야 하므로 여기서 먼저 답한다.
+  if (id === DEMO_ENTRY_ID) return DEMO_ENTRY;
   if (!/^\d+$/.test(id)) return null;
   if (!sql) return g.__oneshotEntries!.find((e) => e.id === id) ?? null;
   await ready();
@@ -200,6 +209,9 @@ export async function saveVenue(
 export async function latestVenueForEntry(
   entryId: string,
 ): Promise<{ id: string; venue: Venue } | null> {
+  // 시연용 진단에는 시연용 도면이 붙어 있다. 이것이 있어야 진단서의
+  // 근거 3(도면 쏠림)이 손작업 없이 채워진다.
+  if (entryId === DEMO_ENTRY_ID) return { id: DEMO_VENUE_ID, venue: demoVenue() };
   if (!/^\d+$/.test(entryId)) return null;
   if (!sql) {
     // 메모리 저장소는 최신이 앞이다 (saveVenue 가 unshift 한다)
@@ -219,6 +231,7 @@ export async function latestVenueForEntry(
 export async function getVenue(
   id: string,
 ): Promise<{ venue: Venue; entryId: string | null } | null> {
+  if (id === DEMO_VENUE_ID) return { venue: demoVenue(), entryId: DEMO_ENTRY_ID };
   // id 는 URL 에서 온다. 숫자가 아니면 질의에 넣지 않는다.
   if (!/^\d+$/.test(id)) return null;
   if (!sql) {

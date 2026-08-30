@@ -591,6 +591,15 @@ ul.scan-findings strong { background: var(--severe); }
   border-bottom: 2px solid var(--ink);
 }
 .report-head .num { margin: 0; font-size: 9pt; color: var(--concrete); }
+/* 시연용 견본 표시. 인쇄본이 손을 떠나면 이 줄이 유일한 구분이라 종이에도 남는다 */
+.report-demo {
+  margin: 0.2rem 0 0;
+  padding: 0.2rem 0.45rem;
+  border-left: 3px solid var(--concrete);
+  font-size: 8.5pt;
+  color: var(--concrete);
+}
+.report-demo strong { color: var(--ink); }
 .report-verdict { margin-top: var(--s2); }
 .report-verdict .alert { margin: 0 0 0.3rem; padding: 0.35rem 0.6rem; }
 .report-verdict .headline { margin: 0; font-size: 13pt; }

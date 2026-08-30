@@ -6,6 +6,7 @@ import {
   latestVenueForEntry,
   saveVenue,
 } from "@/lib/store";
+import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
@@ -160,8 +161,15 @@ export default async function VenuePage({
           저장됐습니다 — 이 주소를 다시 열면 이 도면이 그대로 나옵니다
         </p>
       )}
-      {entryId && (
-        <p className="note">진단 이력 #{entryId} 에 연결된 도면입니다</p>
+      {entryId === DEMO_ENTRY_ID ? (
+        <p className="note">
+          <strong>{DEMO_LABEL}</strong>의 도면입니다. 고령 대가야축제 지역
+          좌표에 예시 배치를 깔아 둔 것이고, 저장하면 새 도면으로 따로 남습니다.
+        </p>
+      ) : (
+        entryId && (
+          <p className="note">진단 이력 #{entryId} 에 연결된 도면입니다</p>
+        )
       )}
 
       <EditorShell

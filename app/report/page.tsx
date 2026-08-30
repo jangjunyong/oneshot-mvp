@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import { getEntry, latestVenueForEntry } from "@/lib/store";
+import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { grade } from "@/lib/grade";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
@@ -142,6 +143,14 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
 
       <header className="report-head">
         <h1>축제 위험 경보 진단서</h1>
+        {/* 인쇄본이 손을 떠나면 이 표시가 유일한 구분이다. 종이에도 남긴다 */}
+        {entry.id === DEMO_ENTRY_ID && (
+          <p className="report-demo">
+            <strong>{DEMO_LABEL}</strong> · 저장된 진단이 아니라 고령
+            대가야축제의 등록값으로 만든 견본입니다. 배수와 도면 치수는 실측이지만
+            결재에 쓸 문서는 아닙니다.
+          </p>
+        )}
         <p className="num">
           {entry.sido} {entry.sigungu} · {entry.month}월 ·{" "}
           {THEME_NAME[Number(entry.theme)] ?? entry.theme} · 인구 {entry.population}만
@@ -252,7 +261,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             ) : (
               <>
                 <p>
-                  쌍둥이 실측 배수({배수?.toFixed(2)}배)로 스캔한 결과, 다음
+                  {/* JSX 는 줄바꿈 앞의 공백을 지운다 — 안 붙이면 "다음3곳" 이 된다 */}
+                  쌍둥이 실측 배수({배수?.toFixed(2)}배)로 스캔한 결과, 다음{" "}
                   {scan.top.length}곳이 넘칩니다.
                 </p>
                 <ul className="report-list">
