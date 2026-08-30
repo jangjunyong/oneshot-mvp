@@ -20,13 +20,14 @@ import {
 
 const 점 = (period: string, ratio: number): TrendPoint => ({ period, ratio });
 
-test("문을 틀리지 않는다 — 개발자센터 데이터랩", () => {
-  // 두 문이 있고 둘 다 살아 있다. 키 없이 두드리면 양쪽 다 401 이라
-  // **응답으로는 못 가른다.** 가르는 것은 열쇠를 받을 수 있는 쪽이고,
-  // 네이버 클라우드 플랫폼의 Search Trend 는 2026-07-23 종료돼 신청이
-  // 불가능하다(콘솔에서 직접 확인). 그래서 개발자센터로 못 박는다.
-  assert.match(ENDPOINT, /^https:\/\/openapi\.naver\.com\/v1\/datalab\//);
-  assert.doesNotMatch(ENDPOINT, /ntruss\.com/, "종료된 NCP 문이다");
+test("문을 틀리지 않는다 — NAVER API HUB 검색어트렌드", () => {
+  // 문이 셋이고 셋 다 응답한다. 키 없이 두드리면 다 401 이라 **응답으로는
+  // 못 가른다.** 가르는 것은 열쇠를 받을 수 있는 쪽이고, 지금 받을 수 있는
+  // 것은 API HUB 뿐이다 (개발자센터는 2026-07-31 신규 신청 마감, 옛
+  // AI·NAVER API 는 실제 키로도 210 Permission Denied). 실측으로 정했다.
+  assert.match(ENDPOINT, /^https:\/\/naverapihub\.apigw\.ntruss\.com\/search-trend\//);
+  assert.doesNotMatch(ENDPOINT, /openapi\.naver\.com/, "신규 신청이 닫힌 문이다");
+  assert.doesNotMatch(ENDPOINT, /naveropenapi\./, "구독이 안 되는 문이다");
 
   const 원래 = {
     id: process.env.NAVER_CLIENT_ID,
@@ -36,9 +37,10 @@ test("문을 틀리지 않는다 — 개발자센터 데이터랩", () => {
     process.env.NAVER_CLIENT_ID = "아이디";
     process.env.NAVER_CLIENT_SECRET = "시크릿";
     const h = authHeaders();
-    assert.equal(h["X-Naver-Client-Id"], "아이디");
-    assert.equal(h["X-Naver-Client-Secret"], "시크릿");
-    assert.equal(h["X-NCP-APIGW-API-KEY-ID"], undefined, "NCP 헤더가 섞였다");
+    // 이름은 콘솔 인증 정보 화면이 직접 알려 준다
+    assert.equal(h["X-NCP-APIGW-API-KEY-ID"], "아이디");
+    assert.equal(h["X-NCP-APIGW-API-KEY"], "시크릿");
+    assert.equal(h["X-Naver-Client-Id"], undefined, "개발자센터 헤더가 섞였다");
   } finally {
     process.env.NAVER_CLIENT_ID = 원래.id;
     process.env.NAVER_CLIENT_SECRET = 원래.secret;

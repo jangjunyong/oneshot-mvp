@@ -15,14 +15,26 @@
 //   - 지역 필터가 없는 건 문제가 아니다. "김천김밥축제"라는 검색어 자체가
 //     지역을 특정한다
 //
-// 두 가지가 남아 화면에는 안 붙인다.
-//   1. **키가 없다.** 네이버 클라우드 플랫폼 콘솔에서 Search Trend 를 신청하는
-//      일은 계정 주인만 할 수 있다 (2026-08-30 확인 — 개발자센터가 아니다)
-//   2. **검증이 안 됐다.** 검색량 배수가 619건 실측 배수를 설명하는지 아직
-//      모른다. 상관도 안 재 보고 숫자를 올리면 불문율 4번을 어긴다
+// ── 판정: 화면에 붙이지 않는다 (2026-08-31, 실측으로 끝냄) ──
 //
-// 그래서 이 파일은 순수 변환 + 네트워크까지만이고, 상관은
-// `evals/search-volume.mjs` 가 키가 꽂히면 잰다. 붙일지는 그 결과가 정한다.
+// 키를 받아 실제로 재 봤다. NAVER API HUB 에서 발급, 표본 120건 중 검색량이
+// 잡힌 90건:
+//
+//   검색량 배수 vs 실측 방문 배수 (n=90)
+//     피어슨   r = 0.037
+//     스피어만 ρ = 0.192      <- 미리 정해 둔 컷 0.3 미만
+//
+// **버린다.** 기준은 재기 전에 정해 뒀고(`evals/search-volume.mjs` 꼬리말),
+// 결과가 마음에 안 든다고 기준을 옮기지 않는다. 검색량은 관심이지 방문이
+// 아니고, 우리에겐 이미 KT 이동통신 실측이 있다.
+//
+// 덤으로 사용자의 가설도 수치로 끝났다 — "타겟이 고령이면 검색량에 안 잡힌다":
+// 60세 이상의 개최 전 배수가 전체보다 낮은 축제가 **80건 중 62건(78%)**.
+// 방향은 맞았다. 다만 그게 이 축을 살릴 근거는 아니다.
+//
+// 파일을 지우지는 않는다. 실험을 되돌려 볼 수 있어야 하고, 누가 다시
+// "검색량 쓰면 되지 않나"라고 물을 때 답이 여기 있어야 한다.
+// **화면에는 연결하지 말 것.**
 //
 // 덧: 공모전 배점의 "데이터 활용 20점"은 **한국관광공사 OpenAPI 필수**라
 // 네이버는 그 점수에 안 잡힌다. 이건 점수용이 아니라 물음에 답하려고 만든다.
@@ -145,35 +157,37 @@ export function elderlyShare(byAge: Record<string, number>): number | null {
 }
 
 /**
- * 네이버 **개발자센터**의 데이터랩 문.
+ * **NAVER API HUB** 의 검색어트렌드 문. 실제 키로 200 을 받아 확인했다.
  *
- * ── 왜 여기인가, 그리고 왜 한 번 옮겼다가 돌아왔나 (2026-08-31) ──
+ * ── 문을 세 번 옮긴 기록 (2026-08-31, 다시 파지 말 것) ──
  *
- * 사용자가 "키 발급처는 네이버 클라우드 플랫폼"이라고 해서 NCP 의
- * `naveropenapi.apigw.ntruss.com/datalab/v1/search` 로 옮겼다가 되돌렸다.
- * 콘솔에 직접 들어가 확인한 결과 **그 상품을 신청할 수가 없다**:
+ * 1. `openapi.naver.com/v1/datalab/search` (개발자센터)
+ *    살아 있긴 하다. 그러나 **2026-07-31 로 신규 신청이 닫혔다.**
+ * 2. `naveropenapi.apigw.ntruss.com/datalab/v1/search` (옛 AI·NAVER API)
+ *    실제 키로 부르면 `210 Permission Denied — A subscription to the API is
+ *    required`. 콘솔의 AI·NAVER API 에는 Search Trend 항목 자체가 없다.
+ * 3. **여기.** 콘솔 `NAVER API HUB > Application` 에서 Data Lab 검색어트렌드를
+ *    골라 등록하면 키가 나온다. 그 키로 이 주소가 200 을 준다.
  *
- *   - AI·NAVER API > Application 등록에 Search Trend 가 없다 (CLOVA 둘뿐)
- *   - 플랫폼 Classic 은 잠겨 있다 ("선택하신 리전에서는 VPC만 제공하고 있습니다")
- *   - 콘솔 검색에 Search Trend 가 안 잡히고, 상품 소개 페이지는 404 다
- *   - NCP Search Trend 는 2026-07-23 종료됐다
+ * 키 없이 두드리면 1·2 가 다 401 이라 **응답으로는 못 가른다.** 가르는 것은
+ * "어느 문 열쇠를 받을 수 있나"이고, 지금 받을 수 있는 것은 API HUB 뿐이다.
  *
- * 두 문 다 키 없이 두드리면 401 이라 **살아 있는지로는 못 가른다.** 가르는
- * 것은 "어느 문 열쇠를 받을 수 있나"이고, 그건 개발자센터뿐이다.
+ * 본문 형식(startDate·endDate·timeUnit·keywordGroups·ages)과 응답 형식
+ * (`results[0].data`)은 셋 다 같다. 다른 것은 주소와 인증 헤더뿐이다.
  */
-export const ENDPOINT = "https://openapi.naver.com/v1/datalab/search";
+export const ENDPOINT = "https://naverapihub.apigw.ntruss.com/search-trend/v1/search";
 
 /**
  * 인증 헤더. 이름을 틀리면 401 만 돌아오고 이유를 안 알려준다 —
  * 그래서 테스트가 이름을 못 박는다.
  *
- * NCP 문으로 착각하면 `X-NCP-APIGW-API-KEY-ID` 를 쓰게 되는데, 그러면
- * 개발자센터는 "Not Exist Client ID" 만 돌려주고 왜인지는 말해 주지 않는다.
+ * 이름은 콘솔이 직접 알려 준다. 인증 정보 화면에 `Client ID
+ * (X-NCP-APIGW-API-KEY-ID)` · `Client Secret (X-NCP-APIGW-API-KEY)` 라고 적혀 있다.
  */
 export function authHeaders(): Record<string, string> {
   return {
-    "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID ?? "",
-    "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET ?? "",
+    "X-NCP-APIGW-API-KEY-ID": process.env.NAVER_CLIENT_ID ?? "",
+    "X-NCP-APIGW-API-KEY": process.env.NAVER_CLIENT_SECRET ?? "",
     "Content-Type": "application/json",
   };
 }
