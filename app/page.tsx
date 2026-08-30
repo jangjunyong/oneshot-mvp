@@ -132,8 +132,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     try {
       id = await saveDraft(await extractPlan(planText));
     } catch (e) {
-      const 사유 = e instanceof Error ? e.message : "추출에 실패했습니다";
-      오류로(`${사유} — 항목을 직접 넣어 주세요`, "&manual=1");
+      // extractFailureMessage 가 이미 완결된 한 문장을 준다(다음 행동까지
+      // 포함). 여기서 덧붙이면 "…직접 넣어 주세요 — 항목을 직접 넣어 주세요"
+      // 처럼 겹친다. 알 수 없는 예외일 때만 우리가 문장을 만든다.
+      오류로(
+        e instanceof Error && e.message
+          ? e.message
+          : "자동 추출에 실패했습니다. 항목을 직접 넣어 주세요",
+        "&manual=1",
+      );
       return;
     }
     redirect(`/?draft=${id}`);

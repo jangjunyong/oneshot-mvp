@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { extractPlan, hasModelKey } from "@/lib/extract";
+import { extractPlan, extractFailureMessage, hasModelKey } from "@/lib/extract";
 import { populationOf } from "@/lib/festivals";
 import { findSimilar } from "@/lib/match";
 import { ACCESSIBILITY_LABEL, MAX_PLAN_TEXT, THEME_NAME } from "@/lib/types";
@@ -100,4 +100,52 @@ test("추출 결과를 그대로 findSimilar 에 넣으면 닮은 축제가 나�
 test("입력 길이 상한이 실제로 걸려 있다", () => {
   // 1건당 비용의 상한이 이 숫자다. 커지면 상한이 무너진다.
   assert.ok(MAX_PLAN_TEXT > 0 && MAX_PLAN_TEXT <= 20000);
+});
+
+// ── 추출 실패 문구 ────────────────────────────────────────
+//
+// 2026-08-30 실제로 터진 것: 무료 모델이 429 를 뱉었는데 그 본문이
+// 담당 공무원 화면과 주소창에 그대로 실렸다.
+//
+//   추출 요청이 거절됐습니다 (429) {"error":{"message":"Provider returned
+//   error","code":429,"metadata":{"raw":"z-ai/glm-5.2:free is temporarily
+//   rate-limited upstream. Please retry shortly, or add your own key...
+//
+// 공급자 사정을 사용자가 읽을 이유가 없다. 여기서 지키는 것은
+// **화면에 나가는 문장에 원문·JSON·영어가 섞이지 않는 것**이다.
+
+test("추출이 실패해도 공급자 원문을 화면에 흘리지 않는다", () => {
+  const 원문 =
+    '{"error":{"message":"Provider returned error","code":429,"metadata":' +
+    '{"raw":"z-ai/glm-5.2:free is temporarily rate-limited upstream."}}}';
+  const msg = extractFailureMessage(429, 원문);
+
+  assert.doesNotMatch(msg, /[{}"]/, `JSON 부호가 남았다: ${msg}`);
+  assert.doesNotMatch(msg, /[A-Za-z]{6,}/, `영어 원문이 남았다: ${msg}`);
+  assert.ok(msg.length < 90, `문장이 너무 길다(${msg.length}자): ${msg}`);
+  assert.match(msg, /[가-힣]/, "한국어 문장이어야 한다");
+});
+
+test("상태 코드마다 담당자가 할 수 있는 일을 알려준다", () => {
+  // 붐빔 — 다시 눌러 볼 수 있다
+  assert.match(extractFailureMessage(429, ""), /잠시|다시/);
+  // 키 문제 — 담당자가 할 수 있는 게 없다. 직접 입력으로 보낸다
+  assert.match(extractFailureMessage(401, ""), /직접/);
+  // 서버 문제 — 잠시 후
+  assert.match(extractFailureMessage(503, ""), /잠시|다시/);
+
+  // 어떤 코드가 와도 문장이 나오고, 원문이 안 섞인다
+  for (const code of [400, 402, 403, 404, 408, 429, 500, 502, 503, 504, 999]) {
+    const m = extractFailureMessage(code, '{"raw":"something went wrong"}');
+    assert.ok(m.length > 0 && m.length < 90, `${code}: ${m}`);
+    assert.doesNotMatch(m, /[{}"]/, `${code} 에 원문이 남았다: ${m}`);
+  }
+});
+
+test("실패 문구는 항상 다음 행동으로 이어진다", () => {
+  // 막다른 문장을 내면 담당자는 화면을 닫는다. 어디로 갈지 늘 적는다.
+  for (const code of [401, 402, 429, 500, 503]) {
+    const m = extractFailureMessage(code, "");
+    assert.match(m, /직접|다시|잠시/, `${code} 가 다음 행동을 안 알려준다: ${m}`);
+  }
 });

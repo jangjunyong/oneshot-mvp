@@ -161,6 +161,43 @@ function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
  * 호출 전에 반드시 하루 한도를 확인할 것 — 이 함수는 한도를 모른다.
  * 입력은 MAX_PLAN_TEXT 에서 자른다. 1건당 비용 상한을 고정하기 위해서다.
  */
+/**
+ * 추출이 실패했을 때 **화면에 나갈 한 문장**.
+ *
+ * 2026-08-30 실제로 터진 것: 무료 모델이 429 를 뱉었는데 그 본문이 담당자
+ * 화면과 주소창에 통째로 실렸다 —
+ *   `추출 요청이 거절됐습니다 (429) {"error":{"message":"Provider returned
+ *    error","code":429,"metadata":{"raw":"z-ai/glm-5.2:free is temporarily
+ *    rate-limited upstream. Please retry shortly, or add your own key...`
+ *
+ * 공급자 사정은 우리가 고칠 몫이지 사용자가 읽을 몫이 아니다. 원문은
+ * 서버 로그로 보내고, 여기서는 **무엇을 할 수 있는지**만 말한다.
+ * 어느 갈래로 가든 다음 행동(다시 누르기 / 직접 넣기)으로 이어야 한다 —
+ * 막다른 문장을 내면 담당자는 화면을 닫는다.
+ *
+ * `detail` 은 받되 쓰지 않는다. 인자로 남겨 둔 이유는 나중에 사유별로
+ * 갈래를 더 나눌 때 여기가 그 자리이기 때문이다.
+ */
+export function extractFailureMessage(status: number, detail = ""): string {
+  void detail;
+  if (status === 429) {
+    return "지금 자동 추출이 붐빕니다. 잠시 후 다시 누르거나 항목을 직접 넣어 주세요";
+  }
+  if (status === 401 || status === 403) {
+    return "자동 추출을 쓸 수 없는 상태입니다. 항목을 직접 넣어 주세요";
+  }
+  if (status === 402) {
+    return "자동 추출 한도를 다 썼습니다. 항목을 직접 넣어 주세요";
+  }
+  if (status === 408 || status === 504) {
+    return "자동 추출이 시간 안에 끝나지 않았습니다. 다시 누르거나 직접 넣어 주세요";
+  }
+  if (status >= 500) {
+    return "자동 추출이 일시적으로 멈췄습니다. 잠시 후 다시 눌러 주세요";
+  }
+  return "자동 추출에 실패했습니다. 항목을 직접 넣어 주세요";
+}
+
 export async function extractPlan(planText: string): Promise<Extraction> {
   if (!hasModelKey()) return assemble(SAMPLE, "sample");
 
@@ -186,9 +223,11 @@ export async function extractPlan(planText: string): Promise<Extraction> {
   });
 
   if (!res.ok) {
-    // 본문에 사유가 들어온다(크레딧 소진·키 상한 초과 등). 삼키면 못 고친다.
+    // 사유는 서버 로그에만 남긴다. 화면에는 다듬은 한국어만 내보낸다 —
+    // 담당 공무원이 공급자 사정을 읽을 이유가 없다 (extractFailureMessage).
     const detail = await res.text().catch(() => "");
-    throw new Error(`추출 요청이 거절됐습니다 (${res.status}) ${detail.slice(0, 200)}`);
+    console.error("[extract] 추출 실패", res.status, detail.slice(0, 300));
+    throw new Error(extractFailureMessage(res.status, detail));
   }
 
   const body = (await res.json()) as {
