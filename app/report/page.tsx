@@ -308,7 +308,13 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       {시기 && 시기.months.length > 0 && (
         <section className="report-season">
           <h2>근거 4 — 시기 민감도</h2>
-          {시기.flat ? (
+          {/* 잰 달이 하나도 없으면 최저·최고를 고르지 않는다 (lib/season.ts) */}
+          {시기.quietest.length === 0 ? (
+            <p className="num">
+              달을 12번 바꿔 물어도 닮은 축제를 찾지 못했습니다. 시기를 견줄
+              근거가 없습니다.
+            </p>
+          ) : 시기.flat ? (
             <p className="num">
               달을 바꿔도 쌍둥이 배수 폭이 {시기.spread?.toFixed(2)}배 안에
               머뭅니다 — 이 조건에서 시기는 갈리지 않습니다.
@@ -349,6 +355,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
               </table>
             </>
           )}
+          {시기.quietest.length > 0 && (
           <p className="num">
             이 표가 재는 것은 시기의 효과가 아니라 매칭이 시기에 얼마나 흔들리는가입니다.
             닮음을 재는 다섯 축에서 개최 시기가 차지하는 비중은 10%뿐이라, 물은 달에
@@ -357,6 +364,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             {!시기.robust &&
               " 또 쌍둥이를 3곳이 아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
           </p>
+          )}
         </section>
       )}
 

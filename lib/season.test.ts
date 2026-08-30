@@ -112,6 +112,27 @@ test("쌍둥이가 없는 달은 지어내지 않는다", () => {
   }
 });
 
+test("어느 달에도 쌍둥이가 없으면 최저·최고 달을 고르지 않는다", () => {
+  // 예전에는 12달의 medianSurge 가 전부 null 일 때 null === null 이 참이라
+  // **12달이 모두 최저이자 최고**로 뽑혔다. 화면은 그걸 받아
+  // "가장 낮았던 달은 1·2·…·12월, 가장 높았던 달은 1·2·…·12월입니다 (폭 배)"
+  // 라고 적었다. 잰 것이 없는데 잰 척하는 문장이다.
+  const 벽지: PlanInput = {
+    sido: "강원", sigungu: "양구군", month: 7,
+    themeCode: 7, populationManMyeong: 0.5, accessibility: 1,
+  };
+  const s = scanSeason(벽지);
+
+  assert.ok(
+    s.months.every((m) => m.matched === 0),
+    "이 조건은 쌍둥이가 한 곳도 없어야 뜻이 있다",
+  );
+  assert.equal(s.spread, null, "잴 것이 없는데 폭이 나왔다");
+  assert.deepEqual(s.quietest, [], "잰 것이 없는데 최저 달을 골랐다");
+  assert.deepEqual(s.busiest, [], "잰 것이 없는데 최고 달을 골랐다");
+  assert.equal(s.flat, false, "평평하다고 말할 근거도 없다");
+});
+
 test("입력이 틀리면 재지 않고 이유를 그대로 싣는다", () => {
   const s = scanSeason({ ...고령, month: 0, populationManMyeong: -1 });
   assert.ok(s.invalid && s.invalid.length > 0);

@@ -62,8 +62,9 @@ export interface SeasonScan {
   monthMatchRate: number;
   /** 표본 수(3·5·7)를 바꿔도 달별 등급이 그대로인가 */
   robust: boolean;
-  /** 배수 중앙값이 가장 낮았던 달(동률 포함) */
+  /** 배수 중앙값이 가장 낮았던 달(동률 포함). 잰 달이 없으면 빈 배열 */
   quietest: number[];
+  /** 가장 높았던 달(동률 포함). 잰 달이 없으면 빈 배열 */
   busiest: number[];
   invalid?: string[];
 }
@@ -127,8 +128,19 @@ export function scanSeason(input: PlanInput): SeasonScan {
     months.every((m) => outlookFor(input, m.month, lim).level === m.level),
   );
 
+  // 잰 달이 하나도 없으면 최저도 최고도 없다.
+  //
+  // 예전에는 여기서 최저·최고를 null 로 두고 medianSurge 와 비교했다.
+  // null === null 이 참이라 **12달이 모두 최저이자 최고**로 뽑혔고, 화면은
+  // 그걸 받아 "가장 낮았던 달은 1·2·…·12월, 가장 높았던 달은 1·2·…·12월
+  // 입니다 (폭 배)" 라고 적었다. 폭은 숫자 없이 단위만 남았다.
+  // 못 잰 것은 빈 목록으로 낸다 — 화면이 아무 말도 안 할 수 있게.
   const 최저 = meds.length ? Math.min(...meds) : null;
   const 최고 = meds.length ? Math.max(...meds) : null;
+  const 고른달 = (기준: number | null) =>
+    기준 === null
+      ? []
+      : months.filter((m) => m.medianSurge === 기준).map((m) => m.month);
 
   return {
     planMonth: input.month,
@@ -137,7 +149,7 @@ export function scanSeason(input: PlanInput): SeasonScan {
     flat: spread !== null && spread < FLAT_SPREAD,
     monthMatchRate: 칸 === 0 ? 0 : 일치 / 칸,
     robust,
-    quietest: months.filter((m) => m.medianSurge === 최저).map((m) => m.month),
-    busiest: months.filter((m) => m.medianSurge === 최고).map((m) => m.month),
+    quietest: 고른달(최저),
+    busiest: 고른달(최고),
   };
 }

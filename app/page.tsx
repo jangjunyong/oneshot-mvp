@@ -1098,7 +1098,14 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
     <div className="season">
       <h3>달을 바꾸면 어떤 쌍둥이가 뽑히나</h3>
 
-      {scan.flat ? (
+      {/* 어느 달에도 쌍둥이가 없으면 견줄 것이 없다. 최저·최고를 고르는
+          문장은 잰 것이 있을 때만 쓴다 (lib/season.ts 의 고른달) */}
+      {scan.quietest.length === 0 ? (
+        <p className="season-head">
+          달을 12번 바꿔 물어도 닮은 축제를 찾지 못했습니다. 시기를 견줄 근거가
+          없습니다.
+        </p>
+      ) : scan.flat ? (
         <p className="season-head num">
           달을 바꿔도 쌍둥이 배수 폭이{" "}
           <strong>
@@ -1160,6 +1167,9 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
       </table>
       </details>
 
+      {/* 뽑힌 쌍둥이가 하나도 없으면 "매칭이 시기에 흔들린다"는 주의는
+          주의할 대상이 없다. 표가 전부 빈칸인 것으로 이미 다 말했다 */}
+      {scan.quietest.length > 0 && (
       <p className="note">
         읽을 때 조심할 것이 있습니다. 이 표가 재는 것은 시기의 효과가 아니라
         매칭이 시기에 얼마나 흔들리는가입니다. 닮음을 재는 다섯 축에서 개최
@@ -1177,6 +1187,7 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
           </>
         )}
       </p>
+      )}
     </div>
   );
 }
