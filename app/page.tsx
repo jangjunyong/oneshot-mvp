@@ -333,6 +333,39 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           조기경보처럼, 과거 중 닮은 것을 찾아 등급만 매깁니다.
         </p>
 
+        {/* 처음 온 사람은 "무엇을 넣으면 무엇이 나오는가"를 3초 안에 알아야
+            한다. 그게 없으면 아래 입력칸이 그냥 빈 폼으로 보인다.
+            PRD 의 쐐기 도식을 그대로 화면에 올린다 */}
+        <ol className="flow">
+          <li>
+            <b>기획안</b>
+            <span>지역 · 개최 시기 · 테마 · 지역 인구 · 접근성 다섯 축</span>
+          </li>
+          <li>
+            <b>닮은 과거 축제</b>
+            <span>
+              619건에서 찾아 그 축제들이 <strong>평소의 몇 배</strong>를 겪었는지
+            </span>
+          </li>
+          <li>
+            <b>경보 등급 + 감당 범위</b>
+            <span>
+              예: 심각 · 작년 물량의 1.0~1.4배 구간.{" "}
+              <strong>품목 개수는 내지 않습니다</strong>
+            </span>
+          </li>
+        </ol>
+
+        {/* 근거의 무게가 작은 글씨(A-01)에 묻혀 있었다. 쓰기 전에 보여야 한다 */}
+        <p className="trust num">
+          배수는 <strong>KT 이동통신 실측</strong>(한국관광 데이터랩) 619건입니다.
+          619건 자기검증에서 위험군을 무작위의{" "}
+          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냅니다(정밀도{" "}
+          {pct(LOO_PUBLISHED.precision)}). 다만{" "}
+          <strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
+          {pct(LOO_PUBLISHED.recall)}) — 경보지 보증이 아닙니다.
+        </p>
+
         <div className="dim">
           <span>{확인단계 ? "SECTION B — 항목 확인" : "SECTION A — 기획안 입력"}</span>
         </div>
@@ -612,6 +645,71 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 </p>
                 <p className="headline">{고름.g.headline}</p>
 
+                {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
+                    잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는
+                    평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
+                    같은 화면에서 충돌한다 (docs/DECISIONS.md) */}
+                {(() => {
+                  const 기준 = localBaseline(
+                    {
+                      sido: 고름.e.sido,
+                      sigungu: 고름.e.sigungu,
+                      month: Number(고름.e.month),
+                    },
+                    고름.result.matched,
+                  );
+                  const 범위 = capacityBand(
+                    고름.g,
+                    고름.result.matched.map((m) => m.festival.actualVisitSurge),
+                    기준?.surge ?? null,
+                  );
+                  if (!범위) return null;
+                  return (
+                    <div className="capacity">
+                      <h3>감당 범위</h3>
+                      {범위.baseSurge !== null && 기준 ? (
+                        <>
+                          <p className="capacity-head num">
+                            작년 물량이 감당한 수준의{" "}
+                            <strong>
+                              {ratioText(범위.lo!)} ~ {ratioText(범위.hi!)}
+                            </strong>{" "}
+                            구간을 보십시오
+                          </p>
+                          <p className="note num">
+                            기준 — {기준.name}({기준.year}년)이 평소의{" "}
+                            {기준.surge.toFixed(2)}배였고, 닮은 축제 3곳은{" "}
+                            {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
+                            {범위.floored &&
+                              " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+                          </p>
+                          <p className="note">
+                            같은 시군구·같은 달의 실측을 기준으로 삼았습니다. 이
+                            축제가 아니라면 기준이 아닙니다.{" "}
+                            <strong>개수는 내지 않습니다</strong> — 작년 대장의
+                            품목별 수량에 이 구간을 곱하는 건 담당자 몫입니다.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="capacity-head num">
+                            닮은 축제 3곳은 평소의{" "}
+                            <strong>
+                              {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배
+                            </strong>
+                            였습니다
+                          </p>
+                          <p className="note">
+                            같은 시군구·같은 달에 열린 축제의 실측이 619건에 없어
+                            <strong> 작년 대비 몇 배인지는 못 냅니다</strong> —
+                            없는 것이 아니라 비교 기준을 못 찾은 것입니다.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* 핀을 눌렀으면 그 한 곳을 깊게, 아니면 닮은 곳 전부를 얕게.
                     번호는 지도의 핀 번호와 같은 것이어야 짝이 읽힌다 */}
                 {핀 ? (
@@ -779,71 +877,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     )}
                   </div>
                 )}
-
-                {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
-                    잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는
-                    평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
-                    같은 화면에서 충돌한다 (docs/DECISIONS.md) */}
-                {(() => {
-                  const 기준 = localBaseline(
-                    {
-                      sido: 고름.e.sido,
-                      sigungu: 고름.e.sigungu,
-                      month: Number(고름.e.month),
-                    },
-                    고름.result.matched,
-                  );
-                  const 범위 = capacityBand(
-                    고름.g,
-                    고름.result.matched.map((m) => m.festival.actualVisitSurge),
-                    기준?.surge ?? null,
-                  );
-                  if (!범위) return null;
-                  return (
-                    <div className="capacity">
-                      <h3>감당 범위</h3>
-                      {범위.baseSurge !== null && 기준 ? (
-                        <>
-                          <p className="capacity-head num">
-                            작년 물량이 감당한 수준의{" "}
-                            <strong>
-                              {ratioText(범위.lo!)} ~ {ratioText(범위.hi!)}
-                            </strong>{" "}
-                            구간을 보십시오
-                          </p>
-                          <p className="note num">
-                            기준 — {기준.name}({기준.year}년)이 평소의{" "}
-                            {기준.surge.toFixed(2)}배였고, 닮은 축제 3곳은{" "}
-                            {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
-                            {범위.floored &&
-                              " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
-                          </p>
-                          <p className="note">
-                            같은 시군구·같은 달의 실측을 기준으로 삼았습니다. 이
-                            축제가 아니라면 기준이 아닙니다.{" "}
-                            <strong>개수는 내지 않습니다</strong> — 작년 대장의
-                            품목별 수량에 이 구간을 곱하는 건 담당자 몫입니다.
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="capacity-head num">
-                            닮은 축제 3곳은 평소의{" "}
-                            <strong>
-                              {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배
-                            </strong>
-                            였습니다
-                          </p>
-                          <p className="note">
-                            같은 시군구·같은 달에 열린 축제의 실측이 619건에 없어
-                            <strong> 작년 대비 몇 배인지는 못 냅니다</strong> —
-                            없는 것이 아니라 비교 기준을 못 찾은 것입니다.
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
 
                 {/* 시기 민감도. 이름을 조심해서 붙였다 — "N월에 열면"이 아니라
                     "N월로 물으면 어떤 쌍둥이가 뽑히나"다. 요청월과 쌍둥이

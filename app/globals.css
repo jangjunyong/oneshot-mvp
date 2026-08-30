@@ -151,6 +151,68 @@ button.note:hover { color: var(--ink); background: none; }
 }
 .entry summary:hover { color: var(--redline); }
 
+/* ── 첫 화면 흐름도 ──
+   도면 시트의 공정 순서표처럼 세 칸. 화살표는 ::after 로 그려 마크업을
+   깨끗하게 두고, 좁은 화면에서는 세로로 쌓이며 화살표가 사라진다 */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--s2);
+  list-style: none;
+  padding: 0;
+  margin: var(--s3) 0 var(--s2);
+  counter-reset: flow;
+}
+.flow li {
+  position: relative;
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  counter-increment: flow;
+}
+.flow li::before {
+  content: counter(flow);
+  display: block;
+  margin-bottom: var(--s1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--concrete);
+}
+.flow b {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: var(--text-base);
+}
+.flow span {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--concrete);
+  line-height: 1.55;
+}
+/* 칸 사이 화살표 — 한 줄로 설 때만 */
+@media (min-width: 44rem) {
+  .flow li + li::after {
+    content: "→";
+    position: absolute;
+    left: calc(var(--s2) * -1);
+    top: var(--s2);
+    width: var(--s2);
+    text-align: center;
+    color: var(--concrete);
+  }
+}
+
+/* 근거의 무게 — 쓰기 전에 읽혀야 한다. 한계도 같은 문장 안에 둔다 */
+.trust {
+  margin: 0 0 var(--s3);
+  padding-left: var(--s2);
+  border-left: 3px solid var(--line-strong);
+  font-size: var(--text-sm);
+  color: var(--concrete);
+  max-width: 44rem;
+}
+.trust strong { color: var(--ink); }
+
 /* ── 감당 범위 ──
    경보(등급)와 근거(닮은 축제) 다음에 오는 **결론** 자리다. 경쟁(.rivals)과
    같은 왼쪽 선 규약을 쓰되, 실측 결론이라 선을 경보색으로 세워 구분한다 */
