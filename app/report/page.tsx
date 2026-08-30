@@ -340,9 +340,9 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             </>
           )}
           <p className="num">
-            이 표는 <strong>시기의 효과가 아니라 매칭의 시기 민감도</strong>입니다.
-            닮음을 재는 다섯 축에서 개최 시기의 비중은 10%뿐이라, 물은 달에 실제로
-            열린 쌍둥이는 {Math.round(시기.monthMatchRate * 100)}%뿐입니다.
+            이 표가 재는 것은 시기의 효과가 아니라 매칭이 시기에 얼마나 흔들리는가입니다.
+            닮음을 재는 다섯 축에서 개최 시기가 차지하는 비중은 10%뿐이라, 물은 달에
+            실제로 열린 쌍둥이는 {Math.round(시기.monthMatchRate * 100)}%뿐입니다.
             &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
             {!시기.robust &&
               " 또 쌍둥이를 3곳이 아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
@@ -362,16 +362,16 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                 <strong>
                   {ratioText(감당.lo!)} ~ {ratioText(감당.hi!)}
                 </strong>{" "}
-                구간을 보십시오. 기준은 {기준.name}({기준.year}년) 평소 대비{" "}
+                구간을 보십시오. 기준으로 삼은 것은 {기준.name}({기준.year}년)의{" "}
                 {기준.surge.toFixed(2)}배이고, 닮은 축제 3곳은{" "}
                 {감당.twinLo.toFixed(2)}~{감당.twinHi.toFixed(2)}배였습니다.
                 {감당.floored &&
-                  " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+                  " 하단은 1배에서 끊었습니다. 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
               </p>
               <p className="num">
-                같은 시군구·같은 달의 실측을 기준으로 삼았습니다.{" "}
-                <strong>품목별 개수는 내지 않습니다</strong> — 작년 대장의 수량에
-                이 구간을 곱하는 것은 담당 부서의 판단입니다.
+                같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다. 품목별 개수는
+                내지 않습니다. 작년 대장의 수량에 이 구간을 곱하는 것은 담당 부서의
+                판단입니다.
               </p>
             </>
           ) : (
@@ -393,17 +393,17 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       <section className="report-selfcheck">
         <h2>이 방식은 얼마나 맞는가 — 619건 자기검증</h2>
         <p className="num">
-          619건 각각을 기획안인 척 넣고 <strong>자기 자신을 뺀</strong> 닮은 축제로
-          등급을 매겨 실제와 대조했습니다(leave-one-out). 위험군을 무작위의{" "}
-          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냅니다 — 정밀도{" "}
-          {pct(LOO_PUBLISHED.precision)} · 재현율 {pct(LOO_PUBLISHED.recall)} ·
-          기저율 {pct(LOO_PUBLISHED.baseRate)}. 예측 배수의 절대오차는 중앙{" "}
-          {LOO_PUBLISHED.medianAbsErr.toFixed(2)}배이고{" "}
+          619건을 하나씩 빼고 그 축제를 다시 맞혀 봤습니다. 맞힐 때 그 축제 자신은
+          뺐습니다. 위험한 축제를 무작위의{" "}
+          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
+          정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율 {pct(LOO_PUBLISHED.recall)},
+          실제 위험군 비율 {pct(LOO_PUBLISHED.baseRate)}. 맞힌 배수와 실제 배수의
+          차이는 중앙값 {LOO_PUBLISHED.medianAbsErr.toFixed(2)}배이고{" "}
           {pct(LOO_PUBLISHED.withinRatio)}가 ±{WITHIN_BAND}배 안에 들었습니다.
         </p>
         <p className="num">
-          <strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
-          {pct(LOO_PUBLISHED.recall)}). 이건 경보이지 보증이 아닙니다.
+          재현율이 {pct(LOO_PUBLISHED.recall)}이니 절반 가까이는 놓칩니다.
+          경보이지 보증이 아닙니다.
         </p>
       </section>
 

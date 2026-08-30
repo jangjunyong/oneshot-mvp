@@ -95,9 +95,9 @@ export function PeerStrip({
         </text>
       </svg>
       <figcaption>
-        같은 규모(인구 {peer.label}) 축제 <strong>{peer.n}곳</strong>의 실측 배수와
-        이 기획안의 자리 — <strong>상위 {peer.topPercent}%</strong>.
-        눈금 하나가 축제 한 곳이다.
+        눈금 하나가 축제 한 곳입니다. 인구 {peer.label} 지역의 축제 {peer.n}곳을
+        배수 순으로 세우고 이 기획안이 어디 서는지 찍었습니다. 상위{" "}
+        <strong>{peer.topPercent}%</strong>입니다.
       </figcaption>
     </figure>
   );

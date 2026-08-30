@@ -340,32 +340,30 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             PRD 의 쐐기 도식을 그대로 화면에 올린다 */}
         <ol className="flow">
           <li>
-            <b>기획안</b>
-            <span>지역 · 개최 시기 · 테마 · 지역 인구 · 접근성 다섯 축</span>
+            <b>기획안을 넣으면</b>
+            <span>지역, 개최 시기, 테마, 지역 인구, 접근성 다섯 가지를 봅니다</span>
           </li>
           <li>
-            <b>닮은 과거 축제</b>
-            <span>
-              619건에서 찾아 그 축제들이 <strong>평소의 몇 배</strong>를 겪었는지
-            </span>
+            <b>닮은 축제를 찾아</b>
+            <span>619건 중에서 고르고, 그 축제들이 평소의 몇 배를 겪었는지 봅니다</span>
           </li>
           <li>
-            <b>경보 등급 + 감당 범위</b>
+            <b>등급과 감당 범위를 냅니다</b>
             <span>
-              예: 심각 · 작년 물량의 1.0~1.4배 구간.{" "}
-              <strong>품목 개수는 내지 않습니다</strong>
+              이를테면 &ldquo;심각, 작년 물량의 1.0~1.4배 구간&rdquo;. 품목별
+              개수는 내지 않습니다
             </span>
           </li>
         </ol>
 
         {/* 근거의 무게가 작은 글씨(A-01)에 묻혀 있었다. 쓰기 전에 보여야 한다 */}
         <p className="trust num">
-          배수는 <strong>KT 이동통신 실측</strong>(한국관광 데이터랩) 619건입니다.
-          619건 자기검증에서 위험군을 무작위의{" "}
-          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냅니다(정밀도{" "}
-          {pct(LOO_PUBLISHED.precision)}). 다만{" "}
-          <strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
-          {pct(LOO_PUBLISHED.recall)}) — 경보지 보증이 아닙니다.
+          배수는 KT 이동통신으로 잰 619건입니다(한국관광 데이터랩). 이 619건을
+          하나씩 빼고 다시 맞혀 보니 위험한 축제를 무작위의{" "}
+          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
+          정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
+          {pct(LOO_PUBLISHED.recall)}. 절반 가까이는 놓칩니다. 경보이지 보증이
+          아닙니다.
         </p>
 
         <div className="dim">
@@ -675,17 +673,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     );
                     return (
                       <p className="basis num">
-                        <strong>평소 대비</strong>란 축제 기간에 그 시군구를 찾은{" "}
-                        <strong>외지인 방문자</strong>가 평상시의 몇 배였나입니다
-                        (KT 이동통신 실측 · 한국관광 데이터랩). 방문객 총수가
-                        아닙니다.
+                        여기서 배수란 축제 기간에 그 시군구를 찾은 외지인이
+                        평상시의 몇 배였나입니다. 방문객 총수가 아닙니다.
                         {또래 && (
                           <>
-                            {" "}이 분모는 지역이 작을수록 작아서{" "}
-                            <strong>인구가 적을수록 배수가 커집니다.</strong> 같은
-                            규모(인구 {또래.label}) 축제 {또래.n}곳과 견주면 이
-                            기획안은 <strong>상위 {또래.topPercent}%</strong>이고,
-                            그 또래의 배수 중앙값은 {또래.median.toFixed(2)}배입니다.
+                            {" "}평상시가 기준이라 인구가 적은 곳일수록 배수가
+                            크게 나옵니다. 인구 {또래.label} 지역의 축제{" "}
+                            {또래.n}곳에 넣고 보면 이 기획안은{" "}
+                            <strong>상위 {또래.topPercent}%</strong>입니다.
+                            그 {또래.n}곳의 중앙값은 {또래.median.toFixed(2)}배였습니다.
                           </>
                         )}
                       </p>
@@ -724,17 +720,17 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                             구간을 보십시오
                           </p>
                           <p className="note num">
-                            기준 — {기준.name}({기준.year}년)이 평소의{" "}
-                            {기준.surge.toFixed(2)}배였고, 닮은 축제 3곳은{" "}
+                            기준으로 삼은 것은 {기준.name}({기준.year}년)의{" "}
+                            {기준.surge.toFixed(2)}배입니다. 닮은 축제 3곳은{" "}
                             {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
                             {범위.floored &&
-                              " 하단은 1배에서 끊었습니다 — 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
+                              " 하단은 1배에서 끊었습니다. 작년보다 줄이라는 말은 실측이 뒷받침하지 않습니다."}
                           </p>
                           <p className="note">
-                            같은 시군구·같은 달의 실측을 기준으로 삼았습니다. 이
-                            축제가 아니라면 기준이 아닙니다.{" "}
-                            <strong>개수는 내지 않습니다</strong> — 작년 대장의
-                            품목별 수량에 이 구간을 곱하는 건 담당자 몫입니다.
+                            같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다.
+                            이 축제가 아니라면 기준이 아닙니다. 품목별 개수는 내지
+                            않습니다. 작년 대장의 수량에 이 구간을 곱하는 것은
+                            담당자가 할 일입니다.
                           </p>
                         </>
                       ) : (
@@ -747,9 +743,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                             였습니다
                           </p>
                           <p className="note">
-                            같은 시군구·같은 달에 열린 축제의 실측이 619건에 없어
-                            <strong> 작년 대비 몇 배인지는 못 냅니다</strong> —
-                            없는 것이 아니라 비교 기준을 못 찾은 것입니다.
+                            같은 시군구에서 같은 달에 열린 축제가 619건에 없어
+                            작년 대비 몇 배인지는 내지 못했습니다. 없는 것이
+                            아니라 비교 기준을 못 찾은 것입니다.
                           </p>
                         </>
                       )}
@@ -945,23 +941,23 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   <details className="selfcheck">
                     <summary>이 방식은 얼마나 맞는가 — 619건 자기검증</summary>
                     <p className="num">
-                      위험군을 무작위의{" "}
+                      619건을 하나씩 빼고 그 축제를 다시 맞혀 봤습니다. 위험한
+                      축제를 무작위의{" "}
                       <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로
-                      집어냅니다 (정밀도 {pct(LOO_PUBLISHED.precision)} · 재현율{" "}
-                      {pct(LOO_PUBLISHED.recall)} · 기저율{" "}
-                      {pct(LOO_PUBLISHED.baseRate)}).
+                      집어냈습니다. 정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
+                      {pct(LOO_PUBLISHED.recall)}, 실제 위험군 비율{" "}
+                      {pct(LOO_PUBLISHED.baseRate)}.
                     </p>
                     <p className="num">
-                      예측 배수의 절대오차는 중앙{" "}
-                      <strong>{LOO_PUBLISHED.medianAbsErr.toFixed(2)}배</strong>,{" "}
+                      맞힌 배수와 실제 배수의 차이는 중앙값{" "}
+                      {LOO_PUBLISHED.medianAbsErr.toFixed(2)}배,{" "}
                       {pct(LOO_PUBLISHED.withinRatio)}가 ±{WITHIN_BAND}배 안에
                       들었습니다.
                     </p>
                     <p className="note">
-                      619건 각각을 기획안인 척 넣고 <strong>자기 자신을 뺀</strong>{" "}
-                      닮은 축제로 등급을 매겨 실제와 대조한 결과입니다.
-                      {" "}<strong>절반 가까이는 놓칩니다</strong>(재현율{" "}
-                      {pct(LOO_PUBLISHED.recall)}) — 이건 경보지 보증이 아닙니다.
+                      맞힐 때 그 축제 자신은 뺐습니다. 안 그러면 정답을 보고 답을
+                      쓰는 셈입니다. 재현율이 {pct(LOO_PUBLISHED.recall)}이니
+                      절반 가까이는 놓칩니다. 경보이지 보증이 아닙니다.
                     </p>
                   </details>
                 )}
@@ -1095,6 +1091,10 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
         </p>
       )}
 
+      {/* 12행이라 펼쳐 두면 화면이 이 표만으로 한 화면을 먹는다. 요약 한 줄은
+          위에 남기고 표는 접는다 — 볼 사람만 편다 */}
+      <details>
+        <summary>달마다 뽑힌 쌍둥이 12줄 보기</summary>
       <table className="season-table">
         <thead>
           <tr>
@@ -1131,19 +1131,22 @@ function SeasonTable({ scan }: { scan: SeasonScan }) {
           ))}
         </tbody>
       </table>
+      </details>
 
       <p className="note">
-        <strong>이 표는 시기의 효과가 아니라 매칭의 시기 민감도입니다.</strong>{" "}
-        닮음을 재는 다섯 축에서 개최 시기의 비중은 10%뿐이라, 달을 바꿔도 같은
-        지역 축제 몇 곳이 순위만 바꿔 재배열됩니다. 실제로 물은 달에 열린
-        쌍둥이는 <strong>{Math.round(scan.monthMatchRate * 100)}%</strong>({" "}
-        <span className="season-twinmonths">✓</span> 표시)뿐입니다 — 나머지는 다른
-        달 축제입니다. &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
+        읽을 때 조심할 것이 있습니다. 이 표가 재는 것은 시기의 효과가 아니라
+        매칭이 시기에 얼마나 흔들리는가입니다. 닮음을 재는 다섯 축에서 개최
+        시기가 차지하는 비중은 10%뿐이라, 달을 바꿔도 같은 지역 축제 몇 곳이
+        순위만 바꿔 다시 섭니다. 물은 달에 실제로 열린 쌍둥이는{" "}
+        <strong>{Math.round(scan.monthMatchRate * 100)}%</strong>(
+        <span className="season-twinmonths">✓</span> 표시)뿐이고 나머지는 다른 달
+        축제입니다. 그러니 &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안
+        됩니다.
         {!scan.robust && (
           <>
-            {" "}또 이 표는 <strong>표본 수에 흔들립니다</strong> — 쌍둥이를 3곳이
-            아니라 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다. 3곳짜리 중앙값이라
-            한 건만 교체돼도 컷을 넘습니다.
+            {" "}표본 수에도 흔들립니다. 쌍둥이를 3곳이 아니라 5곳이나 7곳으로
+            잡으면 일부 달의 등급이 바뀝니다. 3곳짜리 중앙값이라 한 건만 교체돼도
+            컷을 넘습니다.
           </>
         )}
       </p>
