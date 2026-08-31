@@ -1,7 +1,11 @@
 name: CI
 
-# 에이전트의 눈. 타입·린트·빌드가 통과해야 머지한다.
+# 에이전트의 눈. 타입·린트·빌드·테스트가 통과해야 머지한다.
 # 배포는 여기서 하지 않는다 — Vercel Git 연동이 push 를 보고 자동 배포한다.
+#
+# e2e 는 빌드 뒤에만 돌 수 있다 (next start 를 스스로 띄운다). 빌드가
+# 이미 있으니 한 스텝 추가로 끝난다 — "명·원 표기 0건" 같은 제품 불문율을
+# 자동으로 재는 건 이 e2e 뿐이라 머지 게이트 밖에 두면 안 된다.
 
 on:
   push:
@@ -29,5 +33,11 @@ jobs:
       - name: 린트
         run: npm run lint
 
+      - name: 유닛 테스트
+        run: npm test
+
       - name: 빌드
         run: npm run build
+
+      - name: 무JS e2e
+        run: npm run test:e2e
