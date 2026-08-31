@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { getEntry, latestVenueForEntry } from "@/lib/store";
 import { planInputOf } from "@/lib/types";
+import { 긴시각 } from "@/lib/datetime";
 import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { grade, levelLabel } from "@/lib/grade";
@@ -45,30 +46,6 @@ export const dynamic = "force-dynamic";
  * 적는다. 실측: 이 상한에서 진단서가 최악일 때 269mm, A4 가용은 273mm.
  */
 const REPORT_RIVALS = 3;
-
-/** 문서에 찍는 시각. 서버는 UTC 라 그대로 두면 9시간 틀린 진단서가 나간다 */
-function 발행시각(): string {
-  return new Date().toLocaleString("ko-KR", {
-    timeZone: "Asia/Seoul",
-    dateStyle: "long",
-    timeStyle: "short",
-  });
-}
-
-/**
- * 이 진단이 저장된 시각.
- *
- * 지금까지 종이에는 **인쇄한 순간**만 찍혔다. 그래서 시연용 견본을 인쇄해도
- * 오늘 날짜가 박혀 방금 낸 진단처럼 보였다 — `lib/demo.ts` 가 저장 시각을
- * 굳이 고정해 둔 이유가 바로 그것이었는데, 진단서는 그 값을 안 썼다.
- */
-function 진단시각(iso: string): string {
-  return new Date(iso).toLocaleString("ko-KR", {
-    timeZone: "Asia/Seoul",
-    dateStyle: "long",
-    timeStyle: "short",
-  });
-}
 
 export default async function ReportPage({ searchParams }: PageProps<"/report">) {
   const params = await searchParams;
@@ -485,8 +462,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         {entry.id === DEMO_ENTRY_ID && (
           <span className="report-foot-demo">{DEMO_LABEL} · 결재용 아님</span>
         )}
-        <span>진단 {진단시각(entry.savedAt)}</span>
-        <span>인쇄 {발행시각()}</span>
+        <span>진단 {긴시각(entry.savedAt)}</span>
+        <span>인쇄 {긴시각()}</span>
         <span>출처 {DATA_SOURCE}</span>
         <span>같은 시기 경쟁: 한국관광공사 OpenAPI 실시간 조회 · 반경 {NEARBY_RADIUS_KM}km</span>
         <span>축제 위험 경보 · 전국 619개 축제 실측</span>

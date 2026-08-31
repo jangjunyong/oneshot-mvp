@@ -43,3 +43,6 @@ next-env.d.ts
 
 # 도구가 만드는 찌꺼기
 .omc/
+
+# 골든 스냅샷 (evals/golden.mjs 산출물)
+evals/.golden/

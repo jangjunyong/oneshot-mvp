@@ -1,28 +1,21 @@
 import Link from "next/link";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { 짧은시각 } from "@/lib/datetime";
+import { 저장, 선택, 지운다, 추출 } from "@/app/actions";
 import {
-  countExtractsToday,
-  deleteEntry,
   getDraft,
   HISTORY_LIMIT,
   list,
-  save,
-  saveDraft,
   storageMode,
   type Draft,
 } from "@/lib/store";
 import { planInputOf, type Entry } from "@/lib/types";
 import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
-import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
-import { extractPdfText } from "@/lib/pdf";
+import { hasModelKey, modelName } from "@/lib/extract";
 import {
   festivalDetail,
-  festivalStartDate,
   hasTourKey,
   searchFestivals,
   searchFestivalsInPeriod,
-  toExtraction,
   type FestivalDetail,
   type TourFestival,
 } from "@/lib/tourapi";
@@ -34,13 +27,16 @@ import {
   NEARBY_RADIUS_KM,
   type Competitor,
 } from "@/lib/overlap";
-import { coordsOf, findSimilar, validatePlanInput } from "@/lib/match";
+import { coordsOf, findSimilar } from "@/lib/match";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
-import { scanSeason, type SeasonScan } from "@/lib/season";
+import { scanSeason } from "@/lib/season";
 import { peerContext, peerSurges } from "@/lib/peer";
 import { PeerStrip } from "@/app/peer-strip";
 import { TwinMap } from "@/app/twin-map";
+import { TwinCards } from "@/app/_components/twin-cards";
+import { SeasonTable } from "@/app/_components/season-table";
+import { Choice, Field } from "@/app/_components/form-fields";
 import { grade, levelLabel } from "@/lib/grade";
 import {
   ACCESSIBILITY_LABEL,
@@ -48,30 +44,10 @@ import {
   DATA_SOURCE,
   MAX_PLAN_TEXT,
   THEME_NAME,
-  type MatchedFestival,
 } from "@/lib/types";
 
 // 저장한 것이 바로 보여야 하므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
-
-/**
- * 서버는 UTC 로 돈다. 그대로 찍으면 담당자에게 9시간 틀린 시각이 보이고,
- * 390px 한 줄의 절반을 기계 형식이 잡아먹는다. 시간대를 못 박아 옮긴다.
- */
-function 한국시각(iso: string): string {
-  return new Date(iso).toLocaleString("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-const 오류로 = (message: string, extra = "") =>
-  redirect("/?err=" + encodeURIComponent(message) + extra);
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -85,153 +61,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 자바스크립트 없는 e2e 가 이 화면을 더는 검증하지 못한다.
   const 고른id = typeof params.entry === "string" ? params.entry : null;
   const 고른핀 = typeof params.pin === "string" ? params.pin : null;
-
-  /** 1단계 — 기획서 텍스트에서 초안을 뽑는다. 모델을 부르는 유일한 곳이다 */
-  async function 추출(formData: FormData) {
-    "use server";
-    let planText = String(formData.get("planText") ?? "").trim();
-
-    // PDF 가 오면 글자를 뽑아 붙여넣기를 대신한다. 파일이 우선이다 —
-    // 올렸다는 건 그걸 읽어 달라는 뜻이다. 스캔본(글자 없는 이미지)은
-    // 뽑히는 게 없으므로 지어내지 않고 되돌려보낸다.
-    const pdf = formData.get("planPdf");
-    if (pdf instanceof File && pdf.size > 0) {
-      let pdfText = "";
-      try {
-        pdfText = await extractPdfText(new Uint8Array(await pdf.arrayBuffer()));
-      } catch (e) {
-        오류로(e instanceof Error ? e.message : "PDF 를 읽지 못했습니다");
-      }
-      if (pdfText.length < 20) {
-        오류로(
-          "PDF 에서 글자를 거의 찾지 못했습니다 — 스캔본이면 텍스트를 직접 붙여넣어 주세요",
-        );
-      }
-      planText = pdfText;
-    }
-
-    if (planText.length < 20) {
-      오류로("기획서 내용을 붙여넣어 주세요 — 너무 짧습니다");
-    }
-
-    // 한도를 셀 수 없으면 통과시키지 않는다. 상한이 상한이 아니게 된다.
-    let 오늘호출: number;
-    try {
-      오늘호출 = await countExtractsToday();
-    } catch {
-      오늘호출 = DAILY_EXTRACT_LIMIT;
-    }
-    if (hasModelKey() && 오늘호출 >= DAILY_EXTRACT_LIMIT) {
-      오류로(
-        `오늘 자동 추출 한도(${DAILY_EXTRACT_LIMIT}건)를 다 썼습니다. 항목을 직접 넣어 주세요`,
-        "&manual=1",
-      );
-    }
-
-    // 추출이 죽어도 앱은 살아 있어야 한다 — 수동 입력으로 떨어뜨린다.
-    // 여기서 샘플로 대신 채우면 지어낸 값이 근거인 척한다. 그건 안 한다.
-    let id: string;
-    try {
-      id = await saveDraft(await extractPlan(planText));
-    } catch (e) {
-      // extractFailureMessage 가 이미 완결된 한 문장을 준다(다음 행동까지
-      // 포함). 여기서 덧붙이면 "…직접 넣어 주세요 — 항목을 직접 넣어 주세요"
-      // 처럼 겹친다. 알 수 없는 예외일 때만 우리가 문장을 만든다.
-      오류로(
-        e instanceof Error && e.message
-          ? e.message
-          : "자동 추출에 실패했습니다. 항목을 직접 넣어 주세요",
-        "&manual=1",
-      );
-      return;
-    }
-    redirect(`/?draft=${id}`);
-  }
-
-  /**
-   * 1단계의 다른 입구 — 검색 결과에서 축제 하나를 고르면 TourAPI 등록
-   * 정보(주소·개최일)로 초안을 만든다. 모델은 부르지 않으므로 하루 한도
-   * 밖이다. 테마·접근성은 등록 정보에 없어 사람이 확인 화면에서 채운다.
-   */
-  async function 선택(formData: FormData) {
-    "use server";
-    const contentId = String(formData.get("contentId") ?? "");
-    const title = String(formData.get("title") ?? "");
-    const addr1 = String(formData.get("addr1") ?? "");
-    if (!/^\d+$/.test(contentId)) {
-      오류로("선택한 축제를 읽지 못했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
-    }
-
-    // 개최일 조회가 죽어도 주소만으로 초안은 만들 수 있다. 죽이지 않는다.
-    let eventstartdate = "";
-    try {
-      eventstartdate = await festivalStartDate(contentId);
-    } catch {
-      eventstartdate = "";
-    }
-
-    let id: string;
-    try {
-      id = await saveDraft(toExtraction({ title, addr1, eventstartdate }));
-    } catch {
-      오류로("초안 저장에 실패했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
-      return;
-    }
-    redirect(`/?draft=${id}`);
-  }
-
-  /** 2단계 — 사람이 확인·수정한 값을 저장한다. 여기부터는 모델이 끼지 않는다 */
-  async function 저장(formData: FormData) {
-    "use server";
-    const get = (k: string) => String(formData.get(k) ?? "");
-    const raw = {
-      sido: get("sido"),
-      sigungu: get("sigungu"),
-      month: get("month"),
-      theme: get("theme"),
-      population: get("population"),
-      accessibility: get("accessibility"),
-    };
-
-    // 저장하기 전에 막는다. 브라우저(HTML5 속성)를 우회해 들어와도 여기서 걸린다.
-    // 쓰레기 값이 이력에 남으면 나중에 그게 근거인 척한다.
-    const problems = validatePlanInput({
-      sido: raw.sido,
-      sigungu: raw.sigungu,
-      month: Number(raw.month),
-      themeCode: Number(raw.theme),
-      populationManMyeong: Number(raw.population),
-      accessibility: Number(raw.accessibility),
-    });
-    if (problems.length > 0) {
-      오류로("입력을 확인해 주세요 — " + problems.join(" · "), "&manual=1");
-    }
-
-    // 저장이 실패해도 화면 전체가 죽으면 안 된다. 담당자는 왜 안 됐는지
-    // 알아야 하고 다시 누를 수 있어야 한다.
-    let 저장실패 = false;
-    try {
-      await save(raw);
-    } catch {
-      저장실패 = true;
-    }
-    if (저장실패) {
-      오류로("저장에 실패했습니다. 잠시 후 저장을 다시 눌러 주세요.", "&manual=1");
-    }
-
-    revalidatePath("/");
-  }
-
-  /** 이력 한 건 지우기 — 데모 중 쌓인 시험 데이터를 치우는 용도 */
-  async function 지운다(formData: FormData) {
-    "use server";
-    try {
-      await deleteEntry(String(formData.get("entryId") ?? ""));
-    } catch {
-      오류로("지우지 못했습니다. 잠시 후 다시 눌러 주세요.");
-    }
-    revalidatePath("/");
-  }
 
   // 초안을 못 읽어도 입력 화면은 살아 있어야 한다.
   let draft: Draft | null = null;
@@ -696,7 +525,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   {고름.e.population}만 · 접근성{" "}
                   {ACCESSIBILITY_LABEL[Number(고름.e.accessibility)] ??
                     고름.e.accessibility}{" "}
-                  · {한국시각(고름.e.savedAt)}
+                  · {짧은시각(고름.e.savedAt)}
                 </p>
 
                 {/* 결론이 먼저 */}
@@ -1011,7 +840,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만
                 · 접근성{" "}
                 {ACCESSIBILITY_LABEL[Number(e.accessibility)] ?? e.accessibility}{" "}
-                · {한국시각(e.savedAt)}
+                · {짧은시각(e.savedAt)}
               </p>
 
               {/* 요약 행에도 근거 한 조각을 남긴다. 등급만 남기면 담당자는
@@ -1069,297 +898,5 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </div>
       </footer>
     </div>
-  );
-}
-
-/**
- * 지도 아래 넉 장 — 감당 범위의 **기준** 하나와 **닮은 축제** 셋.
- *
- * 왜 여기 있나. 오른쪽 본문이 왼쪽 지도보다 훨씬 길어 지도 아래가 늘 비어
- * 있었다(2026-08-30 사용자 지적). 닮은 축제 목록은 원래 오른쪽에 한 줄씩
- * 있었는데, 그건 지도의 핀 1·2·3 을 설명하는 것이라 지도 옆에 있는 편이 맞다.
- *
- * 기준 카드는 겹칠 수 있다. `localBaseline` 은 **닮은 축제 셋 중에서** 같은
- * 시군구·같은 달인 것을 고르므로, 기준이 있으면 그것은 반드시 셋 중 하나다.
- * 숨기지 않고 "닮은 축제 ①이기도 합니다"라고 카드에 적는다 — 감당 범위가
- * 무엇에 대고 잰 값인지는 닮음과 다른 질문이라 칸을 따로 둘 값어치가 있다.
- */
-function TwinCards({
-  entryId,
-  matched,
-  baseline,
-  selectedPin,
-  scope,
-  capacityShown,
-}: {
-  entryId: string;
-  matched: MatchedFestival[];
-  baseline: { id: string; name: string; year: string; surge: number } | null;
-  selectedPin: string | null;
-  scope: string;
-  /** 오른쪽에 감당 범위 블록이 실제로 서는가. 근거없음 등급이면 안 선다 */
-  capacityShown: boolean;
-}) {
-  if (matched.length === 0) return null;
-
-  const 배수폭 = matched.map((m) => m.festival.actualVisitSurge);
-
-  return (
-    <div className="twin-cards">
-      {matched.map((m, i) => {
-        const 기준인가 = baseline?.id === m.festival.id;
-        return (
-          <Link
-            key={m.festival.id}
-            className="twin-card"
-            data-role={기준인가 ? "base" : undefined}
-            data-current={m.festival.id === selectedPin ? "1" : undefined}
-            href={`/?entry=${entryId}&pin=${m.festival.id}#twin`}
-          >
-            <p className="twin-card-label">
-              <strong>{i + 1}</strong> 닮은 축제
-            </p>
-            <p className="twin-card-name">{m.festival.name}</p>
-            <p className="twin-card-meta num">
-              {m.festival.sido} {m.festival.sigungu} · {m.year}년
-            </p>
-            <p className="twin-card-surge num">
-              평소 대비 <strong>{m.festival.actualVisitSurge.toFixed(2)}배</strong>
-            </p>
-            {/* 기준은 언제나 이 셋 중 하나다. 칸을 따로 세우면 같은 축제가 두 번
-                나오므로 그 카드에 표를 얹는다 (2026-08-30 사용자 지시) */}
-            {기준인가 && (
-              <p className="twin-card-base">
-                같은 시군구, 같은 달
-                {capacityShown ? " · 감당 범위의 기준" : ""}
-              </p>
-            )}
-            <p className="twin-card-foot">
-              {m.festival.id === selectedPin ? "지금 펼친 축제" : "눌러서 근거 보기"}
-            </p>
-          </Link>
-        );
-      })}
-
-      {/* 넷째 칸 — 셋을 다 채우고 남는 자리.
-          기준을 못 찾았으면 그 사실이 급하다(오른쪽 감당 범위의 숫자가 어디서
-          왔는지 담당자가 알아야 한다). 찾았으면 그 자리는 카드에 얹혔으니,
-          화면 어디에도 없던 값을 낸다 — 이 셋이 얼마나 닮았는가. */}
-      <div className="twin-card" data-role="how">
-        {baseline === null && capacityShown ? (
-          <>
-            <p className="twin-card-label">감당 범위의 기준</p>
-            <p className="twin-card-name">못 찾았습니다</p>
-            <p className="twin-card-meta">
-              같은 시군구·같은 달의 축제가 619건에 없습니다
-            </p>
-            <p className="twin-card-surge num">
-              대신 닮은 축제 {matched.length}곳의{" "}
-              <strong>
-                {Math.min(...배수폭).toFixed(2)}~{Math.max(...배수폭).toFixed(2)}배
-              </strong>
-            </p>
-            <p className="twin-card-foot">없는 것이 아니라 못 찾은 것입니다</p>
-          </>
-        ) : (
-          <>
-            <p className="twin-card-label">어떻게 골랐나</p>
-            <p className="twin-card-name">{scope}에서 {matched.length}곳</p>
-            <p className="twin-card-meta">
-              지역·인구·접근성·시기·테마 다섯 축으로 쟀습니다
-            </p>
-            {/* 닮음 거리(0.09 같은 값)를 여기 내던 것을 걷어냈다.
-                담당자가 그 숫자로 할 수 있는 일이 없다 — 결재에서
-                "닮음 거리가 0.09였습니다"라고 답할 수 없고, 척도가 없으면
-                0.11 이 0.27 의 절반이라는 것도 뜻을 못 만든다.
-                불문율 3 이 금지한 "유사도 점수만 던지기"가 바로 이것이고,
-                왜 닮았는지는 아래 details 와 핀 카드가 축별로 낸다 */}
-            <p className="twin-card-foot">
-              다섯 축이 충분히 가깝지 않으면 쓰지 않습니다. 억지로 가장 가까운
-              것을 내놓지 않습니다.
-            </p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * 시기 민감도 표.
- *
- * 제목이 "N월에 열면"이 아닌 이유가 이 컴포넌트의 전부다 — 요청월과 쌍둥이
- * 실제 개최월은 19%만 일치한다. 그래서 각 행에 **쌍둥이가 실제로 열린 달**을
- * 찍어 표가 스스로 한계를 말하게 한다 (lib/season.ts 머리말).
- */
-function SeasonTable({ scan }: { scan: SeasonScan }) {
-  if (scan.months.length === 0) return null;
-
-  return (
-    <div className="season">
-      <h3>달을 바꾸면 어떤 쌍둥이가 뽑히나</h3>
-
-      {/* 어느 달에도 쌍둥이가 없으면 견줄 것이 없다. 최저·최고를 고르는
-          문장은 잰 것이 있을 때만 쓴다 (lib/season.ts 의 고른달) */}
-      {/* 몇 달을 잴 수 있었는지를 먼저 말한다. 이걸 안 밝히면 1달만 잰
-          조건에서도 "달을 바꿔도 그게 그거"로 읽힌다 */}
-      {scan.measured > 0 && scan.measured < scan.months.length && (
-        <p className="season-head num">
-          12달 중 <strong>{scan.measured}달</strong>만 닮은 축제를 찾을 수
-          있었습니다. 나머지 {scan.months.length - scan.measured}달은 평평한 것이
-          아니라 재지 못한 것입니다.
-        </p>
-      )}
-      {scan.quietest.length === 0 ? (
-        <p className="season-head">
-          달을 12번 바꿔 물어도 닮은 축제를 찾지 못했습니다. 시기를 견줄 근거가
-          없습니다.
-        </p>
-      ) : scan.flat ? (
-        <p className="season-head num">
-          달을 바꿔도 쌍둥이 배수 폭이{" "}
-          <strong>
-            {Math.min(
-              ...scan.months.map((m) => m.medianSurge ?? Infinity),
-            ).toFixed(2)}
-            ~
-            {Math.max(...scan.months.map((m) => m.medianSurge ?? 0)).toFixed(2)}배
-          </strong>{" "}
-          안에 머뭅니다 — 이 조건에서 시기는 갈리지 않습니다
-        </p>
-      ) : (
-        <p className="season-head num">
-          가장 낮았던 달은 <strong>{scan.quietest.join("·")}월</strong>, 가장
-          높았던 달은 <strong>{scan.busiest.join("·")}월</strong>입니다 (폭{" "}
-          {scan.spread?.toFixed(2)}배)
-        </p>
-      )}
-
-      {/* 12행이라 펼쳐 두면 화면이 이 표만으로 한 화면을 먹는다. 요약 한 줄은
-          위에 남기고 표는 접는다 — 볼 사람만 편다 */}
-      <details>
-        <summary>달마다 뽑힌 쌍둥이 12줄 보기</summary>
-      <table className="season-table">
-        <thead>
-          <tr>
-            <th>물은 달</th>
-            <th>쌍둥이</th>
-            <th>배수</th>
-            <th>중앙</th>
-            <th>등급</th>
-            <th>쌍둥이가 실제로 열린 달</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scan.months.map((m) => (
-            <tr key={m.month} data-plan={m.month === scan.planMonth || undefined}>
-              <th scope="row" className="num">
-                {m.month}월
-              </th>
-              <td className="num">{m.matched}곳</td>
-              <td className="num">
-                {m.loSurge === null
-                  ? "—"
-                  : `${m.loSurge.toFixed(2)}~${m.hiSurge!.toFixed(2)}`}
-              </td>
-              <td className="num">{m.medianSurge?.toFixed(2) ?? "—"}</td>
-              <td>{m.level}</td>
-              <td className="num season-twinmonths">
-                {m.twinMonths.length === 0
-                  ? "—"
-                  : m.twinMonths
-                      .map((tm) => (tm === m.month ? `${tm}월✓` : `${tm}월`))
-                      .join(" ")}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </details>
-
-      {/* 뽑힌 쌍둥이가 하나도 없으면 "매칭이 시기에 흔들린다"는 주의는
-          주의할 대상이 없다. 표가 전부 빈칸인 것으로 이미 다 말했다 */}
-      {scan.quietest.length > 0 && (
-      <p className="note">
-        읽을 때 조심할 것이 있습니다. 이 표가 재는 것은 시기의 효과가 아니라
-        매칭이 시기에 얼마나 흔들리는가입니다. 닮음을 재는 다섯 축에서 개최
-        시기가 차지하는 비중은 10%뿐이라, 달을 바꿔도 같은 지역 축제 몇 곳이
-        순위만 바꿔 다시 섭니다. 물은 달에 실제로 열린 쌍둥이는{" "}
-        <strong>{Math.round((scan.monthMatchRate ?? 0) * 100)}%</strong>(
-        <span className="season-twinmonths">✓</span> 표시)뿐이고 나머지는 다른 달
-        축제입니다. 그러니 &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안
-        됩니다.
-        {!scan.robust && (
-          <>
-            {" "}표본 수에도 흔들립니다. 쌍둥이를 3곳이 아니라 5곳이나 7곳으로
-            잡으면 일부 달의 등급이 바뀝니다. 3곳짜리 중앙값이라 한 건만 교체돼도
-            컷을 넘습니다.
-          </>
-        )}
-      </p>
-      )}
-    </div>
-  );
-}
-
-/** 값 한 칸 + 그 값이 어디서 나왔는지. 근거 없이 값만 두면 못 믿는다 */
-function Field({
-  id,
-  label,
-  defaultValue,
-  evidence,
-}: {
-  id: string;
-  label: string;
-  defaultValue: string;
-  evidence?: string;
-}) {
-  return (
-    <>
-      <p>
-        <label htmlFor={id}>{label}</label>{" "}
-        <input id={id} name={id} defaultValue={defaultValue} required />
-      </p>
-      {evidence && <p className="evidence">“{evidence}”</p>}
-    </>
-  );
-}
-
-/**
- * 고르는 칸. 담당자는 "테마 코드 3" 이나 "접근성 2등급" 을 모른다.
- * 숫자는 안쪽에만 남기고 화면에는 이름만 낸다.
- */
-function Choice({
-  id,
-  name,
-  label,
-  defaultValue,
-  options,
-  evidence,
-}: {
-  id: string;
-  name: string;
-  label: string;
-  defaultValue: number | string;
-  options: [number, string][];
-  evidence?: string;
-}) {
-  return (
-    <>
-      <p>
-        <label htmlFor={id}>{label}</label>{" "}
-        <select id={id} name={name} defaultValue={String(defaultValue)} required>
-          <option value="" disabled>
-            고르세요
-          </option>
-          {options.map(([value, text]) => (
-            <option key={value} value={value}>
-              {text}
-            </option>
-          ))}
-        </select>
-      </p>
-      {evidence && <p className="evidence">“{evidence}”</p>}
-    </>
   );
 }
