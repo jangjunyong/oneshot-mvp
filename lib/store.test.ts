@@ -3,11 +3,25 @@
 // 여기서 지키는 것은 화면과의 약속 둘이다 (docs/screens.md 구멍 B).
 //   1. 지울 수 있다 — 데모 중 쌓인 시험 데이터가 영영 남지 않는다
 //   2. 이력은 상한까지만 온다 — Postgres 와 메모리가 같은 상한을 말한다
+//
+// 그리고 셋째가 붙었다 — **테이블 준비 규칙**(`onceOrRetry`).
+// 그 규칙은 원래 세 테이블에 손으로 복제돼 있었고, DATABASE_URL 이 있을
+// 때만 실행되는 코드 안에 있어서 자동 검증이 하나도 닿지 않았다.
+// 순수 함수로 빼내면서 여기서 잰다.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deleteEntry, getEntry, getVenue, HISTORY_LIMIT, list, save, saveVenue } from "@/lib/store";
+import {
+  deleteEntry,
+  getEntry,
+  getVenue,
+  HISTORY_LIMIT,
+  list,
+  onceOrRetry,
+  save,
+  saveVenue,
+} from "@/lib/store";
 import { emptyVenue } from "@/lib/venue";
 
 assert.equal(
@@ -85,4 +99,92 @@ test("이력은 상한까지만 돌려준다 — 화면이 그 이상을 약속�
     HISTORY_LIMIT,
     "메모리 모드가 Postgres 의 LIMIT 와 다른 개수를 돌려준다",
   );
+});
+
+// ─────────────────────────────────────────────────────────────
+// 테이블 준비 규칙 — 세 테이블에 손으로 복제돼 있던 것
+// ─────────────────────────────────────────────────────────────
+
+test("준비 작업은 키마다 한 번만 돈다", async () => {
+  const slots: Record<string, Promise<void> | undefined> = {};
+  let 횟수 = 0;
+  const run = async () => {
+    횟수 += 1;
+  };
+
+  await onceOrRetry(slots, "entries", run);
+  await onceOrRetry(slots, "entries", run);
+  await onceOrRetry(slots, "entries", run);
+
+  assert.equal(횟수, 1, "CREATE TABLE 이 요청마다 돌면 안 된다");
+});
+
+test("실패는 캐싱하지 않는다 — 이걸 어기면 인스턴스가 사는 내내 저장이 죽는다", async () => {
+  const slots: Record<string, Promise<void> | undefined> = {};
+  let 횟수 = 0;
+  const 늘실패 = async () => {
+    횟수 += 1;
+    throw new Error("연결 실패");
+  };
+
+  await assert.rejects(() => onceOrRetry(slots, "entries", 늘실패));
+  await assert.rejects(() => onceOrRetry(slots, "entries", 늘실패));
+
+  assert.equal(횟수, 2, "실패한 Promise 가 캐싱돼 재시도가 막혔다");
+  assert.equal(slots.entries, undefined, "실패 뒤 슬롯이 비워지지 않았다");
+});
+
+test("한 번 실패해도 다음에 성공하면 그때부터 캐싱된다", async () => {
+  const slots: Record<string, Promise<void> | undefined> = {};
+  let 횟수 = 0;
+  const 처음만실패 = async () => {
+    횟수 += 1;
+    if (횟수 === 1) throw new Error("콜드스타트 실패");
+  };
+
+  await assert.rejects(() => onceOrRetry(slots, "entries", 처음만실패));
+  await onceOrRetry(slots, "entries", 처음만실패); // 재시도 성공
+  await onceOrRetry(slots, "entries", 처음만실패); // 이제는 캐싱
+
+  assert.equal(횟수, 2);
+});
+
+test("테이블마다 슬롯이 따로다 — 하나가 죽어도 나머지는 산다", async () => {
+  const slots: Record<string, Promise<void> | undefined> = {};
+  const 센다: string[] = [];
+
+  await onceOrRetry(slots, "entries", async () => void 센다.push("entries"));
+  await onceOrRetry(slots, "venues", async () => void 센다.push("venues"));
+  await assert.rejects(() =>
+    onceOrRetry(slots, "drafts", async () => {
+      센다.push("drafts");
+      throw new Error("drafts 만 실패");
+    }),
+  );
+
+  // entries·venues 는 캐싱된 채로 남아야 한다
+  await onceOrRetry(slots, "entries", async () => void 센다.push("entries"));
+  await onceOrRetry(slots, "venues", async () => void 센다.push("venues"));
+
+  assert.deepEqual(센다, ["entries", "venues", "drafts"]);
+  assert.equal(slots.drafts, undefined);
+  assert.ok(slots.entries && slots.venues);
+});
+
+test("동시에 부르면 하나만 돈다 — 콜드스타트에 요청이 몰려도 CREATE 는 한 번", async () => {
+  const slots: Record<string, Promise<void> | undefined> = {};
+  let 횟수 = 0;
+  const 느린준비 = () =>
+    new Promise<void>((resolve) => {
+      횟수 += 1;
+      setTimeout(resolve, 20);
+    });
+
+  await Promise.all([
+    onceOrRetry(slots, "entries", 느린준비),
+    onceOrRetry(slots, "entries", 느린준비),
+    onceOrRetry(slots, "entries", 느린준비),
+  ]);
+
+  assert.equal(횟수, 1);
 });

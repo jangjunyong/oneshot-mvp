@@ -25,16 +25,54 @@ const sql = url ? neon(url) : null;
 // 메모리 폴백 (로컬 개발용)
 const g = globalThis as unknown as {
   __oneshotEntries?: Entry[];
-  __oneshotReady?: Promise<void>;
+  __oneshotReadySlots?: Record<string, Promise<void> | undefined>;
 };
 g.__oneshotEntries ??= [];
+g.__oneshotReadySlots ??= {};
 
-// 테이블은 첫 요청 때 한 번만 만든다. 마이그레이션 도구를 붙일 단계가 아니다.
-function ready(): Promise<void> {
-  if (!sql) return Promise.resolve();
-  // 실패한 Promise 를 캐싱하면 그 인스턴스가 살아 있는 동안 저장·조회가
-  // 전부 죽는다. 재시도 경로를 남긴다.
-  g.__oneshotReady ??= sql`
+type Sql = NonNullable<typeof sql>;
+
+/**
+ * 준비 작업을 키마다 한 번만 돌린다 — **단 실패는 캐싱하지 않는다.**
+ *
+ * 실패한 Promise 를 캐싱하면 그 인스턴스가 살아 있는 **내내** 그 테이블
+ * 접근이 전부 죽는다. 실제로 겪은 사고이고, 그래서 이 규칙이 세 테이블에
+ * 손으로 복제돼 있었다. 네 번째를 추가하는 사람이 `catch` 안의 무효화
+ * 한 줄을 빠뜨리면 같은 사고를 다시 겪으므로 규칙을 여기 한 곳에 둔다.
+ *
+ * `sql` 을 모르는 순수 함수다 — 그래야 DB 없이 테스트할 수 있고,
+ * 실제로 이 파일에서 자동 검증이 닿는 유일한 자리가 된다
+ * (나머지 질의는 `DATABASE_URL` 이 있을 때만 실행된다).
+ */
+export function onceOrRetry(
+  slots: Record<string, Promise<void> | undefined>,
+  key: string,
+  run: () => Promise<unknown>,
+): Promise<void> {
+  slots[key] ??= run()
+    .then(() => undefined)
+    .catch((e) => {
+      slots[key] = undefined;
+      throw e;
+    });
+  return slots[key]!;
+}
+
+/** 테이블은 첫 요청 때 한 번만 만든다. 마이그레이션 도구를 붙일 단계가 아니다. */
+function makeReady(
+  key: string,
+  create: (q: Sql) => Promise<unknown>,
+): () => Promise<void> {
+  return () => {
+    const q = sql;
+    if (!q) return Promise.resolve();
+    return onceOrRetry(g.__oneshotReadySlots!, key, () => create(q));
+  };
+}
+
+const ready = makeReady(
+  "entries",
+  (q) => q`
     CREATE TABLE IF NOT EXISTS entries (
       id            BIGSERIAL PRIMARY KEY,
       sido          TEXT NOT NULL,
@@ -45,14 +83,8 @@ function ready(): Promise<void> {
       accessibility TEXT NOT NULL,
       saved_at      TIMESTAMPTZ NOT NULL DEFAULT now()
     )
-  `
-    .then(() => undefined)
-    .catch((e) => {
-      g.__oneshotReady = undefined;
-      throw e;
-    });
-  return g.__oneshotReady;
-}
+  `,
+);
 
 export async function save(e: Omit<Entry, "id" | "savedAt">): Promise<void> {
   if (!sql) {
@@ -152,27 +184,20 @@ interface VenueRow {
 
 const gv = globalThis as unknown as {
   __oneshotVenues?: VenueRow[];
-  __oneshotVenueReady?: Promise<void>;
 };
 gv.__oneshotVenues ??= [];
 
-function venueReady(): Promise<void> {
-  if (!sql) return Promise.resolve();
-  gv.__oneshotVenueReady ??= sql`
+const venueReady = makeReady(
+  "venues",
+  (q) => q`
     CREATE TABLE IF NOT EXISTS venues (
       id         BIGSERIAL PRIMARY KEY,
       entry_id   BIGINT,
       payload    JSONB NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
-  `
-    .then(() => undefined)
-    .catch((e) => {
-      gv.__oneshotVenueReady = undefined;
-      throw e;
-    });
-  return gv.__oneshotVenueReady;
-}
+  `,
+);
 
 export async function saveVenue(
   venue: Venue,
@@ -271,26 +296,19 @@ interface DraftRow extends Draft {
 
 const gd = globalThis as unknown as {
   __oneshotDrafts?: DraftRow[];
-  __oneshotDraftReady?: Promise<void>;
 };
 gd.__oneshotDrafts ??= [];
 
-function draftReady(): Promise<void> {
-  if (!sql) return Promise.resolve();
-  gd.__oneshotDraftReady ??= sql`
+const draftReady = makeReady(
+  "drafts",
+  (q) => q`
     CREATE TABLE IF NOT EXISTS drafts (
       id         BIGSERIAL PRIMARY KEY,
       payload    JSONB NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
-  `
-    .then(() => undefined)
-    .catch((e) => {
-      gd.__oneshotDraftReady = undefined;
-      throw e;
-    });
-  return gd.__oneshotDraftReady;
-}
+  `,
+);
 
 const isToday = (iso: string) =>
   new Date(iso).toDateString() === new Date().toDateString();
