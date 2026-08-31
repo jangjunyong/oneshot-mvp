@@ -30,7 +30,7 @@
 // 잡았습니까")를 그대로 보여 주기 때문이다. 619건 전수로 조건을 훑어 골랐고,
 // 그 셋이 계속 뜨는지는 demo.test.ts 가 매번 다시 잰다.
 
-import type { Entry } from "@/lib/store";
+import type { Entry } from "@/lib/types";
 import { coordsOf } from "@/lib/match";
 import { presetLayout } from "@/lib/preset";
 import { metersPerPixel } from "@/lib/tilemap";

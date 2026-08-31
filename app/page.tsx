@@ -11,8 +11,8 @@ import {
   saveDraft,
   storageMode,
   type Draft,
-  type Entry,
 } from "@/lib/store";
+import { planInputOf, type Entry } from "@/lib/types";
 import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { extractPlan, hasModelKey, modelName } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
@@ -267,14 +267,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 이력마다 한 번만 잰다. 지도(한 건)와 요약 행이 같은 결과를 봐야
   // 목록의 등급과 지도의 등급이 갈리지 않는다.
   const 진단한다 = (e: Entry) => {
-    const result = findSimilar({
-      sido: e.sido,
-      sigungu: e.sigungu,
-      month: Number(e.month),
-      themeCode: Number(e.theme),
-      populationManMyeong: Number(e.population),
-      accessibility: Number(e.accessibility),
-    });
+    const result = findSimilar(planInputOf(e));
     return { e, result, g: grade(result) };
   };
   const 이력진단 = entries.map(진단한다);
@@ -293,14 +286,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // 지도 아래 카드와 감당 범위 블록이 **같은 것**을 가리켜야 하니 한 번만 고른다.
   const 기준 =
     고름 && !고름.result.invalid
-      ? localBaseline(
-          {
-            sido: 고름.e.sido,
-            sigungu: 고름.e.sigungu,
-            month: Number(고름.e.month),
-          },
-          고름.result.matched,
-        )
+      ? localBaseline(planInputOf(고름.e), 고름.result.matched)
       : null;
 
   // 왼쪽 카드의 "감당 범위의 기준" 라벨이 **화면에 없는 블록**을 가리키면
@@ -969,14 +955,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 {/* 시기 민감도. 이름을 조심해서 붙였다 — "N월에 열면"이 아니라
                     "N월로 물으면 어떤 쌍둥이가 뽑히나"다. 요청월과 쌍둥이
                     실제 개최월이 19%만 일치하기 때문이다(lib/season.ts 머리말) */}
-                {!고름.result.invalid && <SeasonTable scan={scanSeason({
-                  sido: 고름.e.sido,
-                  sigungu: 고름.e.sigungu,
-                  month: Number(고름.e.month),
-                  themeCode: Number(고름.e.theme),
-                  populationManMyeong: Number(고름.e.population),
-                  accessibility: Number(고름.e.accessibility),
-                })} />}
+                {!고름.result.invalid && <SeasonTable scan={scanSeason(planInputOf(고름.e))} />}
 
                 {/* 결재에서 반드시 받는 질문 — "그게 맞는 건 어떻게 압니까".
                     619건 leave-one-out 자기검증을 숫자로 낸다. 한계(재현율)도

@@ -14,17 +14,10 @@ import {
   DEMO_VENUE_ID,
   demoVenue,
 } from "@/lib/demo";
-
-export interface Entry {
-  id: string;
-  sido: string;
-  sigungu: string;
-  month: string;
-  theme: string;
-  population: string;
-  accessibility: string;
-  savedAt: string;
-}
+// Entry 는 types.ts 에 산다. 여기 두면 demo.ts 가 저장 계층을 되짚어
+// 가져가면서 순환이 된다 — 지금은 타입이라 소거되지만 한 글자만 바뀌면
+// 콜드스타트에서 터진다. 쓰는 쪽도 types.ts 에서 직접 가져갈 것.
+import type { Entry } from "@/lib/types";
 
 const url = process.env.DATABASE_URL;
 const sql = url ? neon(url) : null;

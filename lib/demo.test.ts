@@ -23,15 +23,9 @@ import { grade } from "@/lib/grade";
 import { capacityBand, localBaseline } from "@/lib/capacity";
 import { scanVenue } from "@/lib/scan";
 import { polygonAreaM2, siteOf, validateVenue } from "@/lib/venue";
+import { planInputOf } from "@/lib/types";
 
-const 입력 = {
-  sido: DEMO_ENTRY.sido,
-  sigungu: DEMO_ENTRY.sigungu,
-  month: Number(DEMO_ENTRY.month),
-  themeCode: Number(DEMO_ENTRY.theme),
-  populationManMyeong: Number(DEMO_ENTRY.population),
-  accessibility: Number(DEMO_ENTRY.accessibility),
-};
+const 입력 = planInputOf(DEMO_ENTRY);
 
 test("시연 조건의 지역값은 619건에서 온다 — 지어낸 값이 아니다", () => {
   const f = FESTIVALS.find((x) => x.id === DEMO_REGION_FESTIVAL_ID);

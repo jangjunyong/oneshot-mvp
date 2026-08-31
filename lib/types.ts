@@ -14,6 +14,48 @@ export interface PlanInput {
   accessibility: number;
 }
 
+/**
+ * 저장된 진단 한 건. **전 필드가 문자열이다** — DB 컬럼이 전부 TEXT 라서.
+ *
+ * `store.ts` 가 아니라 여기 사는 이유가 둘이다.
+ * 1. `store → demo → store` 순환을 구조적으로 불가능하게 만든다.
+ *    (`demo.ts` 가 이 타입을 저장 계층에서 가져오면 그 순간 고리가 닫힌다)
+ * 2. 아래 `planInputOf` 가 이 타입과 `PlanInput` 을 잇는 유일한 다리인데,
+ *    다리는 두 강둑이 같이 보이는 자리에 놓아야 한다.
+ */
+export interface Entry {
+  id: string;
+  sido: string;
+  sigungu: string;
+  month: string;
+  theme: string;
+  population: string;
+  accessibility: string;
+  savedAt: string;
+}
+
+/**
+ * 저장된 진단(문자열) → 진단기 입력(숫자).
+ *
+ * **이 변환은 여기 한 곳에만 있어야 한다.** 예전에는 화면마다 손으로 다시
+ * 썼고, 그러다 `venue` 화면이 중앙값을 자기 식으로 세면서 같은 진단에
+ * 다른 배수가 나갔다(2026-08-31). 필드 이름이 다르고(`theme` → `themeCode`)
+ * 타입이 둘 다 number 라, 잘못 이어도 타입 검사가 잡아주지 못한다.
+ *
+ * 값 검증은 하지 않는다 — 쓰기 경로(`app/page.tsx`)가 `validatePlanInput` 으로
+ * 이미 막고, 읽기 경로는 이미 저장된 것을 그대로 옮기기만 한다.
+ */
+export function planInputOf(e: Entry): PlanInput {
+  return {
+    sido: e.sido,
+    sigungu: e.sigungu,
+    month: Number(e.month),
+    themeCode: Number(e.theme),
+    populationManMyeong: Number(e.population),
+    accessibility: Number(e.accessibility),
+  };
+}
+
 /** data/festivals.json 의 한 건 */
 export interface Festival {
   id: string;

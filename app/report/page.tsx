@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import { getEntry, latestVenueForEntry } from "@/lib/store";
+import { planInputOf } from "@/lib/types";
 import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
 import { grade } from "@/lib/grade";
@@ -88,14 +89,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     );
   }
 
-  const result = findSimilar({
-    sido: entry.sido,
-    sigungu: entry.sigungu,
-    month: Number(entry.month),
-    themeCode: Number(entry.theme),
-    populationManMyeong: Number(entry.population),
-    accessibility: Number(entry.accessibility),
-  });
+  const 입력 = planInputOf(entry);
+  const result = findSimilar(입력);
   const g = grade(result);
 
   // 같은 시기 경쟁 — 공사 OpenAPI. 죽어도 진단서는 나가야 한다
@@ -137,10 +132,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   const scan = 도면 ? scanVenue(도면.venue, 배수) : null;
 
   // 감당 범위 — 같은 시군구·같은 달의 실측을 기준으로 몇 배 구간인지
-  const 기준 = localBaseline(
-    { sido: entry.sido, sigungu: entry.sigungu, month: Number(entry.month) },
-    result.matched,
-  );
+  const 기준 = localBaseline(입력, result.matched);
   const 감당 = capacityBand(
     g,
     result.matched.map((m) => m.festival.actualVisitSurge),
@@ -152,14 +144,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   // 같은 달이 여러 역할이면 중복을 걷고 달 순서로 되돌린다
   const 시기 = result.invalid
     ? null
-    : scanSeason({
-        sido: entry.sido,
-        sigungu: entry.sigungu,
-        month: Number(entry.month),
-        themeCode: Number(entry.theme),
-        populationManMyeong: Number(entry.population),
-        accessibility: Number(entry.accessibility),
-      });
+    : scanSeason(입력);
   const 시기요약 = 시기
     ? [
         ...new Set([

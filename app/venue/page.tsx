@@ -8,6 +8,8 @@ import {
 } from "@/lib/store";
 import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
+import { grade } from "@/lib/grade";
+import { planInputOf } from "@/lib/types";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
 
@@ -103,24 +105,17 @@ export default async function VenuePage({
       const entry = await getEntry(entryId);
       if (entry) {
         initialCenter = coordsOf(entry.sido, entry.sigungu);
-        const r = findSimilar({
-          sido: entry.sido,
-          sigungu: entry.sigungu,
-          month: Number(entry.month),
-          themeCode: Number(entry.theme),
-          populationManMyeong: Number(entry.population),
-          accessibility: Number(entry.accessibility),
-        });
-        if (r.invalid || r.matched.length === 0) {
+        const r = findSimilar(planInputOf(entry));
+        // 중앙값을 여기서 다시 세지 않는다. 짝수 개일 때 위/아래가 갈려
+        // 같은 진단인데 이 화면과 진단서가 다른 배수를 쓰게 된다
+        // (report/page.tsx 가 같은 이유로 grade 를 재사용한다).
+        const g = grade(r);
+        if (r.invalid || g.medianSurge === null) {
           scenario = { surge: null, label: "이 진단은 비교 대상이 없습니다" };
         } else {
-          const surges = r.matched
-            .map((m) => m.festival.actualVisitSurge)
-            .sort((a, b) => a - b);
-          const median = surges[Math.floor((surges.length - 1) / 2)];
           scenario = {
-            surge: median,
-            label: `쌍둥이 ${r.matched.length}곳 실측 중앙값 ${median.toFixed(2)}배`,
+            surge: g.medianSurge,
+            label: `쌍둥이 ${r.matched.length}곳 실측 중앙값 ${g.medianSurge.toFixed(2)}배`,
           };
         }
       }
