@@ -7,7 +7,7 @@
 // 따라 그리는 흐름이 전부다. 여기엔 판정이 없다 — 판정(M2)은 결정론
 // 엔진의 몫이고, 이 파일은 도면 JSON 을 정확히 만드는 것까지만 한다.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Circle,
   Group,
@@ -258,6 +258,22 @@ export default function Editor({
     img.onload = () => setUnderlayImg(img);
     img.src = venue.underlay;
   }, [venue.underlay]);
+
+  /**
+   * 저장 폼에 실을 도면 JSON — **밑그림은 뺀다.**
+   *
+   * 전에는 렌더마다 `JSON.stringify(venue)` 가 JSX 안에서 그냥 돌았다.
+   * 타일이 한 장 뜰 때도, 도형을 고를 때도, 줌을 바꿀 때도 4MB 사진이
+   * 통째로 다시 직렬화됐다. 밑그림을 올린 뒤 부스 이름을 고치면 키 입력마다
+   * 5.3MB 를 만들어서 타이핑이 눌어붙었다.
+   *
+   * 사진은 아래 별도 hidden 으로 문자열 그대로 나가고(같은 참조라 React 가
+   * DOM 을 다시 안 쓴다), 서버가 다시 합친다.
+   */
+  const venueJson = useMemo(
+    () => JSON.stringify(venue, (키, 값) => (키 === "underlay" ? undefined : 값)),
+    [venue],
+  );
 
   // 선택이 바뀌면 변형 핸들을 그 도형에 붙인다 (통로는 제외 — 점을 끌면 된다)
   useEffect(() => {
@@ -856,7 +872,7 @@ export default function Editor({
         {!selected ? (
           <p className="note">도형을 누르면 이름·인력·선호도를 고칠 수 있습니다</p>
         ) : (
-          <div className="props">
+          <div>
             <p className="note">
               {VENUE_KIND_NAME[selected.kind]}
               {/* 통로는 면이 아니라 선이다 — 폭만 실측으로 말한다 */}
@@ -966,7 +982,12 @@ export default function Editor({
 
         <h2>저장</h2>
         <form action={saveAction}>
-          <input type="hidden" name="venue" value={JSON.stringify(venue)} />
+          {/* 밑그림은 따로 낸다. 한 덩어리로 묶으면 부스 이름을 한 글자
+              칠 때마다 4MB 사진(base64 로 5.3MB)이 통째로 다시 직렬화된다.
+              분리하면 사진은 문자열 그대로 실려 가고, 매번 도는 것은
+              도형 몇 개짜리 작은 JSON 뿐이다. 서버가 다시 합친다. */}
+          <input type="hidden" name="venue" value={venueJson} />
+          <input type="hidden" name="underlay" value={venue.underlay ?? ""} />
           <input type="hidden" name="entryId" value={entryId ?? ""} />
           <p>
             <button type="submit">도면 저장</button>{" "}

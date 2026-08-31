@@ -25,6 +25,25 @@ function median(values: number[]): number {
 
 const oneDecimal = (n: number) => n.toFixed(1);
 
+/**
+ * 등급을 화면에 적는 짧은 문구.
+ *
+ * 진단 화면과 진단서가 같은 문장을 각자 삼항으로 쓰고 있었다. 화면과 종이가
+ * 같은 진단을 다르게 말하는 사고를 이미 한 번 냈으므로(중앙값, 2026-08-31)
+ * 문구도 한 곳에서만 만든다.
+ *
+ * `short` 는 이력 목록의 칩용이다. **일부러 다른 문구다** — 좁은 칸이라
+ * 짧게 끊는다. 같은 함수에 둔 것은 세 자리가 함께 움직이게 하려는 것이고,
+ * 하나로 합치라는 뜻이 아니다.
+ */
+export function levelLabel(level: GradeLevel, short = false): string {
+  if (level === "심각" || level === "주의") {
+    return short ? `경보 ${level}` : `⚠ 경보: ${level}`;
+  }
+  if (level === "근거없음") return short ? "근거 못 찾음" : "위험 근거 못 찾음";
+  return "비교 대상 없음";
+}
+
 export function grade(result: MatchResult): AlertGrade {
   const surges = result.matched.map((m) => m.festival.actualVisitSurge);
 

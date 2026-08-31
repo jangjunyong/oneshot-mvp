@@ -11,6 +11,11 @@ const bundle = raw as Bundle;
 /** 619건 전수. 정적 JSON 이라 요청마다 다시 읽지 않는다 */
 export const FESTIVALS: readonly Festival[] = bundle.festivals;
 
+/**
+ * 데이터 출처·수집일. 화면에 아직 안 붙어 있다 — 붙일 자리를 정하지 못했다.
+ * "출처 없는 숫자는 화면에 올리지 않는다"가 이 프로젝트 규칙이라 지우지 않고
+ * 남긴다. 지우면 619건의 출처가 코드에서 사라진다.
+ */
 export const META = bundle.meta;
 
 /** 못 찾았을 때 화면에 내보내는 "찾아본 범위" */

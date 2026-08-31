@@ -12,7 +12,7 @@ import { getEntry, latestVenueForEntry } from "@/lib/store";
 import { planInputOf } from "@/lib/types";
 import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { coordsOf, findSimilar } from "@/lib/match";
-import { grade } from "@/lib/grade";
+import { grade, levelLabel } from "@/lib/grade";
 import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
 import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { scanSeason } from "@/lib/season";
@@ -97,7 +97,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   const 창 = monthWindow(Number(entry.month), new Date());
   let 경쟁: Competitor[] = [];
   let 경쟁실패 = false;
-  if (hasTourKey() && !result.invalid) {
+  if (창 && hasTourKey() && !result.invalid) {
     try {
       경쟁 = competitorsNear(
         coordsOf(entry.sido, entry.sigungu),
@@ -196,13 +196,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       ) : (
         <>
           <section className="report-verdict">
-            <p className="alert" data-level={g.level}>
-              {g.level === "심각" || g.level === "주의"
-                ? `⚠ 경보: ${g.level}`
-                : g.level === "근거없음"
-                  ? "위험 근거 못 찾음"
-                  : "비교 대상 없음"}
-            </p>
+            <p className="alert" data-level={g.level}>{levelLabel(g.level)}</p>
             <p className="headline">{g.headline}</p>
           </section>
 
@@ -245,7 +239,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
 
           <section>
             <h2>근거 2 — 같은 시기 경쟁</h2>
-            {!hasTourKey() ? (
+            {!hasTourKey() || !창 ? (
               <p className="note">조회하지 않았습니다</p>
             ) : 경쟁실패 ? (
               <p className="note">

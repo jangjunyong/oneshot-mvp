@@ -44,6 +44,12 @@ export default async function VenuePage({
       return;
     }
 
+    // 밑그림은 편집기가 따로 낸다 (한 덩어리로 묶으면 키 입력마다 4MB 사진이
+    // 다시 직렬화된다). 여기서 도로 붙인다. 지우는 경로가 없으므로 빈 값은
+    // "안 올렸다"는 뜻이고, 덮어쓰면 안 된다.
+    const underlay = String(formData.get("underlay") ?? "");
+    if (underlay) venue.underlay = underlay;
+
     const problems = validateVenue(venue);
     if (problems.length > 0) {
       오류로("도면을 확인해 주세요 — " + problems.join(" · "));

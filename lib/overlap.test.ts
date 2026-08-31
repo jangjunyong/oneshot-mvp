@@ -50,8 +50,26 @@ test("조회 창 — 가장 최근에 지난 그 달을 본다 (미래는 등록
   });
 
   // 말일은 달마다 다르다 — 2월은 평년 28일, 윤년 29일
-  assert.equal(monthWindow(2, new Date(2026, 5, 1)).end, "20260228");
-  assert.equal(monthWindow(2, new Date(2028, 5, 1)).end, "20280229");
+  assert.equal(monthWindow(2, new Date(2026, 5, 1))?.end, "20260228");
+  assert.equal(monthWindow(2, new Date(2028, 5, 1))?.end, "20280229");
+});
+
+test("달이 아닌 값이면 창을 지어내지 않는다", () => {
+  const 오늘 = new Date(2026, 7, 29);
+
+  // Number("") 은 0 이고 new Date(연, 0, 0) 은 조용히 전년 12월 말일이 된다.
+  // 그러면 엉뚱한 달의 경쟁 축제가 근거인 척 뜬다 — 못 잰 것이 "안심" 쪽으로
+  // 기우는 이 코드베이스의 단골 실수다.
+  assert.equal(monthWindow(0, 오늘), null);
+  assert.equal(monthWindow(13, 오늘), null);
+  assert.equal(monthWindow(-1, 오늘), null);
+  assert.equal(monthWindow(Number(""), 오늘), null);
+  assert.equal(monthWindow(Number("아무거나"), 오늘), null);
+  assert.equal(monthWindow(Infinity, 오늘), null);
+
+  // 경계는 살아 있어야 한다
+  assert.ok(monthWindow(1, 오늘));
+  assert.ok(monthWindow(12, 오늘));
 });
 
 test("반경 밖은 뺀다 — 같은 달이어도 멀면 수요를 나누지 않는다", () => {

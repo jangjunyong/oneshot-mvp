@@ -55,7 +55,14 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export function monthWindow(
   month: number,
   today: Date,
-): { start: string; end: string; year: number } {
+): { start: string; end: string; year: number } | null {
+  // 달이 아닌 값이 오면 창을 지어내지 않고 없다고 말한다.
+  // `Number("")` 은 0 이고, `new Date(연, 0, 0)` 은 조용히 전년 12월 말일이
+  // 된다 — 그러면 **엉뚱한 달의 경쟁 축제 목록이 근거인 척** 뜬다.
+  // 지금은 쓰기 경로가 막고 있어 닿지 않지만, 못 잰 것이 "안심" 쪽으로
+  // 기우는 것이 이 코드가 반복해 온 실수다.
+  if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+
   // 이번 달까지는 올해가 이미 왔다. 아직 안 온 달은 작년이 최근이다
   const year =
     month <= today.getMonth() + 1 ? today.getFullYear() : today.getFullYear() - 1;

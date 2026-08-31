@@ -41,7 +41,7 @@ import { scanSeason, type SeasonScan } from "@/lib/season";
 import { peerContext, peerSurges } from "@/lib/peer";
 import { PeerStrip } from "@/app/peer-strip";
 import { TwinMap } from "@/app/twin-map";
-import { grade } from "@/lib/grade";
+import { grade, levelLabel } from "@/lib/grade";
 import {
   ACCESSIBILITY_LABEL,
   DAILY_EXTRACT_LIMIT,
@@ -700,13 +700,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 </p>
 
                 {/* 결론이 먼저 */}
-                <p className="alert" data-level={고름.g.level}>
-                  {고름.g.level === "심각" || 고름.g.level === "주의"
-                    ? `⚠ 경보: ${고름.g.level}`
-                    : 고름.g.level === "근거없음"
-                      ? "위험 근거 못 찾음"
-                      : "비교 대상 없음"}
-                </p>
+                <p className="alert" data-level={고름.g.level}>{levelLabel(고름.g.level)}</p>
                 <p className="headline">{고름.g.headline}</p>
 
                 {/* "평소 대비 2.7배"가 무슨 뜻인지 화면 어디에도 없었다.
@@ -1023,13 +1017,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               {/* 요약 행에도 근거 한 조각을 남긴다. 등급만 남기면 담당자는
                   무엇을 보고 매긴 등급인지 모른 채 목록을 훑게 된다 */}
               <p className="verdict">
-                <span className="chip" data-level={g.level}>
-                  {g.level === "심각" || g.level === "주의"
-                    ? `경보 ${g.level}`
-                    : g.level === "근거없음"
-                      ? "근거 못 찾음"
-                      : "비교 대상 없음"}
-                </span>{" "}
+                <span className="chip" data-level={g.level}>{levelLabel(g.level, true)}</span>{" "}
                 {result.invalid
                   ? "입력을 확인해 주세요"
                   : 대표
