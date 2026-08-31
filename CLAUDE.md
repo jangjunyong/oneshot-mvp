@@ -7,12 +7,14 @@
 
 # 실행
 
-개발 `npm run dev` · **테스트 `npm test`** · 타입 `npm run typecheck` · 린트 `npm run lint` · 빌드 `npm run build`
+개발 `npm run dev` · **테스트 `npm test`** · 타입 `npm run typecheck` · 린트 `npm run lint` · 빌드 `npm run build` · e2e `npm run test:e2e`(build 선행)
 
 # 스택
 
-Next.js 16 (App Router) + TypeScript + Tailwind 4 + Vercel Postgres (임의 변경 금지)
+Next.js 16 (App Router) + TypeScript + **Neon Postgres** (임의 변경 금지)
 축제 데이터는 `data/` 아래 정적 JSON. **Next 16은 학습 데이터와 다르다** — API 쓰기 전 `node_modules/next/dist/docs/` 를 읽을 것.
+
+스타일은 손으로 쓴 CSS 두 장이다 — `app/design-system.css`(토큰만 정의) + `app/globals.css`(토큰을 소비만 하고 재정의하지 않는다). **Tailwind 유틸리티 클래스를 쓰지 않는다** — `tailwindcss` 와 postcss 플러그인이 아직 걸려 있지만 `@tailwind`·`@apply` 가 한 군데도 없어 실제로는 한 바이트도 안 낸다 (제거는 심사 뒤로 미룸).
 
 # 규칙
 

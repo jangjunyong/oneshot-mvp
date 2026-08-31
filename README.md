@@ -21,9 +21,11 @@
 
 ```
 npm run dev        # localhost:3000
+npm test           # 유닛 171
 npm run typecheck  # 타입 에러 0 확인
 npm run lint       # 린트
 npm run build      # 프로덕션 빌드
+npm run test:e2e   # 무JS e2e 8 — build 가 먼저 돼 있어야 한다
 ```
 
 환경변수는 `.env.example` 을 `.env.local` 로 복사해서 채운다.
@@ -34,19 +36,24 @@ npm run build      # 프로덕션 빌드
 
 ## 문서
 
-| 파일 | 내용 |
-|---|---|
-| [`PRD.md`](PRD.md) | 왜 · 누구 · 안 만들 것 |
-| [`CLAUDE.md`](CLAUDE.md) | 저장소 규칙 · 암묵지 |
-| [`docs/wireframe.md`](docs/wireframe.md) | 와이어프레임 — 화면 4개 × 4상태, 화면 이동 |
-| [`docs/screens.md`](docs/screens.md) | 화면 매핑 — 엔드포인트 ↔ 화면, 플로우 3개 |
-| [`docs/FLOW.md`](docs/FLOW.md) | 흐름 · 실패 경로 · 도구 선택 |
-| [`evals/cases.md`](evals/cases.md) | 믿을 근거 열 줄 |
-| [`PLAN.md`](PLAN.md) | 오늘 만들 것 · 안 만들 것 |
-| [`docs/slices/`](docs/slices/) | 기능별 스펙 |
-| [`docs/참고사이트.md`](docs/참고사이트.md) | 레퍼런스 · 대체재 (확인된 URL) |
+**새 세션은 위에서부터 순서대로 읽는다.**
+
+| # | 파일 | 내용 |
+|---|---|---|
+| 1 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | **여기부터** — 지금 무엇이 있나 |
+| 2 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | 무엇을 왜 안 하기로 했나 (뒤집힌 결정 포함) |
+| 3 | [`CLAUDE.md`](CLAUDE.md) | 저장소 규칙 · 암묵지 |
+| 4 | [`evals/cases.md`](evals/cases.md) | 완료 판정 — 믿을 근거 열 줄 |
+
+참고 — [`PRD.md`](PRD.md) 왜·누구 · [`docs/wireframe.md`](docs/wireframe.md) 화면 규격 ·
+[`docs/FLOW.md`](docs/FLOW.md) 흐름·실패 경로 · [`docs/기능설명서.md`](docs/기능설명서.md) 제출물 본체 ·
+[`docs/참고사이트.md`](docs/참고사이트.md) 레퍼런스(2026-08-23 시점).
+
+> `PLAN.md`·`docs/screens.md`·`docs/slices/` 는 8월 하순 스냅샷이라 지금 코드와
+> 어긋난다 (셋 다 "안 만들 것"에 넣은 기능이 이미 배포돼 있다). 당시 판단을
+> 남기려고 지우지 않았을 뿐이니 **현재 상태의 근거로 쓰지 말 것.**
 
 ## CI/CD
 
-- **CI** — push·PR 마다 타입 검사 · 린트 · 빌드 (`.github/workflows/ci.yml`)
+- **CI** — push·PR 마다 타입 검사 · 린트 · **유닛 171** · 빌드 · **무JS e2e 8** (`.github/workflows/ci.yml`)
 - **CD** — Vercel Git 연동. `main` push 시 자동 배포
