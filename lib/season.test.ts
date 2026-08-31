@@ -138,13 +138,22 @@ test("12달 중 일부만 쟀으면 평평하다고 말하지 않는다", () => 
   // 1달만 잰 조건에서도 spread=0 이라 flat 이 참이 됐고, 화면은
   // "달을 바꿔도 폭이 0.00~0.00배 안에 머뭅니다 — 시기는 갈리지 않습니다"
   // 라고 적었다. 11달은 평평한 게 아니라 **재지 못한** 것이다.
-  const 한달만: PlanInput = {
-    sido: "서울", sigungu: "중구", month: 6,
-    themeCode: 3, populationManMyeong: 0.5, accessibility: 1,
+  // 섬 지역 + 작은 인구라 닮은 축제가 드물어 몇 달만 잡힌다.
+  //
+  // **개수를 못 박지 않는다.** 예전에는 `measured === 1` 로 픽스처를 고정했는데,
+  // 임계값이 실측을 따라 움직이자(0.27 → 0.24, 2026-08-31) 그 조건이 0달이 되어
+  // 테스트가 깨졌다. 그때 깨진 것은 규칙이 아니라 픽스처였다. 이 테스트가 지키는
+  // 것은 "몇 달이 잡히는가"가 아니라 **일부만 쟀을 때 평평하다고 말하지 않는가**다.
+  const 일부만: PlanInput = {
+    sido: "인천", sigungu: "옹진군", month: 6,
+    themeCode: 3, populationManMyeong: 1, accessibility: 1,
   };
-  const s = scanSeason(한달만);
-  assert.equal(s.measured, 1, "이 조건은 한 달만 잴 수 있어야 뜻이 있다");
-  assert.equal(s.flat, false, "한 달 재고 12달이 평평하다고 말하고 있다");
+  const s = scanSeason(일부만);
+  assert.ok(
+    s.measured > 0 && s.measured < 12,
+    `이 조건은 12달 중 일부만 잴 수 있어야 뜻이 있다 (measured=${s.measured})`,
+  );
+  assert.equal(s.flat, false, "일부만 재고 12달이 평평하다고 말하고 있다");
 
   // 12달을 다 잰 조건에서는 평평 판정이 살아 있어야 한다
   const 전부 = scanSeason(고령);

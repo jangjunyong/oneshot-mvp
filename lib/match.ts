@@ -8,6 +8,10 @@ import {
   type PlanInput,
 } from "@/lib/types";
 import { FESTIVALS, SEARCHED_SCOPE, monthOf, yearOf } from "@/lib/festivals";
+// 지도가 "찍어도 되는 좌표인가"를 판정하는 술어를 그대로 가져다 쓴다.
+// 재는 자와 그리는 자가 갈리면 화면의 거리와 지도의 핀이 서로를 반박한다.
+// (mapproj 는 아무것도 import 하지 않으므로 순환은 생기지 않는다)
+import { hasPlace } from "@/lib/mapproj";
 
 export type AxisWeight = Record<AxisSimilarity["axis"], number>;
 
@@ -69,14 +73,22 @@ function monthDistance(m1: number, m2: number): number {
  * 입력 지역의 좌표. 같은 시군구를 먼저 찾고 없으면 같은 시도의 첫 건을 쓴다.
  * 둘 다 없으면 null 을 돌려주고 지역 축을 아예 빼고 잰다. 좌표를 지어내지 않는다.
  * (지도(app/twin-map.tsx)도 같은 좌표를 쓴다 — 재는 자와 그리는 자가 같아야 한다)
+ *
+ * **쓸 수 있는 좌표만 고른다.** 619건 중 4건은 좌표가 비었거나
+ * (19.69, 117.99) 같은 기본값이 박혀 있다(`mapproj.ts` 머리말). 지도는 그걸
+ * `hasPlace` 로 막고 있었는데 여기서는 안 막아서, `서울 동작구` 로 진단하면
+ * `null` 이 0 으로 읽혀 기니만 앞바다가 원점이 되고 화면에 **"직선거리
+ * 13317km"** 가 근거인 척 떴다(`경기 양주시` 는 2268km). 위 주석이 약속한
+ * "재는 자와 그리는 자가 같아야 한다"를 술어를 공유해서 지킨다.
  */
 export function coordsOf(
   sido: string,
   sigungu: string,
 ): { lat: number; lng: number } | null {
+  const 쓸만한 = (f: Festival) => hasPlace(f.lat, f.lng);
   const hit =
-    FESTIVALS.find((f) => f.sido === sido && f.sigungu === sigungu) ??
-    FESTIVALS.find((f) => f.sido === sido);
+    FESTIVALS.find((f) => f.sido === sido && f.sigungu === sigungu && 쓸만한(f)) ??
+    FESTIVALS.find((f) => f.sido === sido && 쓸만한(f));
   return hit ? { lat: hit.lat, lng: hit.lng } : null;
 }
 
@@ -109,7 +121,10 @@ function axesFor(
     detail: `${input.populationManMyeong.toFixed(1)}만 명 vs ${f.populationManMyeong.toFixed(1)}만 명`,
   });
 
-  if (origin) {
+  // 상대 쪽 좌표도 쓸 만해야 잰다. 기본값이 박힌 4건을 그냥 재면 2000km 대
+  // 거리가 나와 지역 축이 "가장 먼 곳"으로 굳는다 — 재지 못한 것을 잰 척하는
+  // 것이라, 원점이 없을 때와 똑같이 **축을 빼고** 나머지로 잰다.
+  if (origin && hasPlace(f.lat, f.lng)) {
     const km = haversineKm(origin.lat, origin.lng, f.lat, f.lng);
     axes.push({
       axis: "region",

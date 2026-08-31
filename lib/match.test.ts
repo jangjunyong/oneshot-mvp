@@ -6,7 +6,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { findSimilar } from "@/lib/match";
+import { coordsOf, findSimilar } from "@/lib/match";
+import { hasPlace } from "@/lib/mapproj";
 import { FESTIVALS, monthOf } from "@/lib/festivals";
 import { DISTANCE_THRESHOLD, type AxisKey, type PlanInput } from "@/lib/types";
 
@@ -122,4 +123,74 @@ test("임계값은 실측이 보증하는 범위에 붙어 있다", () => {
     DISTANCE_THRESHOLD <= 최대 + 0.01,
     `임계값 ${DISTANCE_THRESHOLD} 가 실측 최대 ${최대.toFixed(4)} 보다 크게 느슨하다`,
   );
+});
+
+// ─────────────────────────────────────────────────────────────
+// 좌표 위생 — 재는 자와 그리는 자가 같아야 한다
+// ─────────────────────────────────────────────────────────────
+
+test("coordsOf 는 쓸 수 없는 좌표를 원점으로 돌려주지 않는다", () => {
+  // 619건 중 4건은 좌표가 비었거나 (19.69, 117.99) 기본값이 박혀 있다.
+  // 지도는 hasPlace 로 막고 있었는데 재는 쪽은 안 막아서, 서울 동작구로
+  // 진단하면 null 이 0 으로 읽혀 기니만 앞바다가 원점이 되고 화면에
+  // "직선거리 13317km" 가 근거인 척 떴다.
+  const 시군구 = [...new Set(FESTIVALS.map((f) => `${f.sido}|${f.sigungu}`))];
+
+  for (const p of 시군구) {
+    const [sido, sigungu] = p.split("|");
+    const c = coordsOf(sido, sigungu);
+    if (c === null) continue; // 좌표를 못 찾으면 null 이 정답이다
+    assert.ok(
+      hasPlace(c.lat, c.lng),
+      `${sido} ${sigungu} 의 원점이 한국 밖이다 (${c.lat}, ${c.lng})`,
+    );
+  }
+});
+
+test("지역 축 거리는 한반도 안의 값이다 — 지구 반대편이 근거로 나가지 않는다", () => {
+  // 원점이든 상대든 한쪽이라도 좌표가 쓰레기면 수천 km 가 나온다.
+  // 남한은 대각선이 500km 안쪽이다.
+  const 한반도최대 = 600;
+  let 최대 = 0;
+  let 최대설명 = "";
+
+  for (const f of FESTIVALS) {
+    const r = findSimilar({
+      sido: f.sido,
+      sigungu: f.sigungu,
+      month: monthOf(f),
+      themeCode: f.themeCode,
+      populationManMyeong: f.populationManMyeong,
+      accessibility: f.accessibility,
+    });
+    for (const m of r.matched) {
+      const 지역 = m.axes.find((a) => a.axis === "region");
+      if (!지역) continue; // 좌표가 없으면 축 자체가 빠진다 — 그게 정답이다
+      const km = Number((지역.detail.match(/([\d.]+)km/) ?? [])[1] ?? 0);
+      if (km > 최대) {
+        최대 = km;
+        최대설명 = `${f.sido} ${f.sigungu} → ${m.festival.sido} ${m.festival.sigungu}`;
+      }
+    }
+  }
+
+  assert.ok(
+    최대 <= 한반도최대,
+    `직선거리 ${최대}km 가 화면에 나간다 (${최대설명}) — 좌표가 쓰레기다`,
+  );
+});
+
+test("서울 동작구·경기 양주시 회귀 — 좌표 기본값이 박힌 시군구", () => {
+  // 이 둘이 정확히 13317km · 2268km 를 냈다. 지목해서 잠근다.
+  for (const [sido, sigungu] of [
+    ["서울", "동작구"],
+    ["경기", "양주시"],
+  ] as const) {
+    const c = coordsOf(sido, sigungu);
+    assert.ok(c, `${sido} ${sigungu} 의 좌표를 못 찾는다`);
+    assert.ok(
+      hasPlace(c!.lat, c!.lng),
+      `${sido} ${sigungu} 가 다시 한국 밖을 가리킨다`,
+    );
+  }
 });
