@@ -46,3 +46,8 @@ next-env.d.ts
 
 # 골든 스냅샷 (evals/golden.mjs 산출물)
 evals/.golden/
+
+# 공사 KT 일별 원본(하루 한 파일, 빌드 산출물이 visitors/ 에 있다)
+/data/kto/raw/
+/data/kto/prefetch.log
+/data/kto/prefetch.out
