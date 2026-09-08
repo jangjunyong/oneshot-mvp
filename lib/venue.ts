@@ -134,6 +134,8 @@ export interface Venue {
     view?: number;
   };
   items: VenueItem[];
+  /** 실도면(GeoJSON) — /venue 시뮬 편집기가 저장한다(2026-09-09). 있으면 items 대신 이것이 도면이다 */
+  geo?: GeoJSON.FeatureCollection & { origin?: [number, number]; zoom?: number; name?: string; source?: string };
 }
 
 /**
