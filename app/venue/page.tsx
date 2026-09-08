@@ -12,6 +12,7 @@ import { grade } from "@/lib/grade";
 import { planInputOf } from "@/lib/types";
 import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
 import { EditorShell } from "@/app/venue/editor-shell";
+import { SimShell } from "@/app/venue/sim-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -147,9 +148,10 @@ export default async function VenuePage({
         </span>
         <h1>행사장 도면</h1>
         <p className="lede">
-          부지 지도를 깔고 부스·무대·출입구·통로를 놓으면, 진단에서 나온 쌍둥이
+          OSM 실도면(위성으로 대조 가능) 위에서 보행자 시뮬레이션을 돌려, 진단에서 나온 쌍둥이
           축제의 실측 배수로 <strong>어디가 막히는지</strong>를 그 자리에서
-          잽니다.
+          잽니다. 방문객 수를 예측하지 않습니다 — 시나리오를 넣고 배치가
+          견디는지를 봅니다.
         </p>
 
       {오류 && (
@@ -173,6 +175,17 @@ export default async function VenuePage({
         )
       )}
 
+      <SimShell
+        initialCenter={initialCenter}
+        vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+        scenario={scenario}
+        initialGeo={venue.geo ?? null}
+        entryId={entryId}
+        saveAction={저장}
+      />
+
+      <details className="sim-legacy">
+        <summary>예전 캔버스 편집기 (Konva) — 위성 위 편집이 붙을 때까지 남겨 둔다</summary>
       <EditorShell
         initialVenue={venue}
         entryId={entryId}
@@ -183,6 +196,7 @@ export default async function VenuePage({
         scenario={scenario}
         saveAction={저장}
       />
+      </details>
       </main>
 
       <footer className="titleblock">

@@ -1,0 +1,96 @@
+/* 행사장 시뮬레이션 화면 — 도면 시스템 토큰 위에 얹는다 */
+.sim-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+  gap: 16px;
+  margin-top: 20px;
+  align-items: start;
+}
+.sim-panel {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 12px 14px 16px;
+  font-size: var(--text-sm);
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+}
+.sim-panel h3 {
+  font: 600 var(--text-xs) var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--concrete);
+  margin: 14px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.sim-panel h3:first-child { margin-top: 0; }
+.sim-row { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.sim-row > span { color: var(--concrete); font-size: var(--text-xs); }
+.sim-row input, .sim-row select {
+  font: inherit; padding: 5px 7px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+}
+.sim-row input[type="range"] { padding: 0; }
+.sim-check { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.sim-check input { margin: 0; }
+.sim-small { color: var(--concrete); font-size: var(--text-xs); line-height: 1.5; margin: 6px 0; }
+.sim-map-col { min-width: 0; }
+.sim-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 10px; border: 1px solid var(--line); border-bottom: none; background: var(--surface);
+  font-size: var(--text-sm);
+}
+.sim-toolbar .btn {
+  font: 500 var(--text-sm) var(--font-body); padding: 5px 12px;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--surface); cursor: pointer;
+}
+.sim-toolbar .btn:disabled { opacity: 0.35; cursor: default; }
+.sim-inline { display: inline-flex; align-items: center; gap: 6px; }
+.sim-inline input[type="range"] { width: 90px; }
+.sim-map {
+  position: relative; height: min(72vh, 760px); border: 1px solid var(--line-strong); background: var(--raised);
+}
+/* MapLibre 가 자기 캔버스를 나중에 붙이므로 z-index 없이는 타일이 도면을 덮는다. 컨트롤(z 2)보다는 아래 */
+.sim-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.sim-status { margin: 6px 0 0; font-size: var(--text-xs); color: var(--concrete); }
+.sim-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sim-kpi div { border: 1px solid var(--line); background: var(--raised); padding: 8px 10px; }
+.sim-kpi span { display: block; color: var(--concrete); font-size: var(--text-xs); }
+.sim-kpi b { display: block; font-size: var(--text-lg); font-weight: 600; margin-top: 2px; }
+.sim-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: var(--text-xs); color: var(--concrete); margin: 8px 0; }
+.sim-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.15); }
+.sim-table { width: 100%; border-collapse: collapse; font-size: var(--text-xs); margin: 4px 0 8px; }
+.sim-table th { text-align: left; font-weight: 500; color: var(--concrete); border-bottom: 1px solid var(--line-strong); padding: 3px 4px; }
+.sim-table td { border-bottom: 1px solid var(--line); padding: 3px 4px; vertical-align: top; }
+.sim-panel .btn {
+  font: 500 var(--text-sm) var(--font-body); padding: 6px 12px; width: 100%;
+  border: 1px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.sim-panel .btn:disabled { opacity: 0.35; cursor: default; }
+@media (max-width: 1100px) {
+  .sim-layout { grid-template-columns: 1fr; }
+  .sim-panel { position: static; max-height: none; }
+}
+.sim-gate { display: flex; justify-content: space-between; gap: 6px; margin: 2px 0; }
+.sim-gate span { color: var(--ink); font-size: var(--text-xs); flex: 1; }
+.sim-gate input { width: 64px; }
+.sim-q { width: 100%; box-sizing: border-box; font: inherit; padding: 6px 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); resize: vertical; margin: 4px 0 6px; }
+.sim-answer { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.sim-answer .alert, .sim-answer .note { font-size: var(--text-xs); margin: 6px 0; }
+.sim-tag { display: inline-block; font-size: 10px; padding: 1px 5px; border: 1px solid var(--line-strong); color: var(--concrete); margin-left: 4px; vertical-align: middle; }
+.sim-ol { margin: 4px 0 8px; padding-left: 18px; font-size: var(--text-xs); }
+.sim-ol li { margin: 2px 0; }
+
+/* 편집 */
+.sim-modes { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.sim-mode { font: 500 var(--text-xs) var(--font-body); padding: 4px 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer; }
+.sim-mode.is-on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.sim-two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sim-two .sim-row { margin: 4px 0; }
+.sim-inspector { border: 1px solid var(--line-strong); background: var(--raised); padding: 8px 10px; margin: 8px 0; }
+.sim-panel .btn.sim-primary { background: var(--ink); color: var(--surface); }
+.sim-panel .btn.sim-danger { border-color: var(--severe); color: var(--severe); margin-top: 6px; }
+.sim-hidden-form { display: none; }
+.sim-map[data-mode="select"] { cursor: default; }
+.sim-map[data-mode="booth"], .sim-map[data-mode="corridor"], .sim-map[data-mode="measure"] { cursor: crosshair; }
