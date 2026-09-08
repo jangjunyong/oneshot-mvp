@@ -792,7 +792,9 @@ export default function SimMap({
   const cats = Array.from(new Set(
     fc?.features.filter((f) => f.properties?.kind === "booth" && typeof f.properties?.cat === "string").map((f) => String(f.properties?.cat)) ?? [],
   ));
-  const worst = sum?.hotspots[0] ?? null;
+  // 1초 미만 지속은 반올림하면 "0초 지속"이 돼 말이 안 된다 — 표와 판정 문장 모두 1초 이상만
+  const hotspots = (sum?.hotspots ?? []).filter((h) => h.secAboveD >= 1);
+  const worst = hotspots[0] ?? null;
   const tot = sum ? Object.values(sum.gateCount).reduce((a, b) => a + b, 0) || 1 : 1;
   const boothN = fc?.features.filter((f) => f.properties?.kind === "booth").length ?? 0;
 
@@ -1027,7 +1029,7 @@ export default function SimMap({
         <table className="sim-table">
           <thead><tr><th>#</th><th>위치</th><th>최대</th><th>지속</th></tr></thead>
           <tbody>
-            {(sum?.hotspots ?? []).map((h, i) => (
+            {hotspots.map((h, i) => (
               <tr key={i}><td>{i + 1}</td><td>{venue ? nearestName(venue, h.x, h.y) : "-"}</td><td className="num">{h.peak.toFixed(2)}</td><td className="num">{h.secAboveD.toFixed(0)}s</td></tr>
             ))}
           </tbody>
