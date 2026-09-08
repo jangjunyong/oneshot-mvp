@@ -14,7 +14,8 @@ import {
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./sim.css";
-import { LOS, losOf, Simulation, type Scenario, type Summary } from "@/lib/sim/sim.js";
+import { LOS, losOf, type Scenario, type Summary } from "@/lib/sim/sim.js";
+import type { Frame, FromWorker, GridMeta, ToWorker } from "./sim-protocol";
 import { askScenario } from "@/app/venue/ask-action";
 import type { AskScenario, VenueIndex } from "@/lib/simask";
 import {
@@ -318,7 +319,15 @@ export default function SimMap({
   const mapRef = useRef<MLMap | null>(null);
   const projRef = useRef<Projection | null>(null);
   const venueRef = useRef<SimVenue | null>(null);
-  const simRef = useRef<Simulation | null>(null);
+  // 시뮬은 워커에서 돈다 — 메인은 마지막 프레임(스냅숏)만 그린다
+  const workerRef = useRef<Worker | null>(null);
+  const metaRef = useRef<GridMeta | null>(null);
+  const frameRef = useRef<Frame | null>(null);
+  const densRef = useRef<{ density: Float32Array; peak: Float32Array } | null>(null);
+  const scenarioRef = useRef<Scenario | null>(null);
+  /** 헤드리스 작업의 완료 콜백 — 질문·스트레스는 한 번에 하나만 */
+  const pendingRef = useRef<{ headless?: (r: FromWorker) => void; stress?: (r: FromWorker) => void }>({});
+  const send = (m: ToWorker) => workerRef.current?.postMessage(m);
   const runningRef = useRef(false);
   const speedRef = useRef(20);
   const showRef = useRef({ agents: true, heat: true, peak: false });
@@ -387,6 +396,33 @@ export default function SimMap({
     map.addControl(new NavigationControl(), "top-left");
     map.addControl(new ScaleControl({ maxWidth: 120, unit: "metric" }));
     mapRef.current = map;
+    // 워커 — 격자·거리장·스텝이 전부 여기서 돈다. 메인은 프레임을 받아 그리기만
+    const worker = new Worker(new URL("./sim.worker.ts", import.meta.url), { type: "module" });
+    workerRef.current = worker;
+    worker.onmessage = (e: MessageEvent<FromWorker>) => {
+      const m = e.data;
+      switch (m.type) {
+        case "built":
+          metaRef.current = m.meta;
+          setStatus(`격자 ${m.meta.w}×${m.meta.h} (${m.meta.cell}m) · 걸을 수 있는 면적 ${m.meta.walkM2.toFixed(0)}㎡ · 워커`);
+          setSum(m.summary);
+          setReady(true);
+          break;
+        case "frame":
+          frameRef.current = m.frame;
+          if (m.frame.density && m.frame.peakDensity) densRef.current = { density: m.frame.density, peak: m.frame.peakDensity };
+          break;
+        case "summary": setSum(m.summary); break;
+        case "stopped": runningRef.current = false; setRunning(false); break;
+        case "progress":
+          if (m.scope === "headless") setAsking(m.text); else setStressMsg(m.text);
+          break;
+        case "headlessDone": pendingRef.current.headless?.(m); pendingRef.current.headless = undefined; break;
+        case "stressDone": pendingRef.current.stress?.(m); pendingRef.current.stress = undefined; break;
+        case "error": setStatus(m.message); setAsking(null); setStressMsg(null); break;
+      }
+    };
+    worker.onerror = (ev) => setStatus("시뮬 워커를 못 띄웠습니다: " + (ev.message || "알 수 없는 오류"));
     // 개발 중에만 — 크롬 콘솔에서 레이어·소스 상태를 읽으려고 노출한다
     if (process.env.NODE_ENV !== "production") {
       (window as Window & { __simMap?: MLMap }).__simMap = map;
@@ -427,7 +463,7 @@ export default function SimMap({
       })
       .catch(() => setStatus("도면 파일을 못 읽었습니다 (" + VENUE_FILE + ")"));
 
-    return () => { ro.disconnect(); map.remove(); mapRef.current = null; };
+    return () => { ro.disconnect(); map.remove(); mapRef.current = null; worker.terminate(); workerRef.current = null; };
   }, []);
 
   // ── 배경 바꾸기 — 이벤트에서 처리한다. 스타일을 갈면 레이어가 날아가므로 다시 얹는다
@@ -453,8 +489,10 @@ export default function SimMap({
     fcRef.current = fc;
     runningRef.current = false;
     setRunning(false);
-    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 몇 초)");
-    simRef.current = null;
+    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 몇 초 — 워커에서)");
+    send({ type: "pause" });
+    frameRef.current = null;
+    densRef.current = null;
     setReady(false);
     // 도면(m)은 바로 — 그리기가 기다리면 안 된다. 격자·거리장은 몇 초라 한 틱(편집 뒤엔 1.5초) 미룬다
     {
@@ -472,27 +510,12 @@ export default function SimMap({
     editedRef.current = false;
     staleRef.current = false;
     const t = setTimeout(() => {
-      const proj = projRef.current;
-      if (!proj) return;
-      const venue = venueFromGeoJSON(eff, proj);
-      venueRef.current = venue;
-      setVenue(venue);
-      if (venue.gates.length === 0) {
-        setStatus("출입구(kind: gate)가 없어 시뮬을 못 돌립니다");
-        return;
-      }
       const sc: Scenario = {
         inflowPerHour: inflow.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n)),
         inflowScale: scaleRef.current, personsPerAgent: ppa, visitsPerPerson: visits, dwellSecMean: dwell, seed,
       };
-      const sim = new Simulation(venue, sc);
-      simRef.current = sim;
-      const walk = sim.grid.walk.reduce((a, b) => a + b, 0) * sim.cell * sim.cell;
-      setStatus(`격자 ${sim.grid.w}×${sim.grid.h} (${sim.cell}m) · 걸을 수 있는 면적 ${walk.toFixed(0)}㎡`);
-      setSum(sim.summary());
-      setReady(true);
-      // 거리장 계산이 메인 스레드를 몇 초 잡는 동안 지도가 멈춰 있다 — 깨운다
-      map.resize();
+      scenarioRef.current = sc;
+      send({ type: "build", fc: eff, origin, scenario: sc });
     }, delay);
     return () => clearTimeout(t);
   }, [fc, whatif, gateShare, focus, inflow, visits, dwell, seed, ppa, rebuildTick]);
@@ -500,9 +523,9 @@ export default function SimMap({
   // 배수는 시뮬을 다시 만들지 않는다 — 돌던 시뮬의 유입만 바꾼다
   useEffect(() => {
     scaleRef.current = scale;
-    if (simRef.current) simRef.current.scenario.inflowScale = scale;
+    send({ type: "scale", v: scale });
   }, [scale]);
-  useEffect(() => { speedRef.current = speed; }, [speed]);
+  useEffect(() => { speedRef.current = speed; send({ type: "speed", v: speed }); }, [speed]);
   useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
   const changeMode = (k: EditMode) => {
     modeRef.current = k; draftRef.current = [];
@@ -622,26 +645,10 @@ export default function SimMap({
 
   // ── 루프: 스텝은 타이머, 그리기는 rAF ────────────────────────────
   useEffect(() => {
-    let last = performance.now(), acc = 0, frame = 0, raf = 0;
-    const timer = setInterval(() => {
-      const now = performance.now();
-      const el = Math.min(2, (now - last) / 1000);
-      last = now;
-      const sim = simRef.current;
-      if (!(runningRef.current && sim)) return;
-      acc = Math.min(acc + el * speedRef.current, 120);
-      let n = 0;
-      while (acc >= sim.dt && n < 1200) { sim.step(); acc -= sim.dt; n++; }
-      const hours = sim.scenario.inflowPerHour.length;
-      if (sim.time > hours * 3600 && sim.agents.length === 0) {
-        runningRef.current = false;
-        setRunning(false);
-      }
-      if (document.hidden && frame++ % 10 === 0) setSum(sim.summary());
-    }, 50);
-
+    let frame = 0, raf = 0;
     const draw = () => {
-      const c = canvasEl.current, map = mapRef.current, sim = simRef.current, proj = projRef.current, venue = venueRef.current;
+      const c = canvasEl.current, map = mapRef.current, proj = projRef.current, venue = venueRef.current;
+      const meta = metaRef.current, fr = frameRef.current, dens = densRef.current;
       raf = requestAnimationFrame(draw);
       if (!c || !map) return;
       // 배경을 갈거나 첫 로드 뒤 타일이 와도 MapLibre 가 다시 안 그리는 일이 있다(2026-09-08 실측 —
@@ -650,12 +657,11 @@ export default function SimMap({
       const ctx = c.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, c.width, c.height);
-      if (!sim || !proj) return;
+      if (!proj) return;
       const toScreen = (x: number, y: number): [number, number] => {
         const p = map.project(proj.toLngLat([x, y]));
         return [p.x * devicePixelRatio, p.y * devicePixelRatio];
       };
-      const g = sim.grid;
       const sh = showRef.current;
       const o = toScreen(0, 0), u = toScreen(1, 0);
       const pxPerM = Math.hypot(u[0] - o[0], u[1] - o[1]);
@@ -664,14 +670,14 @@ export default function SimMap({
         fc: fcRef.current, proj, selectedId: selectedRef.current, drag: dragRef.current,
         draft: draftRef.current, hover: hoverRef.current, mode: modeRef.current,
       });
-      if (sh.heat || sh.peak) {
-        const src = sh.peak ? sim.peakDensity : sim.density;
+      if ((sh.heat || sh.peak) && meta && dens) {
+        const src = sh.peak ? dens.peak : dens.density;
         for (let i = 0; i < src.length; i++) {
           const d = src[i];
           if (d < 1.0) continue;
-          const cx = i % sim.dW, cy = Math.floor(i / sim.dW);
-          const x0 = g.minX + cx * sim.dCell, y0 = g.minY + cy * sim.dCell;
-          const a = toScreen(x0, y0), b = toScreen(x0 + sim.dCell, y0 + sim.dCell);
+          const cx = i % meta.dW, cy = Math.floor(i / meta.dW);
+          const x0 = meta.minX + cx * meta.dCell, y0 = meta.minY + cy * meta.dCell;
+          const a = toScreen(x0, y0), b = toScreen(x0 + meta.dCell, y0 + meta.dCell);
           ctx.fillStyle = losOf(d).color;
           ctx.fillRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
         }
@@ -698,59 +704,46 @@ export default function SimMap({
           label(cc[0], cc[1], gt.name);
         }
       }
-      if (sh.agents) {
+      if (sh.agents && fr) {
         const r = Math.max(1.2, (z - 15) * 1.1) * devicePixelRatio;
-        for (const a of sim.agents) {
-          const [sx, sy] = toScreen(a.x, a.y);
-          ctx.fillStyle = a.state === "queue" ? "#C62A20" : a.state === "serve" || a.state === "dwell" ? "#3a5a8a" : "#171717";
+        const colors = ["#171717", "#C62A20", "#3a5a8a", "#171717"];
+        for (let i = 0; i < fr.n; i++) {
+          const [sx, sy] = toScreen(fr.xy[2 * i], fr.xy[2 * i + 1]);
+          ctx.fillStyle = colors[fr.st[i]] ?? "#171717";
           ctx.beginPath();
           ctx.arc(sx, sy, r, 0, Math.PI * 2);
           ctx.fill();
         }
       }
-      if (runningRef.current && frame++ % 12 === 0) setSum(sim.summary());
+      frame++;
     };
     raf = requestAnimationFrame(draw);
-    return () => { clearInterval(timer); cancelAnimationFrame(raf); };
+    return () => { cancelAnimationFrame(raf); };
   }, []);
 
   // ── 스트레스 테스트 (첫 1.5시간, 점=1명) ─────────────────────────
-  const runStress = async () => {
-    const venue = venueRef.current, sim = simRef.current;
-    if (!venue || !sim) return;
+  const runStress = () => {
+    const venue = venueRef.current, base = scenarioRef.current, fc0 = fcRef.current;
+    if (!venue || !base || !fc0 || pendingRef.current.stress) return;
     runningRef.current = false;
     setRunning(false);
     setStress(null);
-    const base: Scenario = { ...sim.scenario };
+    setStressMsg("배수 0.5× 준비 중…");
     const horizon = Math.min(base.inflowPerHour.length, 1) * 3600 + 1800;
-    const rows: StressRow[] = [];
-    for (let k = 0.5; k <= 4.01; k += 0.5) {
-      const s = new Simulation(venue, { ...base, inflowScale: k, personsPerAgent: 1 });
-      const steps = horizon / s.dt;
-      for (let i = 0; i < steps; i++) {
-        s.step();
-        if (i % 2000 === 0) {
-          setStressMsg(`배수 ${k.toFixed(1)}× 재생 중… ${fmtT(s.time)}`);
-          await new Promise((r) => setTimeout(r));
-        }
-      }
-      const su = s.summary();
-      const worst = su.hotspots[0];
-      rows.push({
-        k, peak: su.peak.density,
-        where: su.limit.at ? nearestName(venue, su.limit.at.x, su.limit.at.y) : worst ? nearestName(venue, worst.x, worst.y) : "-",
-        sec: worst ? worst.secAboveD : 0, sec5: su.limit.secAbove5,
-      });
-      if (su.limit.secAbove5 >= 60) break;
-    }
-    setStressMsg(null);
-    setStress({ rows, limit: rows.find((o) => o.sec5 >= 60) ?? null });
+    const origin = fc0.origin ?? [126.93, 37.36];
+    pendingRef.current.stress = (m) => {
+      if (m.type !== "stressDone") return;
+      const rows: StressRow[] = m.rows.map((r) => ({ k: r.k, peak: r.peak, sec: r.sec, sec5: r.sec5, where: r.at ? nearestName(venue, r.at.x, r.at.y) : "-" }));
+      setStressMsg(null);
+      setStress({ rows, limit: rows.find((o) => o.sec5 >= 60) ?? null });
+    };
+    send({ type: "stress", fc: effectiveFC(fc0, whatif, gateShare, focus), origin, scenario: base, horizonSec: horizon });
   };
 
   // ── 질문 → 시나리오 → 90분 헤드리스 재생 → 시뮬 숫자로만 답 ─────────
   const runQuestion = async () => {
-    const fc0 = fc, proj = projRef.current, sim0 = simRef.current;
-    if (!fc0 || !proj || !sim0 || !question.trim()) return;
+    const fc0 = fc, proj = projRef.current, base = scenarioRef.current;
+    if (!fc0 || !proj || !base || !question.trim() || pendingRef.current.headless) return;
     runningRef.current = false;
     setRunning(false);
     setAnswer(null);
@@ -760,36 +753,26 @@ export default function SimMap({
     for (const g of sc.closeGates) wi["close:" + g] = true;
     for (const c of sc.doubleServersCats) wi["servers2cat:" + c] = true;
     const fo: Focus = { ids: sc.focusBooths, boost: sc.boost };
-    const v = venueFromGeoJSON(effectiveFC(fc0, wi, gateShare, fo), proj);
-    setAsking("격자·거리장 만드는 중…");
-    await new Promise((r) => setTimeout(r, 30));
+    const effQ = effectiveFC(fc0, wi, gateShare, fo);
+    const v = venueFromGeoJSON(effQ, proj);
+    setAsking("격자·거리장 만드는 중… (워커)");
     // 점=5명·60분 — 점=3명·90분은 2분 30초가 걸렸다(2026-09-08 실측). 답은 위치와 지속이지 소수점이 아니다
-    const s = new Simulation(v, { ...sim0.scenario, inflowScale: sc.inflowScale ?? scaleRef.current, personsPerAgent: Math.max(5, sim0.scenario.personsPerAgent ?? 1) });
     const minutes = 60;
-    const steps = (minutes * 60) / s.dt;
-    const waitingMax: Record<string, number> = {};
-    for (let i = 0; i < steps; i++) {
-      s.step();
-      if (i % 2000 === 0) {
-        for (const q of s.summary().queues) if (fo.ids.includes(q.id)) waitingMax[q.id] = Math.max(waitingMax[q.id] ?? 0, q.waiting);
-        setAsking(`가정대로 재생 중… ${fmtT(s.time)} / ${fmtT(minutes * 60)}`);
-        await new Promise((r) => setTimeout(r));
-      }
-    }
-    const su = s.summary();
-    for (const q of su.queues) if (fo.ids.includes(q.id)) waitingMax[q.id] = Math.max(waitingMax[q.id] ?? 0, q.waiting);
-    const focusAns: FocusAnswer[] = v.attractions.filter((a) => fo.ids.includes(a.id)).map((a) => {
-      let cells = 0, secMax = 0, peak = 0;
-      for (let i = 0; i < s.secAboveD.length; i++) {
-        const cx = i % s.dW, cy = Math.floor(i / s.dW);
-        const x = s.grid.minX + (cx + 0.5) * s.dCell, y = s.grid.minY + (cy + 0.5) * s.dCell;
-        if (Math.hypot(x - a.front[0], y - a.front[1]) > 10) continue;
-        peak = Math.max(peak, s.peakDensity[i]);
-        if (s.secAboveD[i] > 0) { cells++; secMax = Math.max(secMax, s.secAboveD[i]); }
-      }
-      const q = su.queues.find((x) => x.id === a.id);
-      return { name: a.name, waitingMax: waitingMax[a.id] ?? 0, maxWaitMin: (q?.maxWait ?? 0) / 60, balked: q?.balked ?? 0, corridorCells: cells, corridorSecMax: secMax, corridorPeak: peak };
+    const origin = fc0.origin ?? [126.93, 37.36];
+    const done = await new Promise<FromWorker>((resolve) => {
+      pendingRef.current.headless = resolve;
+      send({
+        type: "headless", fc: effQ, origin, minutes, focusIds: fo.ids,
+        scenario: { ...base, inflowScale: sc.inflowScale ?? scaleRef.current, personsPerAgent: Math.max(5, base.personsPerAgent ?? 1) },
+      });
     });
+    if (done.type !== "headlessDone") { setAsking(null); return; }
+    const su = done.result.summary;
+    const focusAns: FocusAnswer[] = done.result.focus.map((f) => ({
+      name: v.attractions.find((a) => a.id === f.id)?.name ?? f.id,
+      waitingMax: f.waitingMax, maxWaitMin: f.maxWaitMin, balked: f.balked,
+      corridorCells: f.corridorCells, corridorSecMax: f.corridorSecMax, corridorPeak: f.corridorPeak,
+    }));
     setAnswer({
       sc, minutes,
       hotspots: su.hotspots.map((h) => ({ where: nearestName(v, h.x, h.y), peak: h.peak, sec: h.secAboveD })),
@@ -958,8 +941,8 @@ export default function SimMap({
 
       <div className="sim-map-col">
         <div className="sim-toolbar">
-          <button type="button" className="btn" disabled={running || !ready} onClick={() => { runningRef.current = true; setRunning(true); }}>재생</button>
-          <button type="button" className="btn" disabled={!running} onClick={() => { runningRef.current = false; setRunning(false); }}>멈춤</button>
+          <button type="button" className="btn" disabled={running || !ready} onClick={() => { runningRef.current = true; setRunning(true); send({ type: "run" }); }}>재생</button>
+          <button type="button" className="btn" disabled={!running} onClick={() => { runningRef.current = false; setRunning(false); send({ type: "pause" }); }}>멈춤</button>
           <button type="button" className="btn" onClick={() => setWhatif({ ...whatif })}>처음부터</button>
           <label className="sim-inline"><span>배속</span>
             <input type="range" min={1} max={60} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} /> <b className="num">{speed}×</b>
