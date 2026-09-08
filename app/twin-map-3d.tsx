@@ -110,6 +110,13 @@ export default function TwinMap3D({
       // 기둥 — 멀리 있는 것(화면 위쪽)부터 그려 가까운 것이 덮는다
       const drawn: Drawn[] = [];
       const order = [...P].map((p) => ({ p, s: sc(p.lng, p.lat) })).sort((a, b) => a.s[1] - b.s[1]);
+      // 같은 자리(같은 시군구)의 기둥은 겹친다 — 가까운 것끼리 옆으로 비켜 세운다. 번호 순으로 오른쪽
+      const step = 26 * dpr;
+      for (let i = 0; i < order.length; i++) {
+        const me = order[i];
+        const near = order.filter((o) => Math.abs(o.s[0] - me.s[0]) < step && Math.abs(o.s[1] - me.s[1]) < 60 * dpr && o.p.num < me.p.num).length;
+        if (near > 0) me.s = [me.s[0] + near * step, me.s[1]];
+      }
       for (const { p, s } of order) {
         const [x, y] = s;
         const sel = p.id === S, hov = p.id === hoverRef.current;
