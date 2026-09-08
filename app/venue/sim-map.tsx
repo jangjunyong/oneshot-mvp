@@ -1074,7 +1074,7 @@ export default function SimMap({
             )}
           </>
         )}
-        <p className="sim-small">엔진 기본 도표(Weidmann) 검증 전이다. 밀도·대기열·병목 <strong>위치</strong>까지만 읽고, 배수 상한 숫자는 아직 근거로 쓰지 말 것.</p>
+        <p className="sim-small">엔진은 폭 2m 통로 정상류에서 Weidmann 기본도표 ±30% 안(7점 중 6점, 전부 느린 쪽)을 통과했다(2026-09-09). 5명/㎡ 위 구간은 어떤 모델도 검증 밖이라, 상한 배수는 <strong>구간</strong>으로 읽을 것.</p>
       </aside>
     </div>
   );
