@@ -34,6 +34,7 @@ import { scanSeason } from "@/lib/season";
 import { peerContext, peerSurges } from "@/lib/peer";
 import { PeerStrip } from "@/app/peer-strip";
 import { TwinMap } from "@/app/twin-map";
+import { TwinMap3DShell } from "@/app/twin-map-3d-shell";
 import { TwinCards } from "@/app/_components/twin-cards";
 import { SeasonTable } from "@/app/_components/season-table";
 import { Choice, Field } from "@/app/_components/form-fields";
@@ -486,6 +487,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   selectedPin={핀?.festival.id ?? null}
                   scope={고름.result.searchedScope}
                 />
+                {/* 3D 는 보조 — 닮은 축제 몇 곳의 좌표·배수만 넘긴다. 619건은 서버에 남는다 */}
+                {고름.result.matched.length > 0 && (
+                  <TwinMap3DShell
+                    pins={고름.result.matched.map((m, i) => ({
+                      id: m.festival.id, name: m.festival.name, lat: m.festival.lat, lng: m.festival.lng,
+                      num: i + 1, year: m.year, surge: m.festival.actualVisitSurge,
+                    }))}
+                    origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
+                    entryId={고름.e.id}
+                    selectedPin={핀?.festival.id ?? null}
+                    vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+                  />
+                )}
                 <TwinCards
                   entryId={고름.e.id}
                   matched={고름.result.matched}
