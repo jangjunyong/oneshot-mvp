@@ -83,6 +83,7 @@ describe("이웃 줄에 맞추기 — 15° 눌러서는 도로 각도에 못 맞
     assert.deepEqual(far.at, [0, 5]);
     const none = snapToRow(fc, proj, [50, 50]);
     assert.equal(none.neighbor, null);
+    assert.equal(none.via, null);
     assert.equal(none.rotation, 0);
   });
   it("rotateTo·alignToNeighbor 는 절대 각도로 맞춘다", () => {
@@ -92,5 +93,40 @@ describe("이웃 줄에 맞추기 — 15° 눌러서는 도로 각도에 못 맞
     assert.ok(Math.abs(orientationOf(fc.features[1], proj) - 100) < 1e-6);
     fc = alignToNeighbor(fc, proj, "b2");
     assert.ok(Math.abs(orientationOf(fc.features[1], proj) - 8.6) < 1e-6);
+  });
+});
+
+describe("첫 부스 — 이웃이 없으면 통로 방향·연석 바깥에 붙는다", () => {
+  it("도로 띠 안을 누르면 도로 각도로, 누른 쪽 연석 바깥 0.3m 에", () => {
+    // 폭 10m 도로가 (0,0)→(100,50) 으로 비스듬히
+    const fc = addCorridor(base, proj, [[0, 0], [100, 50]], 10);
+    const ang = Math.atan2(50, 100), ux = Math.cos(ang), uy = Math.sin(ang);
+    // 도로 위 s=40 지점에서 왼쪽으로 2m 들어간 곳을 누른다
+    const foot: [number, number] = [40 * ux, 40 * uy];
+    const p: [number, number] = [foot[0] - uy * 2, foot[1] + ux * 2];
+    const r = snapToRow(fc, proj, p);
+    assert.equal(r.via, "corridor");
+    assert.ok(Math.abs(r.rotation - (ang * 180) / Math.PI) < 1e-6);
+    // 왼쪽 연석(5m) 바깥 1.8m = 6.8m
+    const lat = -(r.at[0] - foot[0]) * uy + (r.at[1] - foot[1]) * ux;
+    assert.ok(Math.abs(lat - 6.8) < 1e-6, String(lat));
+  });
+  it("통로에서 멀리(가장자리 3m 밖) 누르면 각도만 맞추고 자리는 그대로", () => {
+    const fc = addCorridor(base, proj, [[0, 0], [100, 0]], 4);
+    const r = snapToRow(fc, proj, [50, 9]);
+    assert.equal(r.via, "corridor");
+    assert.equal(r.rotation, 0);
+    assert.deepEqual(r.at, [50, 9]);
+  });
+  it("통로가 15m 안에 없으면 아무것도 안 한다", () => {
+    const fc = addCorridor(base, proj, [[0, 0], [100, 0]], 4);
+    assert.equal(snapToRow(fc, proj, [50, 40]).via, null);
+  });
+  it("이웃 부스가 있으면 부스가 통로보다 우선", () => {
+    let fc = addCorridor(base, proj, [[0, 0], [100, 0]], 4);
+    fc = addBooth(fc, proj, [50, 3.8], { name: "a", cat: "x", rotation: 20 });
+    const r = snapToRow(fc, proj, [53.4, 4.1]);
+    assert.equal(r.via, "booth");
+    assert.ok(Math.abs(r.rotation - 20) < 1e-6);
   });
 });

@@ -265,10 +265,10 @@ function drawEdit(
   }
   if (st.mode === "booth" && st.hover) {
     // 놓일 자리 미리 보기 — 3×3. 이웃 줄에 붙으면 그 각도·자리로 보인다
-    const sn = st.snap && st.fc && st.proj ? snapToRow(st.fc, st.proj, st.hover) : { at: st.hover, rotation: 0, neighbor: null };
+    const sn = st.snap && st.fc && st.proj ? snapToRow(st.fc, st.proj, st.hover) : { at: st.hover, rotation: 0, neighbor: null, via: null };
     const a = (sn.rotation * Math.PI) / 180, c = Math.cos(a), sgn = Math.sin(a);
     const pts: [number, number][] = [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]].map(([x, y]) => toScreen(sn.at[0] + x * c - y * sgn, sn.at[1] + x * sgn + y * c));
-    ctx.strokeStyle = sn.neighbor ? "#171717" : "#C62A20"; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.strokeStyle = sn.via ? "#171717" : "#C62A20"; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([4 * dpr, 3 * dpr]);
     ctx.beginPath(); pts.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
     void pxPerM;
   }
@@ -597,7 +597,7 @@ export default function SimMap({
       if (snapRef.current && f && f.properties?.kind === "booth") {
         const c = centroidM(f, proj);
         const sn = snapToRow(next, proj, c, 3.5, d.id);
-        if (sn.neighbor) {
+        if (sn.via) {
           next = translateFeature(next, proj, d.id, sn.at[0] - c[0], sn.at[1] - c[1]);
           next = rotateTo(next, proj, d.id, sn.rotation);
         }
@@ -611,7 +611,7 @@ export default function SimMap({
     const md = modeRef.current;
     if (md === "booth") {
       const n = fc0.features.filter((f) => f.properties?.kind === "booth").length + 1;
-      const sn = snapRef.current ? snapToRow(fc0, proj, m) : { at: m, rotation: 0, neighbor: null };
+      const sn = snapRef.current ? snapToRow(fc0, proj, m) : { at: m, rotation: 0, neighbor: null, via: null };
       commit(addBooth(fc0, proj, sn.at, { name: newBooth.name.trim() || `${newBooth.cat} ${n}`, cat: newBooth.cat, servers: newBooth.servers, serviceSec: newBooth.serviceSec, rotation: sn.rotation }));
     } else if (md === "corridor") {
       draftRef.current = [...draftRef.current, m];
@@ -831,12 +831,12 @@ export default function SimMap({
           ))}
         </div>
         {(mode === "select" || mode === "booth") && (
-          <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄에 맞추기 (각도·3.5m 간격)</span></label>
+          <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄·통로에 맞추기 (각도·3.5m 간격, 첫 부스는 도로 연석에)</span></label>
         )}
         {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
         {mode === "booth" && (
           <>
-            <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 선다(국내 조립부스 규격). 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>
+            <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 선다(국내 조립부스 규격). 이웃 부스가 있으면 그 줄에, 없으면 가장 가까운 도로·산책로 방향으로 연석 바깥에 붙는다. 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>
             <label className="sim-row"><span>이름 (비우면 분류+번호)</span><input value={newBooth.name} onChange={(e) => setNewBooth({ ...newBooth, name: e.target.value })} /></label>
             <label className="sim-row"><span>분류</span>
               <select value={newBooth.cat} onChange={(e) => setNewBooth({ ...newBooth, cat: e.target.value })}>{BOOTH_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>

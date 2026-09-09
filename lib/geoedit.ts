@@ -200,17 +200,52 @@ export function nearestBooth(fc: FC, proj: Projection, p: [number, number], maxD
  * 이웃 부스의 축(첫 변) 위로 점을 내려 3.5m 피치(부스 3m + 틈 0.5m)로 반올림한다.
  * 옆으로 2.5m 넘게 떨어져 누른 점은 새 줄로 보고 각도만 맞춘다.
  */
-export function snapToRow(fc: FC, proj: Projection, p: [number, number], pitch = 3.5, exceptId: string | null = null): { at: [number, number]; rotation: number; neighbor: Feature | null } {
+/** 점(m)에서 가장 가까운 통로 선분 — 각도(도)·선분 위 발·옆 거리(부호)·폭 */
+export function nearestCorridorSegment(fc: FC, proj: Projection, p: [number, number], maxDist = 15): { angle: number; foot: [number, number]; lateral: number; width: number } | null {
+  let best: { d: number; angle: number; foot: [number, number]; lateral: number; width: number } | null = null;
+  for (const f of fc.features) {
+    if (f.properties?.kind !== "corridor" || f.geometry.type !== "LineString") continue;
+    const pts = f.geometry.coordinates.map((c) => proj.toM(c));
+    const w = Number(f.properties?.width ?? 4);
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+      const vx = bx - ax, vy = by - ay, L = Math.hypot(vx, vy) || 1e-9;
+      const t = Math.max(0, Math.min(1, ((p[0] - ax) * vx + (p[1] - ay) * vy) / (L * L)));
+      const foot: [number, number] = [ax + vx * t, ay + vy * t];
+      const d = distM(p, foot);
+      if (d <= maxDist && (!best || d < best.d)) {
+        const ux = vx / L, uy = vy / L;
+        best = { d, angle: (Math.atan2(vy, vx) * 180) / Math.PI, foot, lateral: -(p[0] - foot[0]) * uy + (p[1] - foot[1]) * ux, width: w };
+      }
+    }
+  }
+  return best;
+}
+
+export interface Snap { at: [number, number]; rotation: number; neighbor: Feature | null; via: "booth" | "corridor" | null }
+
+export function snapToRow(fc: FC, proj: Projection, p: [number, number], pitch = 3.5, exceptId: string | null = null): Snap {
   const nb = nearestBooth(fc, proj, p, 8, exceptId);
-  if (!nb) return { at: p, rotation: 0, neighbor: null };
+  if (!nb) {
+    // 첫 부스 — 이웃이 없으면 통로 방향에 맞춘다. 통로 띠 안이나 가장자리 3m 안을 눌렀으면 연석 바깥 0.3m 로 붙인다
+    const cs = nearestCorridorSegment(fc, proj, p, 15);
+    if (!cs) return { at: p, rotation: 0, neighbor: null, via: null };
+    const a = (cs.angle * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+    const edge = cs.width / 2 + 1.5 + 0.3;
+    if (Math.abs(cs.lateral) <= cs.width / 2 + 3) {
+      const sgn = cs.lateral >= 0 ? 1 : -1;
+      return { at: [cs.foot[0] - uy * sgn * edge, cs.foot[1] + ux * sgn * edge], rotation: cs.angle, neighbor: null, via: "corridor" };
+    }
+    return { at: p, rotation: cs.angle, neighbor: null, via: "corridor" };
+  }
   const rot = orientationOf(nb, proj);
   const a = (rot * Math.PI) / 180, ax = Math.cos(a), ay = Math.sin(a);
   const c = centroidM(nb, proj);
   const dx = p[0] - c[0], dy = p[1] - c[1];
   const along = dx * ax + dy * ay, lateral = -dx * ay + dy * ax;
   const t = Math.round(along / pitch) * pitch;
-  if (Math.abs(lateral) > 2.5) return { at: p, rotation: rot, neighbor: nb };
-  return { at: [c[0] + ax * t, c[1] + ay * t], rotation: rot, neighbor: nb };
+  if (Math.abs(lateral) > 2.5) return { at: p, rotation: rot, neighbor: nb, via: "booth" };
+  return { at: [c[0] + ax * t, c[1] + ay * t], rotation: rot, neighbor: nb, via: "booth" };
 }
 
 /** 절대 각도(도)로 돌린다 */
