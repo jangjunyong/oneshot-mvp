@@ -559,7 +559,7 @@ export default function SimMap({
     fcRef.current = fc;
     runningRef.current = false;
     setRunning(false);
-    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 몇 초 — 워커에서)");
+    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 워커에서 몇 초)");
     send({ type: "pause" });
     frameRef.current = null;
     densRef.current = null;
@@ -573,7 +573,7 @@ export default function SimMap({
       // 편집 중 — 도면만 바꾸고 시뮬은 나중에. 화면엔 그 사실을 적는다
       editedRef.current = false;
       staleRef.current = true;
-      setStatus("편집 중 — 보기 모드로 돌아가면 격자·거리장을 다시 만든다");
+      setStatus("편집 중. 보기 모드로 돌아가면 격자·거리장을 다시 만든다");
       return;
     }
     const delay = editedRef.current ? 800 : 30;
@@ -952,7 +952,7 @@ export default function SimMap({
         {(mode === "select" || mode === "booth") && (
           <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄·통로에 맞추기 (각도·3.5m 간격, 첫 부스는 도로 연석에)</span></label>
         )}
-        {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 고른 것의 <strong>둥근 손잡이</strong>를 끌면 자유롭게 돌고(Shift 면 15° 단위), <strong>네모 손잡이</strong>를 끌면 그 방향으로 3.5m 마다 같은 부스가 이어진다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
+        {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 고른 것의 <strong>둥근 손잡이</strong>를 끌면 자유롭게 돈다(Shift 면 15° 단위). 네모 손잡이를 끌면 그 방향으로 3.5m 마다 같은 부스가 이어진다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
         {mode === "booth" && (
           <>
             <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 선다(국내 조립부스 규격). 이웃 부스가 있으면 그 줄에, 없으면 가장 가까운 도로·산책로 방향으로 연석 바깥에 붙는다. 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>
@@ -997,7 +997,7 @@ export default function SimMap({
                   {p.kind === "gate" && (
                     <label className="sim-row"><span>유입 몫</span><input type="number" min={0} max={1} step={0.05} value={gateShare[selectedId] ?? Number(p.share ?? 0)} onChange={(e) => setGateShare({ ...gateShare, [selectedId]: Number(e.target.value) })} /></label>
                   )}
-                  <label className="sim-row"><span>각도(°) — 첫 변 기준</span>
+                  <label className="sim-row"><span>각도(°) · 첫 변 기준</span>
                     <input type="number" step={0.5} value={projView ? Math.round(orientationOf(f, projView) * 10) / 10 : 0} onChange={(e) => rotateSelTo(Number(e.target.value))} />
                   </label>
                   <div className="sim-four">
@@ -1056,7 +1056,7 @@ export default function SimMap({
             );
           })}
         </div>
-        <p className="sim-small">담당자 말로는 대부분 수리산역에서 내려 들어온다 — 그 출입구를 0.6 으로 두었다. 실측이 아니라 가정이다.</p>
+        <p className="sim-small">담당자 말로는 대부분 수리산역에서 내려 들어온다. 그 출입구를 0.6 으로 두었다. 실측이 아니라 가정이다.</p>
         <label className="sim-row"><span>1인 방문 부스 수</span>
           <input type="number" value={visits} min={1} max={10} onChange={(e) => setVisits(Number(e.target.value))} />
         </label>
@@ -1135,20 +1135,20 @@ export default function SimMap({
             <p className="sim-small"><strong>가정</strong> {answer.sc.restated || "화면의 시나리오 그대로"} <span className="sim-tag">{answer.sc.source === "model" ? "모델이 옮김" : "규칙으로 옮김"}</span></p>
             {answer.focus.map((f) => (
               <p key={f.name} className={f.corridorCells > 0 ? "alert" : "note"} data-level={f.corridorCells > 0 ? "심각" : undefined}>
-                <strong>{f.name}</strong> — 줄 최대 <b className="num">{f.waitingMax}</b>, 최장 대기 <b className="num">{f.maxWaitMin.toFixed(1)}분</b>, 줄 포기 <b className="num">{f.balked}</b>.
+                <strong>{f.name}</strong>: 줄 최대 <b className="num">{f.waitingMax}</b>, 최장 대기 <b className="num">{f.maxWaitMin.toFixed(1)}분</b>, 줄 포기 <b className="num">{f.balked}</b>.
                 앞 10m 안에서 3명/㎡ 이상을 겪은 칸 <b className="num">{f.corridorCells}</b>개
-                {f.corridorCells > 0 ? <>, 최장 <b className="num">{f.corridorSecMax.toFixed(0)}초</b>, 최대 <b className="num">{f.corridorPeak.toFixed(2)}명/㎡</b>. 줄이 통로를 먹는다.</> : ". 통로는 버틴다 — 이 가정 안에서."}
+                {f.corridorCells > 0 ? <>, 최장 <b className="num">{f.corridorSecMax.toFixed(0)}초</b>, 최대 <b className="num">{f.corridorPeak.toFixed(2)}명/㎡</b>. 줄이 통로를 먹는다.</> : ". 통로는 버틴다, 이 가정 안에서."}
               </p>
             ))}
             <p className="sim-small"><strong>병목 상위</strong> ({answer.minutes}분 재생)</p>
             <ol className="sim-ol">
               {answer.hotspots.length === 0 && <li>3명/㎡ 이상이 지속된 칸이 없다</li>}
               {answer.hotspots.map((h, i) => (
-                <li key={i}>{h.where} — 최대 <b className="num">{h.peak.toFixed(2)}</b>, 지속 <b className="num">{h.sec.toFixed(0)}초</b></li>
+                <li key={i}>{h.where}: 최대 <b className="num">{h.peak.toFixed(2)}</b>, 지속 <b className="num">{h.sec.toFixed(0)}초</b></li>
               ))}
             </ol>
             {answer.limitSec >= 60 ? (
-              <p className="alert" data-level="심각">행안부 &quot;위험&quot;(5명/㎡)이 <b className="num">{answer.limitSec.toFixed(0)}초</b> 이어진 자리가 있다 — {answer.limitWhere}. 이 가정에서는 배치를 바꿔야 한다.</p>
+              <p className="alert" data-level="심각">행안부 &quot;위험&quot;(5명/㎡)이 <b className="num">{answer.limitSec.toFixed(0)}초</b> 이어진 자리가 있다: {answer.limitWhere}. 이 가정에서는 배치를 바꿔야 한다.</p>
             ) : (
               <p className="note">5명/㎡ 60초 지속 지점은 없다. 근거를 못 찾은 것이지 안전하다는 뜻이 아니다.</p>
             )}
@@ -1170,10 +1170,10 @@ export default function SimMap({
         </p>
         {worst ? (
           <p className="alert" data-level="심각">
-            행안부 &quot;주의&quot;(3명/㎡) 이상이 <b className="num">{worst.secAboveD.toFixed(0)}초</b> 지속된 지점이 있다 — 최대 <b className="num">{worst.peak.toFixed(2)}명/㎡</b> ({losOf(worst.peak).grade}). 지도의 짙은 칸이 그 자리다.
+            행안부 &quot;주의&quot;(3명/㎡) 이상이 <b className="num">{worst.secAboveD.toFixed(0)}초</b> 지속된 지점이 있다. 최대 <b className="num">{worst.peak.toFixed(2)}명/㎡</b> ({losOf(worst.peak).grade}). 지도의 짙은 칸이 그 자리다.
           </p>
         ) : (
-          <p className="note">아직 3명/㎡ 이상이 지속된 지점이 없다. (가정 안에서의 결과다 — &quot;안전하다&quot;는 뜻이 아니다)</p>
+          <p className="note">아직 3명/㎡ 이상이 지속된 지점이 없다. (가정 안에서의 결과다. &quot;안전하다&quot;는 뜻이 아니다)</p>
         )}
 
         <h3>병목 상위 (3명/㎡ 이상 지속 시간)</h3>
@@ -1223,7 +1223,7 @@ export default function SimMap({
             {stress.limit ? (
               <p className="alert" data-level="심각">시나리오의 <b className="num">{stress.limit.k.toFixed(1)}배</b>에서 <b>{stress.limit.where}</b>가 행안부 &quot;위험&quot;(5명/㎡) 이상을 60초 넘게 유지한다. 이 배치가 견디는 상한은 그 아래다.</p>
             ) : (
-              <p className="note">4배까지 5명/㎡ 60초 지속 지점이 없다 — 이 시나리오·가정 안에서.</p>
+              <p className="note">4배까지 5명/㎡ 60초 지속 지점이 없다. 이 시나리오·가정 안에서의 결과다.</p>
             )}
           </>
         )}

@@ -330,13 +330,13 @@ export function checkVisitors(
     if (history.length === 1 && peer) {
       // 1년뿐이면 또래 상위 5% 와 자기 이력 중 큰 쪽 — 한 해가 특별히 나빴을 가능성을 봐준다
       historyMult = Math.max(historyMult, basis === "peakDay" ? peer.peakP95 : peer.meanP95);
-      base.caveats.push(`이력이 1년뿐이라 ${peer.label} 상위 5% 배수와 비교했다 — 신뢰도 낮음.`);
+      base.caveats.push(`이력이 1년뿐이라 ${peer.label} 상위 5% 배수와 비교했다. 신뢰도 낮음.`);
     }
   } else if (peer) {
     // 첫 회: 베이스라인이 없으니 요구 배수는 못 재고, 담당자가 낸 값을 배수로 환산할 근거가 없다.
     historyMult = basis === "peakDay" ? peer.peakP95 : peer.meanP95;
     confidence = "low";
-    base.caveats.push(`첫 회 축제 — 자기 이력이 없어 ${peer.label} 상위 5% 배수만 참고한다.`);
+    base.caveats.push(`첫 회 축제라 자기 이력이 없다. ${peer.label} 상위 5% 배수만 참고한다.`);
   }
   if (requiredMult !== null && historyMult !== null && historyMult > 0) {
     r = requiredMult / historyMult;
@@ -386,7 +386,7 @@ export function checkVisitors(
   } else if (capLabel) label = capLabel;
   else label = "근거 없음";
 
-  base.caveats.push("순증은 귀속 100%가 아니다 — 같은 기간 반경 50km 다른 축제·연휴가 섞인다.");
+  base.caveats.push("순증은 귀속 100%가 아니다. 같은 기간 반경 50km 다른 축제·연휴가 섞인다.");
   base.caveats.push("현지인 참여가 큰 축제는 외지인 기준 순증이 과소 평가된다.");
 
   return {
@@ -568,11 +568,11 @@ export function checkSchedule(claim: ScheduleClaim, history: readonly HistoryYea
   }
   if (!hasWeekend) {
     label = "과대";
-    notes.push("주말이 없는 기간이다 — 이력 최대일은 전부 주말이었다.");
+    notes.push("주말이 없는 기간이다. 이력 최대일은 전부 주말이었다.");
   }
   if (lengthDays > lenMax * 1.5) {
     if (label === "통과") label = "주의";
-    notes.push(`기간 ${lengthDays}일은 이력 최장 ${lenMax}일의 1.5배를 넘는다 — 일평균 배수가 희석된다.`);
+    notes.push(`기간 ${lengthDays}일은 이력 최장 ${lenMax}일의 1.5배를 넘는다. 일평균 배수가 희석된다.`);
   }
   if (notes.length === 0) notes.push(`이력 최대일 요일(${[...peaks].map((d) => DOW_KO[d]).join("·")})과 길이(${historyLengthDays.join("·")}일)가 기획과 맞는다.`);
   return { item: "schedule", label, weekdays, historyPeakWeekdays, lengthDays, historyLengthDays, hasWeekend, note: notes.join(" ") };

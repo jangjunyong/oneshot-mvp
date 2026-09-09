@@ -164,7 +164,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
 
         {isDemo && (
           <p className="alert" data-level="근거없음">
-            <strong>견본</strong> — 군포시(41410) 2024·2025·2026 군포철쭉축제 기간.
+            <strong>견본</strong>입니다. 군포시(41410)의 2024·2025·2026 군포철쭉축제 기간을 봅니다.
           </p>
         )}
         {errors.map((e) => (

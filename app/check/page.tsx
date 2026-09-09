@@ -137,8 +137,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
         {isDemo && (
           <p className="alert" data-level="근거없음">
-            <strong>견본</strong> — 군포철쭉축제 2027 기획안. 예상 방문객은 2025년 발표 최다일 값이고, 이력은
-            2024·2025·2026 세 해다. 아래 칸을 고쳐 다른 축제를 넣을 수 있다.
+            <strong>견본</strong>입니다. 군포철쭉축제 2027 기획안이고, 예상 방문객은 2025년 발표 최다일 값, 이력은
+            2024·2025·2026 세 해입니다. 아래 칸을 고쳐 다른 축제를 넣을 수 있습니다.
           </p>
         )}
         {errors.map((e) => (
@@ -197,9 +197,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                             <th>
                               {i + 1}단계 {s.title}
                               <span className="note">
-                                {s.id === "cap" && " — 하드 게이트"}
-                                {s.id === "increment" && " — 보조 신호"}
-                                {s.id === "multiple" && " — 주 근거"}
+                                {s.id === "cap" && " · 하드 게이트"}
+                                {s.id === "increment" && " · 보조 신호"}
+                                {s.id === "multiple" && " · 주 근거"}
                               </span>
                             </th>
                             <td>{stageNum(s.slots.numerator)}</td>
@@ -221,7 +221,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         {visitors.verdict.r !== null && (
                           <tr>
                             <th>
-                              3단계 세부<span className="note"> — r = 요구 배수 ÷ 이력 배수</span>
+                              3단계 세부<span className="note"> · r = 요구 배수 ÷ 이력 배수</span>
                             </th>
                             <td className="num">{visitors.verdict.requiredMult?.toFixed(2)}배 요구</td>
                             <td>{stageNum("historyMult")}</td>
@@ -271,9 +271,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       </td>
                     </tr>
                     {[
-                      noEvidence("주차면", "주차 수요를 잴 공사 데이터가 없다 — 담당자 확인"),
-                      noEvidence("부스 수", "부스 수요를 잴 공사 데이터가 없다 — 행사장 도면 시뮬로 통로 밀도만 본다"),
-                      noEvidence("예산", "문체부 예산 자료는 2026·2027 행이 없다 — 예산 미공개"),
+                      noEvidence("주차면", "주차 수요를 잴 공사 데이터가 없다. 담당자 확인."),
+                      noEvidence("부스 수", "부스 수요를 잴 공사 데이터가 없다. 행사장 도면 시뮬로 통로 밀도만 본다."),
+                      noEvidence("예산", "문체부 예산 자료에 2026·2027 행이 없다. 예산 미공개."),
                     ].map((v) => (
                       <tr key={v.item}>
                         <th>{v.item}</th>
@@ -291,7 +291,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
                 {(visitors || 귀속경고) && (
                   <details className="selfcheck" open>
-                    <summary>단서 — 이 판정이 말하지 않는 것</summary>
+                    <summary>단서 · 이 판정이 말하지 않는 것</summary>
                     <ul>
                       {귀속경고 && (
                         <li className="attribution" data-status={경쟁상태}>
@@ -329,7 +329,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         </p>
                         <p className="note">
                           자기 이력 {range.years.join("·")} 의 연도별 배수를 0.1 단위로 바깥 반올림한 구간.{" "}
-                          {range.confidence === "high" ? "이력 2년 이상." : "이력 1년뿐 — 신뢰도 낮음."}
+                          {range.confidence === "high" ? "이력 2년 이상." : "이력이 1년뿐이라 신뢰도가 낮다."}
                         </p>
                       </>
                     ) : (

@@ -236,7 +236,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           <p className="num">
             {range.mean ? (
               <>
-                자기 이력 {range.years.join("·")}: 평균 <strong>{bandText(range.mean)}</strong> · 최대일 <strong>{bandText(range.peak)}</strong>
+                자기 이력 {range.years.join("·")}: <strong>평균 {bandText(range.mean)} · 최대일 {bandText(range.peak)}</strong>
                 {range.confidence === "low" && " (이력 1년, 신뢰도 낮음)"}.
               </>
             ) : (

@@ -143,7 +143,7 @@ export type CompetitionStatus = "ok" | "nokey" | "fail" | "none";
  */
 export function attributionCaveat(year: string, list: readonly Competitor[], status: CompetitionStatus, radiusKm = NEARBY_RADIUS_KM): string | null {
   if (status === "none" || status === "nokey") return null;
-  if (status === "fail") return `${year} 축제 기간의 반경 ${radiusKm}km 경쟁 축제 조회에 실패했다 — 귀속 경고를 확인하지 못했다.`;
+  if (status === "fail") return `${year} 축제 기간의 반경 ${radiusKm}km 경쟁 축제 조회에 실패했다. 귀속 경고를 확인하지 못했다.`;
   if (list.length === 0) return `${year} 축제 기간에 반경 ${radiusKm}km 안에 공사 TourAPI 등록 축제가 없었다. 등록되지 않은 행사·연휴는 못 본다.`;
   const names = [...list]
     .sort((a, b) => a.distanceKm - b.distanceKm)

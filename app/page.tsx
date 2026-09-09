@@ -312,7 +312,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               )}
               {검색어 && !검색실패 && 검색결과.length === 0 && (
                 <p className="note">
-                  “{검색어}” 로 등록된 축제를 찾지 못했습니다 — 이름을 바꿔
+                  “{검색어}” 로 등록된 축제를 찾지 못했습니다. 이름을 바꿔
                   보거나 <Link href="/?manual=1">직접 입력</Link>해 주세요
                 </p>
               )}
@@ -340,14 +340,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
           {draft && draft.source === "sample" && (
             <p className="alert" data-level="근거없음">
-              모델 키가 없어 <strong>고정 샘플</strong>로 채웠습니다 — 실제
+              모델 키가 없어 <strong>고정 샘플</strong>로 채웠습니다. 실제
               문서에서 뽑은 값이 아닙니다
             </p>
           )}
 
           {draft && draft.source === "tourapi" && (
             <p className="note">
-              한국관광공사 TourAPI <strong>등록 정보</strong>에서 채웠습니다 —
+              한국관광공사 TourAPI <strong>등록 정보</strong>에서 채웠습니다.
               기획서가 아니라 공공 등록 데이터가 출처입니다
             </p>
           )}
@@ -355,7 +355,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           {/* 못 찾은 것과 잘못 뽑은 것은 다르다. 무엇이 없는지 짚어 준다 */}
           {draft && draft.missing.length > 0 && (
             <p className="alert" data-level="주의">
-              문서에서 찾지 못한 항목이 있습니다 — {draft.missing.join(" · ")}.
+              문서에서 찾지 못한 항목이 있습니다: {draft.missing.join(" · ")}.
               아래에서 직접 채워 주세요
             </p>
           )}
@@ -364,7 +364,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
           {draft && checkUrlFromExtraction(draft) && (
             <section className="check-bridge">
-              <h2>주 근거 — 기획안의 숫자를 이 축제의 실측으로 판정하기</h2>
+              <h2>주 근거 · 기획안의 숫자를 이 축제의 실측으로 판정하기</h2>
               <dl className="check-bridge-facts">
                 <dt>예상 방문객</dt>
                 <dd>
@@ -413,7 +413,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </section>
           )}
 
-          <h3 className="aux-head">보조 근거 — 닮은 과거 축제 619건으로 경보 등급</h3>
+          <h3 className="aux-head">보조 근거 · 닮은 과거 축제 619건으로 경보 등급</h3>
           <p className="note">
             자기 이력이 없는 첫 회 축제이거나, 판정과 나란히 놓을 또래 맥락이 필요할 때 씁니다. 지역·시기·테마·인구·접근성 다섯
             축으로 닮은 축제를 찾고, 그 축제들이 실제로 겪은 배수로 등급을 냅니다.
@@ -484,7 +484,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <p className="evidence">
                 {draft.populationManMyeong != null
                   ? `${DATA_SOURCE} 의 같은 시군구 기록에서 가져왔습니다`
-                  : "같은 시군구 기록이 없어 비워 뒀습니다 — 직접 넣어 주세요"}
+                  : "같은 시군구 기록이 없어 비워 뒀습니다. 직접 넣어 주세요"}
               </p>
             )}
 
@@ -521,7 +521,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       {/* 상한을 숨기면 "저장했는데 사라졌다"가 된다. 화면이 먼저 말한다 */}
       {!조회실패 && entries.length >= HISTORY_LIMIT && (
         <p className="note">
-          최근 {HISTORY_LIMIT}건까지만 보입니다 — 더 오래된 진단은 화면에
+          최근 {HISTORY_LIMIT}건까지만 보입니다. 더 오래된 진단은 화면에
           나오지 않습니다
         </p>
       )}
@@ -720,7 +720,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <ul>
                       {핀.axes.map((a) => (
                         <li key={a.axis}>
-                          {a.label} — {a.detail}
+                          {a.label}: {a.detail}
                         </li>
                       ))}
                     </ul>
@@ -790,7 +790,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                           <ul>
                             {m.axes.map((a) => (
                               <li key={a.axis}>
-                                {a.label} — {a.detail}
+                                {a.label}: {a.detail}
                               </li>
                             ))}
                           </ul>
@@ -808,13 +808,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <h3>같은 시기 경쟁</h3>
                     {경쟁조회실패 ? (
                       <p className="note">
-                        같은 시기 축제를 불러오지 못했습니다 — 잠시 후 새로고침해
+                        같은 시기 축제를 불러오지 못했습니다. 잠시 후 새로고침해
                         주세요
                       </p>
                     ) : 기획지역 === null ? (
                       <p className="note">
                         {고름.e.sido} {고름.e.sigungu} 의 좌표를 찾지 못해 거리를
-                        재지 못했습니다 — 없는 것이 아니라 못 잰 것입니다
+                        재지 못했습니다. 없는 것이 아니라 못 잰 것입니다
                       </p>
                     ) : (
                       <>
@@ -895,7 +895,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <p>
                   {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
                   <Link href={`/venue?entry=${고름.e.id}`}>
-                    이 쏠림에 대비하기 — 행사장 도면 →
+                    이 쏠림에 대비하기 · 행사장 도면 →
                   </Link>
                   {" · "}
                   {/* 근거는 화면에만 있으면 결재에 못 올라간다 */}
@@ -931,7 +931,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 {result.invalid
                   ? "입력을 확인해 주세요"
                   : 대표
-                    ? `${대표.festival.name}처럼 — 평소 대비 ${대표.festival.actualVisitSurge.toFixed(2)}배`
+                    ? `${대표.festival.name}처럼, 평소 대비 ${대표.festival.actualVisitSurge.toFixed(2)}배`
                     : `찾아본 범위: ${result.searchedScope}`}
               </p>
 

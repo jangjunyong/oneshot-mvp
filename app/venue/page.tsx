@@ -41,7 +41,7 @@ export default async function VenuePage({
     try {
       venue = JSON.parse(String(formData.get("venue") ?? "")) as Venue;
     } catch {
-      오류로("도면을 읽지 못했습니다 — 다시 저장해 주세요");
+      오류로("도면을 읽지 못했습니다. 다시 저장해 주세요");
       return;
     }
 
@@ -53,7 +53,7 @@ export default async function VenuePage({
 
     const problems = validateVenue(venue);
     if (problems.length > 0) {
-      오류로("도면을 확인해 주세요 — " + problems.join(" · "));
+      오류로("도면을 확인해 주세요: " + problems.join(" · "));
     }
 
     const entryId = String(formData.get("entryId") ?? "") || null;
@@ -151,7 +151,7 @@ export default async function VenuePage({
         <p className="lede">
           OSM 실도면(위성으로 대조 가능) 위에서 보행자 시뮬레이션을 돌려, 진단에서 나온 쌍둥이
           축제의 실측 배수로 <strong>어디가 막히는지</strong>를 그 자리에서
-          잽니다. 방문객 수를 예측하지 않습니다 — 시나리오를 넣고 배치가
+          잽니다. 방문객 수를 예측하지 않습니다. 시나리오를 넣고 배치가
           견디는지를 봅니다.
         </p>
 
@@ -162,7 +162,7 @@ export default async function VenuePage({
       )}
       {저장됨 && (
         <p className="note" role="status">
-          저장됐습니다 — 이 주소를 다시 열면 이 도면이 그대로 나옵니다
+          저장됐습니다. 이 주소를 다시 열면 이 도면이 그대로 나옵니다
         </p>
       )}
       {entryId === DEMO_ENTRY_ID ? (
@@ -186,7 +186,7 @@ export default async function VenuePage({
       />
 
       <details className="sim-legacy">
-        <summary>예전 캔버스 편집기 (Konva) — 위성 위 편집이 붙을 때까지 남겨 둔다</summary>
+        <summary>예전 캔버스 편집기 (Konva) · 위성 위 편집이 붙을 때까지 남겨 둔다</summary>
       <EditorShell
         initialVenue={venue}
         entryId={entryId}
