@@ -19,6 +19,7 @@ import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
 import { scanSeason } from "@/lib/season";
 import { scanVenue } from "@/lib/scan";
 import { VENUE_KIND_NAME } from "@/lib/venue";
+import { simCardHeadline } from "@/lib/simcard";
 import {
   competitionHeadline,
   competitorsNear,
@@ -106,7 +107,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   // (grade.ts 는 경보를 보수적으로 내려고 위쪽 값을 쓴다).
   const 도면 = await latestVenueForEntry(entry.id).catch(() => null);
   const 배수 = g.medianSurge;
-  const scan = 도면 ? scanVenue(도면.venue, 배수) : null;
+  // 실도면(geo)만 있는 도면은 Konva 항목이 없어 부하 스캔 대상이 아니다. 그쪽은 시뮬 요약(sim)이 말한다
+  const scan = 도면 && 도면.venue.items.length > 0 ? scanVenue(도면.venue, 배수) : null;
 
   // 감당 범위 — 같은 시군구·같은 달의 실측을 기준으로 몇 배 구간인지
   const 기준 = localBaseline(입력, result.matched);
@@ -248,12 +250,35 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
 
           <section>
             <h2>근거 3 — 행사장 배치의 쏠림</h2>
-            {scan === null ? (
+            {/* 실도면 시뮬 요약(/venue, 브라우저 워커)이 도면과 함께 저장돼 있으면 먼저 적는다.
+                서버는 시뮬을 못 돌리므로 저장 시점의 요약과 그때의 가정을 그대로 옮긴다 */}
+            {도면?.venue.sim && (
+              <div className="report-sim">
+                <p>
+                  <strong>실도면 시뮬</strong> {simCardHeadline(도면.venue.sim)}
+                </p>
+                {도면.venue.sim.hotspots.length > 0 && (
+                  <ul className="report-list">
+                    {도면.venue.sim.hotspots.map((h, i) => (
+                      <li key={i}>
+                        {h.where}: 최대 {h.peak.toFixed(2)}명/㎡, 3명/㎡ 이상 {Math.round(h.sec)}초 지속
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="num">
+                  가정: 시간대별 유입 {도면.venue.sim.inflowPerHour}명/h × 배수 {도면.venue.sim.scale.toFixed(2)}, 점 하나 {도면.venue.sim.k}명,
+                  {" "}{Math.round(도면.venue.sim.simSec / 60)}분 재생. 도면 저장 {긴시각(도면.venue.sim.at)}. 통로 정상류는 기본도표로 검증했고 5명/㎡ 위는 검증 밖입니다.
+                </p>
+              </div>
+            )}
+            {scan === null && !도면?.venue.sim ? (
               <p className="note">
-                이 진단에 연결된 도면이 아직 없습니다 — 행사장 도면을 그리면 배치의
-                병목까지 이 진단서에 들어갑니다
+                {도면?.venue.geo
+                  ? "실도면은 저장돼 있지만 시뮬을 돌린 뒤 저장한 요약이 없습니다. 행사장 도면에서 재생 뒤 저장하면 여기 들어갑니다"
+                  : "이 진단에 연결된 도면이 아직 없습니다. 행사장 도면을 그리면 배치의 병목까지 이 진단서에 들어갑니다"}
               </p>
-            ) : scan.blocked ? (
+            ) : scan === null ? null : scan.blocked ? (
               <p className="note">{scan.blocked}</p>
             ) : scan.top.length === 0 ? (
               <p>

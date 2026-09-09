@@ -136,6 +136,8 @@ export interface Venue {
   items: VenueItem[];
   /** 실도면(GeoJSON) — /venue 시뮬 편집기가 저장한다(2026-09-09). 있으면 items 대신 이것이 도면이다 */
   geo?: GeoJSON.FeatureCollection & { origin?: [number, number]; zoom?: number; name?: string; source?: string };
+  /** 저장 시점의 시뮬 요약(lib/simcard.ts). 진단서 근거 3 이 읽는다. 시뮬을 안 돌리고 저장하면 없다 */
+  sim?: import("@/lib/simcard").SimCard;
 }
 
 /**

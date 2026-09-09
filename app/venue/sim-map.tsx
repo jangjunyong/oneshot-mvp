@@ -6,6 +6,7 @@
 // 스트레스 테스트가 끝난다. 프레임마다 React 상태를 건드리지 않는다(ref 로 돈다).
 
 import { useEffect, useRef, useState } from "react";
+import { simCardFrom } from "@/lib/simcard";
 import {
   Map as MLMap,
   NavigationControl,
@@ -776,7 +777,10 @@ export default function SimMap({
   const saveGeo = () => {
     const form = geoFormRef.current, fc0 = fcRef.current;
     if (!form || !fc0) return;
-    const v: Venue = { width: 900, height: 620, mPerPx: null, items: [], geo: fc0 };
+    // 시뮬을 돌린 뒤 저장하면 그 요약이 진단서 근거 3 으로 간다. 워커의 Summary 는 좌표뿐이라 이름은 여기서 붙인다
+    const sv = venueRef.current;
+    const card = sum && sv ? simCardFrom(sum, (x, y) => nearestName(sv, x, y), { inflowPerHour: inflow, scale, k: ppa }) : null;
+    const v: Venue = { width: 900, height: 620, mPerPx: null, items: [], geo: fc0, ...(card ? { sim: card } : {}) };
     (form.elements.namedItem("venue") as HTMLInputElement).value = JSON.stringify(v);
     form.requestSubmit();
   };
@@ -1015,9 +1019,9 @@ export default function SimMap({
         })()}
         <div className="sim-two">
           <button type="button" className="btn" disabled={history.length === 0} onClick={undo}>되돌리기 ({history.length})</button>
-          <button type="button" className="btn sim-primary" disabled={!dirty} onClick={saveGeo}>도면 저장</button>
+          <button type="button" className="btn sim-primary" disabled={!dirty && !(sum && sum.time > 0)} onClick={saveGeo}>도면 저장</button>
         </div>
-        {dirty && <p className="sim-small">저장 안 된 변경이 있다. 저장하면 이 주소로 다시 열 수 있다.</p>}
+        {dirty && <p className="sim-small">저장 안 된 변경이 있다. 저장하면 이 주소로 다시 열 수 있다.{sum && sum.time > 0 ? " 지금까지 돌린 시뮬 요약이 진단서 근거 3 에 같이 들어간다." : ""}</p>}
 
         <h3>도면</h3>
         <label className="sim-row"><span>배경</span>
