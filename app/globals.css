@@ -963,3 +963,13 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
   .report-check .report-range p, .report-check .report-advice p { font-size: 8.5pt; }
   .report-check .report-limits .report-list { display: block; }
 }
+
+/* ── 기획서 초안 → /check 다리 ── */
+.check-bridge { margin: var(--s4) 0 var(--s2); padding: var(--s2) var(--s3); border: 1px solid var(--line-strong); background: var(--surface); }
+.check-bridge h2 { font-size: var(--text-lg); margin-bottom: var(--s2); }
+.check-bridge-facts { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--s1) var(--s2); margin: 0 0 var(--s2); }
+.check-bridge-facts dt { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--concrete); padding-top: 0.15rem; }
+.check-bridge-facts dd { margin: 0; }
+.check-bridge-evidence { display: block; margin: 0.15rem 0 0; padding-left: 0.6rem; border-left: 2px solid var(--line); font-size: var(--text-sm); color: var(--concrete); }
+.button-link { display: inline-block; padding: 0.55em 1.3em; border: 1px solid var(--ink); background: var(--ink); color: var(--surface); font-size: var(--text-sm); font-weight: 500; text-decoration: none; }
+.button-link:hover { background: transparent; color: var(--ink); }

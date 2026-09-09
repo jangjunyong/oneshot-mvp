@@ -9,7 +9,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { extractPlan, extractFailureMessage, hasModelKey, shortSido } from "@/lib/extract";
+import { extractPlan, extractFailureMessage, hasModelKey, sanitizeFacts, shortSido } from "@/lib/extract";
+import { checkUrlFromExtraction } from "@/lib/checkquery";
 import { populationOf } from "@/lib/festivals";
 import { findSimilar } from "@/lib/match";
 import { ACCESSIBILITY_LABEL, MAX_PLAN_TEXT, THEME_NAME } from "@/lib/types";
@@ -166,4 +167,67 @@ test("실패 문구는 항상 다음 행동으로 이어진다", () => {
     const m = extractFailureMessage(code, "");
     assert.match(m, /직접|다시|잠시/, `${code} 가 다음 행동을 안 알려준다: ${m}`);
   }
+});
+
+// ── 팩트체크 항목 (기획/08 §4 #14) ────────────────────────
+//
+// 예상 방문객·기간·주차·부스·예산은 문서에서 **옮겨 적은 값**이다. 원문 근거가 없는 값은
+// 지어낸 것이므로 null 로 되돌려야 하고, 그러면 /check 는 그 항목을 판정하지 않는다.
+
+test("샘플 초안에도 팩트체크 항목이 있고, 값이 있는 항목엔 근거가 붙는다", async () => {
+  const 초안 = await extractPlan(기획서);
+  assert.ok(초안.facts, "facts 가 없다");
+  const f = 초안.facts!;
+  assert.equal(f.expectedVisitors, 100000);
+  assert.equal(f.visitorBasis, "period");
+  assert.equal(f.visitorCounting, null, "샘플은 연인원/실인원을 말하지 않는다 — 판정은 단위 미상이어야 한다");
+  for (const k of ["expectedVisitors", "startDate", "endDate", "parkingSpaces", "boothCount", "budgetManWon"] as const) {
+    if (f[k] !== null) assert.ok(f.evidence[k], `${k} 값은 있는데 근거가 없다`);
+  }
+  // 5축 근거에는 팩트 키가 섞이지 않는다 (/ 화면은 facts 를 모른다)
+  assert.ok(!("expectedVisitors" in 초안.evidence));
+});
+
+test("원문 근거가 없는 값은 null 로 되돌린다 — 모델이 스키마 때문에 채운 숫자는 지어낸 것이다", () => {
+  const f = sanitizeFacts({
+    sido: null, sigungu: null, month: null, themeCode: null, accessibility: null,
+    expectedVisitors: 50000,
+    visitorBasis: "peakDay",
+    visitorCounting: "unique",
+    startDate: "2027-05-01",
+    endDate: "2027/05/03",
+    parkingSpaces: 0,
+    boothCount: 80,
+    budgetManWon: 12000,
+    evidence: { startDate: "5월 1일 개막", boothCount: "판매 부스 80개", budgetManWon: "" },
+  });
+  assert.equal(f.expectedVisitors, null, "근거 없는 예상 방문객");
+  assert.equal(f.visitorBasis, null, "값이 없으면 단위도 비운다");
+  assert.equal(f.visitorCounting, null);
+  assert.equal(f.startDate, "2027-05-01");
+  assert.equal(f.endDate, null, "YYYY-MM-DD 가 아니면 버린다");
+  assert.equal(f.parkingSpaces, null, "0 은 값이 아니다");
+  assert.equal(f.boothCount, 80);
+  assert.equal(f.budgetManWon, null, "빈 근거는 근거가 아니다");
+  assert.deepEqual(Object.keys(f.evidence).sort(), ["boothCount", "startDate"]);
+});
+
+test("초안 → /check 링크: 뽑힌 값만 옮기고 이력은 비워 둔다", async () => {
+  const 초안 = await extractPlan(기획서);
+  const url = checkUrlFromExtraction(초안, "김천김밥축제");
+  assert.ok(url);
+  const p = new URLSearchParams(url!.split("?")[1]);
+  assert.equal(p.get("sido"), "경북");
+  assert.equal(p.get("sigungu"), "김천시");
+  assert.equal(p.get("n"), "100000");
+  assert.equal(p.get("basis"), "period");
+  assert.equal(p.get("counting"), null);
+  assert.equal(p.get("start"), "2024-10-25");
+  assert.equal(p.get("h1s"), null);
+  // 시군구가 없으면 링크도 없다
+  assert.equal(checkUrlFromExtraction({ ...초안, sigungu: null }), null);
+  // 옛 초안(facts 없음)도 링크는 선다 — 시군구만 넘긴다
+  const { facts: _f, ...옛 } = 초안;
+  void _f;
+  assert.match(checkUrlFromExtraction(옛)!, /^\/check\?sido=/);
 });

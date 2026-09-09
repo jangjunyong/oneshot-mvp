@@ -1,4 +1,4 @@
-// 기획서 텍스트 → 5축 초안.
+// 기획서 텍스트 → 5축 초안 + 팩트체크 항목(예상 방문객·단위·기간·주차·부스·예산).
 //
 // 지자체마다 기획서 양식이 다르다. 법정 서식([별지 제20호의3] 지역축제
 // 안전관리계획서)이 통일한 것은 표지 한 장뿐이고, 실제 계획은 "첨부서류"로
@@ -18,6 +18,8 @@ import {
   THEME_NAME,
   type ExtractedKey,
   type Extraction,
+  type FactKey,
+  type PlanFacts,
 } from "@/lib/types";
 import { populationOf } from "@/lib/festivals";
 import { shortSido } from "@/lib/tourapi";
@@ -50,7 +52,7 @@ const DEFAULT_MODEL = "google/gemini-2.5-flash-lite";
  * 없으면 모델이 길게 뱉는 만큼 그대로 돈이 된다. 스키마가 이미 모양을
  * 잡지만, 값이 아니라 **한도**로도 잠가 둔다.
  */
-const MAX_OUTPUT_TOKENS = 700;
+const MAX_OUTPUT_TOKENS = 1100;
 
 const KOREAN_NAME: Record<ExtractedKey, string> = {
   sido: "시도",
@@ -73,7 +75,11 @@ const SYSTEM = `너는 한국 지자체의 축제 기획서에서 정해진 항�
 규칙:
 - 문서에 근거가 없는 항목은 반드시 null 로 둔다. 추측하지 않는다.
 - 값을 채운 항목은 evidence 에 **원문 문장을 그대로** 옮긴다. 요약하거나 고쳐 쓰지 않는다.
-- 방문객 수는 다루지 않는다. 문서에 예상 인원이 적혀 있어도 무시한다.
+- 예상 방문객은 문서에 적힌 숫자를 **그대로 옮긴다**. 계산하거나 추정하지 않는다. 숫자가 없으면 null.
+  visitorBasis 는 그 숫자가 기간 전체 합계면 "period", 하루 최다면 "peakDay". 문서가 말하지 않으면 null.
+  visitorCounting 은 연인원(누적)이면 "personDays", 실인원(고유 방문자)이면 "unique". 문서가 말하지 않으면 null.
+- startDate·endDate 는 YYYY-MM-DD. 연도나 날짜가 문서에 없으면 null (월만 있으면 null).
+- parkingSpaces 는 주차 면수, boothCount 는 부스·판매대 수, budgetManWon 은 총예산(만 원). 단위를 만 원으로 환산해 적는다.
 
 themeCode 는 다음 중 하나: ${themeChoices}
 accessibility 는 교통 접근성이다. 다음 중 하나: ${accessChoices}
@@ -96,6 +102,14 @@ const SCHEMA = {
       type: ["integer", "null"],
       description: "교통 접근성 1~5",
     },
+    expectedVisitors: { type: ["integer", "null"], description: "기획안에 적힌 예상 방문객 수(명). 인용만" },
+    visitorBasis: { type: ["string", "null"], enum: ["period", "peakDay", null], description: "기간 총계면 period, 일 최다면 peakDay" },
+    visitorCounting: { type: ["string", "null"], enum: ["personDays", "unique", null], description: "연인원이면 personDays, 실인원이면 unique" },
+    startDate: { type: ["string", "null"], description: "개최 첫날 YYYY-MM-DD" },
+    endDate: { type: ["string", "null"], description: "개최 마지막날 YYYY-MM-DD" },
+    parkingSpaces: { type: ["integer", "null"], description: "주차 면수" },
+    boothCount: { type: ["integer", "null"], description: "부스 수" },
+    budgetManWon: { type: ["integer", "null"], description: "총예산(만 원)" },
     evidence: {
       type: "object",
       description: "값을 채운 항목만. 원문 문장을 그대로 옮긴다",
@@ -105,6 +119,12 @@ const SCHEMA = {
         month: { type: "string" },
         themeCode: { type: "string" },
         accessibility: { type: "string" },
+        expectedVisitors: { type: "string" },
+        startDate: { type: "string" },
+        endDate: { type: "string" },
+        parkingSpaces: { type: "string" },
+        boothCount: { type: "string" },
+        budgetManWon: { type: "string" },
       },
       additionalProperties: false,
     },
@@ -115,6 +135,14 @@ const SCHEMA = {
     "month",
     "themeCode",
     "accessibility",
+    "expectedVisitors",
+    "visitorBasis",
+    "visitorCounting",
+    "startDate",
+    "endDate",
+    "parkingSpaces",
+    "boothCount",
+    "budgetManWon",
     "evidence",
   ],
   additionalProperties: false,
@@ -127,7 +155,15 @@ interface ModelOutput {
   month: number | null;
   themeCode: number | null;
   accessibility: number | null;
-  evidence: Partial<Record<ExtractedKey, string>>;
+  expectedVisitors?: number | null;
+  visitorBasis?: string | null;
+  visitorCounting?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  parkingSpaces?: number | null;
+  boothCount?: number | null;
+  budgetManWon?: number | null;
+  evidence: Partial<Record<ExtractedKey | FactKey, string>>;
 }
 
 /**
@@ -143,14 +179,59 @@ const SAMPLE: ModelOutput = {
   month: 10,
   themeCode: 1,
   accessibility: 2,
+  expectedVisitors: 100000,
+  visitorBasis: "period",
+  visitorCounting: null,
+  startDate: "2024-10-25",
+  endDate: "2024-10-27",
+  parkingSpaces: 400,
+  boothCount: null,
+  budgetManWon: null,
   evidence: {
     sido: "[샘플] 경상북도 김천시 일원에서 개최한다.",
     sigungu: "[샘플] 경상북도 김천시 일원에서 개최한다.",
     month: "[샘플] 개최 기간: 10월 중 3일간",
     themeCode: "[샘플] 지역 특산물인 김밥을 주제로 한 음식 축제",
     accessibility: "[샘플] KTX 김천구미역에서 차량 20분, 전용 주차장 400면",
+    expectedVisitors: "[샘플] 예상 방문객: 3일간 10만 명",
+    startDate: "[샘플] 개최 기간: 2024. 10. 25.(금) ~ 10. 27.(일)",
+    endDate: "[샘플] 개최 기간: 2024. 10. 25.(금) ~ 10. 27.(일)",
+    parkingSpaces: "[샘플] KTX 김천구미역에서 차량 20분, 전용 주차장 400면",
   },
 };
+
+const FACT_KEYS: FactKey[] = ["expectedVisitors", "startDate", "endDate", "parkingSpaces", "boothCount", "budgetManWon"];
+const isYmd = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isCount = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
+
+/**
+ * 팩트체크 항목 정리 — **원문 근거가 없는 값은 null 로 되돌린다** (기획/08 §4 #14).
+ * 모델이 스키마 때문에 숫자를 채웠는데 evidence 가 비면 그 숫자는 지어낸 것이다.
+ * 단위(basis·counting)는 값이 있을 때만 의미가 있고, 값이 없으면 같이 비운다.
+ */
+export function sanitizeFacts(out: ModelOutput): PlanFacts {
+  const ev: PlanFacts["evidence"] = {};
+  for (const k of FACT_KEYS) {
+    const e = out.evidence?.[k];
+    if (typeof e === "string" && e.trim()) ev[k] = e;
+  }
+  const keep = <T>(k: FactKey, v: T | null | undefined, ok: (x: unknown) => x is T): T | null =>
+    v !== null && v !== undefined && ok(v) && ev[k] ? v : null;
+  const expectedVisitors = keep("expectedVisitors", out.expectedVisitors, isCount);
+  const basis = out.visitorBasis === "period" || out.visitorBasis === "peakDay" ? out.visitorBasis : null;
+  const counting = out.visitorCounting === "personDays" || out.visitorCounting === "unique" ? out.visitorCounting : null;
+  return {
+    expectedVisitors,
+    visitorBasis: expectedVisitors === null ? null : basis,
+    visitorCounting: expectedVisitors === null ? null : counting,
+    startDate: keep("startDate", out.startDate, isYmd),
+    endDate: keep("endDate", out.endDate, isYmd),
+    parkingSpaces: keep("parkingSpaces", out.parkingSpaces, isCount),
+    boothCount: keep("boothCount", out.boothCount, isCount),
+    budgetManWon: keep("budgetManWon", out.budgetManWon, isCount),
+    evidence: ev,
+  };
+}
 
 /** 시도 표기 정규화. 정의는 lib/tourapi.ts 에 하나뿐이고 여기서 다시 내보낸다 */
 export { shortSido };
@@ -185,7 +266,25 @@ function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
       : null;
   if (population === null) missing.push("지역 인구");
 
-  return { ...normalized, populationManMyeong: population, missing, source };
+  // 5축과 팩트체크 항목을 갈라 담는다 — 5축 화면(/)은 facts 를 모르고, /check 는 5축을 안 쓴다
+  const facts = sanitizeFacts(normalized);
+  const evidence: Extraction["evidence"] = {};
+  for (const k of Object.keys(KOREAN_NAME) as ExtractedKey[]) {
+    const e = normalized.evidence[k];
+    if (e) evidence[k] = e;
+  }
+  return {
+    sido: normalized.sido,
+    sigungu: normalized.sigungu,
+    month: normalized.month,
+    themeCode: normalized.themeCode,
+    accessibility: normalized.accessibility,
+    evidence,
+    facts,
+    populationManMyeong: population,
+    missing,
+    source,
+  };
 }
 
 /**

@@ -198,7 +198,28 @@ export type ExtractedKey =
  * 값만 받으면 잘못 뽑힌 것이 근거인 척한다. 항목마다 원문 근거를 같이 받아
  * 화면에 붙인다 — 암묵지 2번("왜 닮았는지를 항상 같이 낸다")과 같은 이유다.
  */
+/** 기획안 팩트체크(/check)가 판정하는 항목. 값은 문서에서 옮겨 적은 것이고, 원문 근거가 없으면 null 이다 */
+export type FactKey = "expectedVisitors" | "startDate" | "endDate" | "parkingSpaces" | "boothCount" | "budgetManWon";
+
+export interface PlanFacts {
+  /** 기획안에 적힌 예상 방문객. 예측이 아니라 인용이다 */
+  expectedVisitors: number | null;
+  /** 그 숫자의 단위 — 문서가 말하지 않으면 null (판정은 "단위 미상") */
+  visitorBasis: "period" | "peakDay" | null;
+  visitorCounting: "personDays" | "unique" | null;
+  /** YYYY-MM-DD */
+  startDate: string | null;
+  endDate: string | null;
+  parkingSpaces: number | null;
+  boothCount: number | null;
+  budgetManWon: number | null;
+  /** 값을 채운 항목의 원문 문장. 근거 없는 값은 assemble 이 null 로 되돌린다 */
+  evidence: Partial<Record<FactKey, string>>;
+}
+
 export interface Extraction {
+  /** 팩트체크 항목. 옛 초안(2026-09-09 이전)과 TourAPI 초안에는 없다 */
+  facts?: PlanFacts;
   sido: string | null;
   sigungu: string | null;
   /** 개최 월 1~12 */

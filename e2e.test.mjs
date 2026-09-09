@@ -323,6 +323,23 @@ test("기획서를 붙여넣으면 뽑은 항목이 채워진 확인 화면으�
 
   // 샘플이라는 사실을 숨기지 않는다
   assert.match(확인, /고정 샘플/, "샘플이라는 표시가 없다");
+
+  // 기획안 팩트체크로 가는 다리 — 뽑은 예상 방문객·기간이 /check URL 로 넘어간다.
+  // 예상 방문객은 문서에서 옮겨 적은 값이라 출처 셀(data-origin="input")로 나간다
+  const 다리 = 확인.replace(/<!--\s*-->/g, "").replace(/&amp;/g, "&");
+  assert.match(다리, /실측으로 판정하기/, "다리 절이 없다");
+  const href = 다리.match(/href="(\/check\?[^"]+)"/)?.[1];
+  assert.ok(href, "/check 링크가 없다");
+  const p = new URLSearchParams(href.split("?")[1]);
+  assert.equal(p.get("sigungu"), "김천시");
+  assert.equal(p.get("n"), "100000");
+  assert.equal(p.get("start"), "2024-10-25");
+  assert.match(다리, /data-origin="input"/, "예상 방문객이 출처 셀 밖에 있다");
+  assert.doesNotMatch(출처셀걷기(확인), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+  // 그 링크를 따라가면 /check 가 그 값으로 선다 (이력이 없으니 근거 없음이 맞다)
+  const 판정 = (await (await fetch(BASE + href)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(판정, /김천시/);
+  assert.doesNotMatch(판정, /견본/, "담당자 입력인데 견본이라 한다");
 });
 
 test("도면 화면이 뜨고, 진단 이력에서 도면으로 가는 길이 있다", async () => {

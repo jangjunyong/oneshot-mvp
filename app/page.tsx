@@ -11,6 +11,7 @@ import {
 import { planInputOf, type Entry } from "@/lib/types";
 import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
 import { hasModelKey, modelName } from "@/lib/extract";
+import { checkUrlFromExtraction } from "@/lib/checkquery";
 import {
   festivalDetail,
   hasTourKey,
@@ -431,6 +432,59 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <Link href="/">다른 기획서 넣기</Link>
             </p>
           </form>
+
+          {/* 기획안 팩트체크로 가는 다리. 여기 숫자는 문서에서 옮겨 적은 것이고, 판정은 /check 가
+              공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
+          {draft && checkUrlFromExtraction(draft) && (
+            <section className="check-bridge">
+              <h2>기획안의 숫자를 실측으로 판정하기</h2>
+              <dl className="check-bridge-facts">
+                <dt>예상 방문객</dt>
+                <dd>
+                  {draft.facts?.expectedVisitors != null ? (
+                    <>
+                      <span className="num" data-num="" data-origin="input" data-source-api="기획안" data-source-value={String(draft.facts.expectedVisitors)} data-source-period="" data-source-date="">
+                        {draft.facts.expectedVisitors.toLocaleString("ko-KR")}명
+                      </span>
+                      {draft.facts.visitorBasis ? (draft.facts.visitorBasis === "peakDay" ? " · 일 최다" : " · 기간 총계") : " · 단위 미상"}
+                      {draft.facts.visitorCounting ? (draft.facts.visitorCounting === "unique" ? " · 실인원" : " · 연인원") : ""}
+                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.expectedVisitors}</span>
+                    </>
+                  ) : (
+                    <span className="note">문서에서 못 찾음</span>
+                  )}
+                </dd>
+                <dt>개최 기간</dt>
+                <dd>
+                  {draft.facts?.startDate && draft.facts?.endDate ? (
+                    <>
+                      {draft.facts.startDate} ~ {draft.facts.endDate}
+                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.startDate}</span>
+                    </>
+                  ) : (
+                    <span className="note">문서에서 못 찾음 (연·월·일이 다 있어야 한다)</span>
+                  )}
+                </dd>
+                <dt>주차면 · 부스 · 예산</dt>
+                <dd>
+                  {[
+                    draft.facts?.parkingSpaces != null ? `주차 ${draft.facts.parkingSpaces.toLocaleString("ko-KR")}면` : null,
+                    draft.facts?.boothCount != null ? `부스 ${draft.facts.boothCount.toLocaleString("ko-KR")}개` : null,
+                    draft.facts?.budgetManWon != null ? `예산 ${draft.facts.budgetManWon.toLocaleString("ko-KR")}만 원` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || <span className="note">문서에서 못 찾음</span>}
+                  <span className="note check-bridge-evidence">공사 데이터에 주차·부스·예산 실측이 없어 판정표에는 &ldquo;근거 없음&rdquo;으로 오른다.</span>
+                </dd>
+              </dl>
+              <p>
+                <Link className="button-link" href={checkUrlFromExtraction(draft, "")!}>
+                  이 숫자로 판정하러 가기 →
+                </Link>{" "}
+                <span className="note">지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다.</span>
+              </p>
+            </section>
+          )}
         </>
       )}
 

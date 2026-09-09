@@ -4,6 +4,7 @@
 // 아무 입력도 없으면 군포 2027 견본이 선다 — 심사위원의 시크릿 창에서도 첫 화면이 비지 않게.
 
 import type { Basis, Counting } from "@/lib/verdict";
+import type { Extraction } from "@/lib/types";
 import { isYmd, ymdCompact, type Period } from "@/lib/history";
 
 export interface CheckQuery {
@@ -122,4 +123,25 @@ export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
     p.set(`h${i + 1}e`, dash(h.end));
   });
   return "?" + p.toString();
+}
+
+/**
+ * 기획서 초안(lib/extract.ts) → /check 링크. 뽑힌 값만 옮기고, 이력 기간은 담당자가 /check 에서 적는다.
+ * 시군구가 없으면 null — /check 는 시군구 없이 판정하지 못한다.
+ */
+export function checkUrlFromExtraction(e: Extraction, name = ""): string | null {
+  if (!e.sido || !e.sigungu) return null;
+  const f = e.facts;
+  const q: CheckQuery = {
+    name,
+    sido: e.sido,
+    sigungu: e.sigungu,
+    n: f?.expectedVisitors ?? null,
+    basis: f?.visitorBasis ?? null,
+    counting: f?.visitorCounting ?? null,
+    start: f?.startDate ? ymdCompact(f.startDate) : "",
+    end: f?.endDate ? ymdCompact(f.endDate) : "",
+    history: [],
+  };
+  return "/check" + checkQueryString(q, false);
 }
