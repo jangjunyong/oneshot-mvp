@@ -153,7 +153,7 @@ test("날짜 표기 — 형식이 어긋나면 원문을 그대로 둔다", () =
 });
 
 test("귀속 경고 문장 — 이름·거리만 적고 사람 수는 없다, 0건은 '없었다'가 아니다", () => {
-  const c = (title: string, km: number) => ({ contentId: title, title, addr1: "", eventStartDate: "20260418", eventEndDate: "20260426", lat: 0, lng: 0, distanceKm: km, surge: null });
+  const c = (title: string, km: number) => ({ contentId: title, title, addr1: "", startDate: "20260418", endDate: "20260426", lat: 0, lng: 0, distanceKm: km, surge: null });
   const many = attributionCaveat("2026", [c("가", 30), c("나", 5), c("다", 12), c("라", 40)], "ok")!;
   assert.match(many, /4건/);
   assert.match(many, /나\(5km\) · 다\(12km\) · 가\(30km\) 외 1곳/);
