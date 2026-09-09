@@ -172,6 +172,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <span className="logo">축제 위험 경보</span>
         <nav>
           <Link href="/" aria-current="page">진단</Link>
+          <Link href="/check">기획안 판정</Link>
           <Link href="/venue">행사장 도면</Link>
         </nav>
       </header>

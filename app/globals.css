@@ -876,3 +876,69 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
   font-size: 8px;
   font-weight: 600;
 }
+
+/* ── 기획안 판정 (/check) · 실측 근거 (/evidence) ─────────────────────────── */
+.check-sheet { --sheet-max: 1320px; }
+.check-form fieldset {
+  border: 1px solid var(--line);
+  padding: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+.check-form legend {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--concrete);
+  padding: 0 0.4rem;
+}
+.check-form fieldset label { flex: 0 0 auto; font: inherit; font-size: var(--text-sm); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.check-form input[type="date"] { max-width: 11rem; }
+.check-form label:empty { flex: 0 0 8.5rem; }
+.check-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem); gap: var(--s4); align-items: start; }
+@media (max-width: 900px) { .check-layout { grid-template-columns: minmax(0, 1fr); } }
+.check-main { min-width: 0; }
+.check-side { min-width: 0; }
+.check-side h2 { font-size: var(--text-lg); margin-bottom: var(--s2); }
+.check-sentence { font-size: var(--text-base); line-height: 1.7; max-width: none; margin: 0 0 var(--s2); }
+.check-sentence .num { font-weight: 500; }
+.check-table { width: 100%; font-size: var(--text-sm); margin: 0 0 var(--s3); }
+.check-table th, .check-table td { vertical-align: top; }
+/* 판정표는 셀이 흘러야 한다 — 진단서 표(nowrap)와 달리 열이 여섯이라 한 줄로는 못 선다 */
+.check-table td:nth-child(n) { white-space: normal; }
+.check-table th { white-space: normal; }
+.check-table tbody th { text-align: left; font-weight: 500; }
+.check-table .chip, .check-table [data-num] { white-space: nowrap; }
+.check-table td.num { white-space: nowrap; }
+.check-table tbody th .note { display: block; font-weight: 400; }
+.check-cell-label { display: block; }
+.check-table tr[data-peak] { background: var(--raised); }
+.check-table tr[data-peak] th { color: var(--redline); }
+[data-num][data-origin="measured"] { border-bottom: 1px dotted var(--line-strong); cursor: help; }
+[data-num][data-origin="input"] { border-bottom: 1px solid var(--ink); }
+.chip[data-level="근거없음"] { color: var(--concrete); border-color: var(--line-strong); }
+.range-card {
+  border: 1px solid var(--line-strong);
+  padding: var(--s2);
+  margin: 0 0 var(--s3);
+  background: var(--surface);
+}
+.range-card[data-confidence="low"] { border-style: dashed; }
+.range-line { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 0.35rem; max-width: none; }
+.range-line span:first-child { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--concrete); }
+.range-line strong { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
+.range-peer { color: var(--concrete); }
+.range-peer .num { font-size: var(--text-base); }
+.range-card .note { margin: 0.25rem 0 0.5rem; }
+.evidence-fig { margin: 0 0 var(--s3); }
+.evidence-fig svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); }
+.ev-fest { fill: var(--raised); }
+.ev-grid { stroke: var(--line); stroke-width: 1; }
+.ev-base { stroke: var(--concrete); stroke-width: 1; stroke-dasharray: 4 3; }
+.ev-line { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.ev-peak { fill: var(--severe); }
+.ev-tick { font-family: var(--font-mono); font-size: 10px; fill: var(--concrete); }

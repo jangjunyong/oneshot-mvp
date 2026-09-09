@@ -349,3 +349,58 @@ test("너무 짧은 입력은 모델을 부르지 않고 되돌려보낸다", as
   const 화면 = await (await fetch(BASE + "/?err=%EB%84%88%EB%AC%B4")).text();
   assert.match(화면, /기획서 붙여넣기/, "붙여넣기 화면으로 돌아오지 않았다");
 });
+
+// ── 기획안 팩트체크 (/check · /evidence) — 기획/08 §4 완료조건 4a·4b·13 ─────────
+//
+// 명 수는 <span data-num …> 안에만 있어야 한다. 그 span 을 걷어낸 본문에 "N명" 이 남으면
+// 출처 없는 숫자다. 판정 라벨은 lib/verdict.test.ts 가 잰 것과 같아야 한다(결정론).
+
+function 출처셀걷기(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<span[^>]*data-num[^>]*>[\s\S]*?<\/span>/g, "")
+    .replace(/<!--\s*-->/g, "");
+}
+
+test("판정 견본 — 군포 2027 은 성립 불가, 명 수는 전부 출처 셀 안에", async () => {
+  const html = await (await fetch(BASE + "/check")).text();
+  const 본문 = html.replace(/<!--\s*-->/g, "");
+  assert.match(본문, /견본/, "견본 표시가 없다");
+  assert.match(본문, /예상 방문객 성립 불가/, "최종 판정이 없다");
+  assert.match(본문, /1\.1~1\.3배/, "내년 구간(평균)이 없다");
+  assert.match(본문, /1\.4~1\.6배/, "내년 구간(최대일)이 없다");
+  assert.match(본문, /주의 신호/, "2단계 보조 신호가 없다");
+  // 출처 4속성 — measured 셀마다 API·값·기간·조회일
+  const 셀들 = html.match(/<span[^>]*data-num[^>]*data-origin="measured"[^>]*>/g) ?? [];
+  assert.ok(셀들.length >= 4, `실측 셀이 ${셀들.length}개뿐`);
+  for (const 셀 of 셀들) {
+    for (const a of ["data-source-api", "data-source-value", "data-source-period", "data-source-date"]) {
+      assert.match(셀, new RegExp(`${a}="[^"]+"`), `${a} 가 빈 셀: ${셀}`);
+    }
+  }
+  assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+});
+
+test("판정 음성 — 작년 실측 그대로 넣으면 통과, 단위를 빼면 단위 미상", async () => {
+  const 기본 = "sido=경기&sigungu=군포시&h1s=2024-04-20&h1e=2024-04-28&h2s=2025-04-19&h2e=2025-04-27&h3s=2026-04-18&h3e=2026-04-26&start=2027-04-17&end=2027-04-25";
+  const 통과 = (await (await fetch(`${BASE}/check?${기본}&n=110184&basis=peakDay&counting=unique`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(통과, /예상 방문객 통과/, "음성 케이스가 통과가 아니다");
+  assert.doesNotMatch(통과, /견본/, "담당자 입력인데 견본이라 한다");
+  const 미상 = (await (await fetch(`${BASE}/check?${기본}&n=110184`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(미상, /단위 미상/, "단위 없이 판정했다");
+  // 이력이 없는 축제는 근거 없음 + 또래 구간만
+  const 첫회 = (await (await fetch(`${BASE}/check?sido=강원&sigungu=횡성군&n=30000&basis=peakDay&counting=unique`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(첫회, /근거 없음|신뢰도 낮음/, "이력 없는 축제에 확신을 냈다");
+  assert.match(첫회, /또래/, "또래 구간이 없다");
+});
+
+test("실측 근거 — 곡선 3장, 연도별 표, 일별 표가 자바스크립트 없이 나온다", async () => {
+  const html = await (await fetch(BASE + "/evidence")).text();
+  assert.equal((html.match(/class="ev-line"/g) ?? []).length, 3, "곡선이 3장이 아니다");
+  assert.match(html, /2026-04-18/, "일별 표가 없다");
+  assert.match(html, /locgoRegnVisitrDDList/, "출처 API 이름이 없다");
+  assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+  // 시군구를 못 찾으면 짐작하지 않는다
+  const 없음 = (await (await fetch(`${BASE}/evidence?sido=경기&sigungu=없는시`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(없음, /찾지 못했다/, "없는 시군구를 그냥 넘겼다");
+});

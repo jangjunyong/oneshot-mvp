@@ -138,6 +138,7 @@ export default async function VenuePage({
         <span className="logo">축제 위험 경보</span>
         <nav>
           <Link href="/">진단</Link>
+          <Link href="/check">기획안 판정</Link>
           <Link href="/venue" aria-current="page">행사장 도면</Link>
         </nav>
       </header>
