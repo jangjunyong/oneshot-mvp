@@ -9,7 +9,8 @@ import assert from "node:assert/strict";
 import { computeSurge, median, type DailyRow } from "@/lib/surge";
 import fx from "@/data/kto/fixtures/41410.json";
 
-const rows: DailyRow[] = (fx as { rows: [string, number, number, number][] }).rows.map(
+// JSON 은 (string|number)[][] 로 읽혀 바로 단언이 안 된다 — unknown 을 거친다 (Vercel 빌드의 타입 검사가 여기서 깨졌다)
+const rows: DailyRow[] = (fx as unknown as { rows: [string, number, number, number][] }).rows.map(
   ([ymd, loc, out, frn]) => ({ ymd, loc, out, frn }),
 );
 
