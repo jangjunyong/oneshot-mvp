@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  addBooth, addCorridor, alignToNeighbor, centroidM, hitCorridor, hitTest, nextId, orientationOf, projectionOf, remove, rotate, rotateTo, snapToRow, translate, type FC,
+  addBooth, addCorridor, alignToNeighbor, centroidM, extendRow, nextName, hitCorridor, hitTest, nextId, orientationOf, projectionOf, remove, rotate, rotateTo, snapToRow, translate, type FC,
 } from "@/lib/geoedit";
 
 const base: FC = { type: "FeatureCollection", origin: [126.925, 37.355], features: [] };
@@ -128,5 +128,30 @@ describe("첫 부스 — 이웃이 없으면 통로 방향·연석 바깥에 붙
     const r = snapToRow(fc, proj, [53.4, 4.1]);
     assert.equal(r.via, "booth");
     assert.ok(Math.abs(r.rotation - 20) < 1e-6);
+  });
+});
+
+describe("쫙 늘리기 — 축 방향으로 3.5m 마다 복제", () => {
+  it("이름은 번호를 올리고, 자리·각도·속성을 물려받는다", () => {
+    let fc = addBooth(base, proj, [0, 0], { name: "체험 17", cat: "체험", rotation: 30, servers: 3, serviceSec: 240, popularity: 4 });
+    fc = extendRow(fc, proj, "b1", 3, 1);
+    assert.equal(fc.features.length, 4);
+    const names = fc.features.map((f) => f.properties?.name);
+    assert.deepEqual(names, ["체험 17", "체험 18", "체험 19", "체험 20"]);
+    const a = (30 * Math.PI) / 180;
+    const c3 = centroidM(fc.features[3], proj);
+    assert.ok(Math.abs(c3[0] - 10.5 * Math.cos(a)) < 1e-6 && Math.abs(c3[1] - 10.5 * Math.sin(a)) < 1e-6);
+    assert.ok(Math.abs(orientationOf(fc.features[3], proj) - 30) < 1e-6);
+    assert.equal(fc.features[3].properties?.servers, 3);
+    assert.equal(fc.features[3].properties?.serviceSec, 240);
+    assert.deepEqual(fc.features[3].properties?.queueDir, fc.features[0].properties?.queueDir);
+  });
+  it("반대 방향(-1)·0개·번호 없는 이름", () => {
+    let fc = addBooth(base, proj, [0, 0], { name: "본부", cat: "편의" });
+    assert.equal(extendRow(fc, proj, "b1", 0, 1).features.length, 1);
+    fc = extendRow(fc, proj, "b1", 2, -1);
+    assert.deepEqual(fc.features.map((f) => f.properties?.name), ["본부", "본부 2", "본부 3"]);
+    assert.ok(centroidM(fc.features[1], proj)[0] < 0);
+    assert.equal(nextName(fc, "본부 3"), "본부 4");
   });
 });

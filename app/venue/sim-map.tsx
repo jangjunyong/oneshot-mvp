@@ -19,7 +19,7 @@ import type { Frame, FromWorker, GridMeta, ToWorker } from "./sim-protocol";
 import { askScenario } from "@/app/venue/ask-action";
 import type { AskScenario, VenueIndex } from "@/lib/simask";
 import {
-  addBooth, addCorridor, alignToNeighbor, centroidM, distM, hitCorridor, hitTest, orientationOf, projectionOf,
+  addBooth, addCorridor, alignToNeighbor, centroidM, distM, extendRow, hitCorridor, hitTest, orientationOf, projectionOf,
   remove as removeFeature, rotate as rotateFeature, rotateTo, setProps, snapToRow, translate as translateFeature,
 } from "@/lib/geoedit";
 import type { Venue } from "@/lib/venue";
@@ -228,21 +228,77 @@ function drawEdit(
     fc: FC | null; proj: Projection | null; selectedId: string | null;
     drag: { id: string; start: [number, number]; last: [number, number] } | null;
     draft: [number, number][]; hover: [number, number] | null; mode: EditMode; snap: boolean;
+    rot: { id: string; center: [number, number]; deltaDeg: number } | null;
+    ext: { id: string; center: [number, number]; axis: [number, number]; count: number; dir: 1 | -1 } | null;
   },
-) {
+): { rot: { x: number; y: number } | null; ext: { x: number; y: number } | null } {
   const dpr = devicePixelRatio;
+  let handle: { x: number; y: number } | null = null;
+  let extHandle: { x: number; y: number } | null = null;
   if (st.fc && st.proj && st.selectedId) {
     const f = st.fc.features.find((x) => x.properties?.id === st.selectedId);
     if (f) {
       const dx = st.drag && st.drag.id === st.selectedId ? st.drag.last[0] - st.drag.start[0] : 0;
       const dy = st.drag && st.drag.id === st.selectedId ? st.drag.last[1] - st.drag.start[1] : 0;
-      const pts = (f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.type === "LineString" ? f.geometry.coordinates : [])
-        .map((c) => st.proj!.toM(c)).map(([x, y]) => toScreen(x + dx, y + dy));
+      // 회전 미리보기 — 손잡이를 끄는 동안은 중심 기준으로 돌린 윤곽을 보인다
+      const rot = st.rot && st.rot.id === st.selectedId ? st.rot : null;
+      const ra = rot ? (rot.deltaDeg * Math.PI) / 180 : 0, rc = Math.cos(ra), rs = Math.sin(ra);
+      const spin = ([x, y]: [number, number]): [number, number] => rot
+        ? [rot.center[0] + (x - rot.center[0]) * rc - (y - rot.center[1]) * rs, rot.center[1] + (x - rot.center[0]) * rs + (y - rot.center[1]) * rc]
+        : [x, y];
+      const ptsM = (f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.type === "LineString" ? f.geometry.coordinates : [])
+        .map((c) => spin(st.proj!.toM(c) as [number, number]));
+      const pts = ptsM.map(([x, y]) => toScreen(x + dx, y + dy));
       ctx.beginPath();
       pts.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
       if (f.geometry.type === "Polygon") ctx.closePath();
       ctx.strokeStyle = "#C62A20"; ctx.lineWidth = 2.5 * dpr; ctx.setLineDash([]); ctx.stroke();
       if (f.geometry.type === "Polygon") { ctx.fillStyle = "rgba(198,42,32,0.12)"; ctx.fill(); }
+      // 회전 손잡이 — 셋째 변(뒤쪽)의 가운데에서 바깥으로 22px. 사각형이 아니어도 중심 기준으로 선다
+      if (f.geometry.type === "Polygon" && st.mode === "select" && pts.length >= 4) {
+        const cxs = pts.slice(0, -1).reduce((a, q) => a + q[0], 0) / (pts.length - 1), cys = pts.slice(0, -1).reduce((a, q) => a + q[1], 0) / (pts.length - 1);
+        const mx = (pts[2][0] + pts[3][0]) / 2, my = (pts[2][1] + pts[3][1]) / 2;
+        const vx = mx - cxs, vy = my - cys, vl = Math.hypot(vx, vy) || 1;
+        const hx = mx + (vx / vl) * 22 * dpr, hy = my + (vy / vl) * 22 * dpr;
+        ctx.strokeStyle = "#C62A20"; ctx.lineWidth = 1.5 * dpr;
+        ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(hx, hy); ctx.stroke();
+        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.arc(hx, hy, 7 * dpr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // 회전 아이콘 느낌의 작은 호
+        ctx.beginPath(); ctx.arc(hx, hy, 3.5 * dpr, -Math.PI * 0.9, Math.PI * 0.6); ctx.stroke();
+        handle = { x: hx, y: hy };
+        // 늘리기 손잡이 — 둘째 변(축 방향 끝)의 가운데 바깥 22px, 네모
+        {
+          const ex2 = (pts[1][0] + pts[2][0]) / 2, ey2 = (pts[1][1] + pts[2][1]) / 2;
+          const wx = ex2 - cxs, wy = ey2 - cys, wl = Math.hypot(wx, wy) || 1;
+          const gx = ex2 + (wx / wl) * 22 * dpr, gy = ey2 + (wy / wl) * 22 * dpr;
+          ctx.strokeStyle = "#C62A20"; ctx.lineWidth = 1.5 * dpr;
+          ctx.beginPath(); ctx.moveTo(ex2, ey2); ctx.lineTo(gx, gy); ctx.stroke();
+          ctx.fillStyle = "#FFFFFF"; ctx.fillRect(gx - 6 * dpr, gy - 6 * dpr, 12 * dpr, 12 * dpr); ctx.strokeRect(gx - 6 * dpr, gy - 6 * dpr, 12 * dpr, 12 * dpr);
+          ctx.beginPath(); ctx.moveTo(gx - 3 * dpr, gy); ctx.lineTo(gx + 3 * dpr, gy); ctx.moveTo(gx, gy - 3 * dpr); ctx.lineTo(gx, gy + 3 * dpr); ctx.stroke();
+          extHandle = { x: gx, y: gy };
+        }
+        // 늘리기 미리보기 — 복제될 자리에 점선 사각형
+        const ex = st.ext && st.ext.id === st.selectedId ? st.ext : null;
+        if (ex && ex.count > 0) {
+          ctx.setLineDash([4 * dpr, 3 * dpr]); ctx.strokeStyle = "#171717"; ctx.lineWidth = 1.5 * dpr;
+          for (let k = 1; k <= ex.count; k++) {
+            const off: [number, number] = [ex.axis[0] * ex.dir * 3.5 * k, ex.axis[1] * ex.dir * 3.5 * k];
+            const g = ptsM.map(([x, y]) => toScreen(x + off[0] + dx, y + off[1] + dy));
+            ctx.beginPath(); g.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.closePath(); ctx.stroke();
+          }
+          ctx.setLineDash([]);
+          const t = `+${ex.count}`;
+          ctx.font = `700 ${12 * dpr}px var(--font-mono, monospace)`; ctx.textAlign = "left";
+          ctx.lineWidth = 4 * dpr; ctx.strokeStyle = "#FFFFFF"; ctx.strokeText(t, extHandle.x + 10 * dpr, extHandle.y - 8 * dpr);
+          ctx.fillStyle = "#171717"; ctx.fillText(t, extHandle.x + 10 * dpr, extHandle.y - 8 * dpr);
+        }
+        if (rot) {
+          const t = `${Math.round(rot.deltaDeg * 10) / 10 >= 0 ? "+" : ""}${(Math.round(rot.deltaDeg * 10) / 10).toFixed(1)}°`;
+          ctx.font = `${12 * dpr}px var(--font-mono, monospace)`; ctx.textAlign = "left";
+          ctx.lineWidth = 4 * dpr; ctx.strokeStyle = "#FFFFFF"; ctx.strokeText(t, hx + 10 * dpr, hy - 8 * dpr);
+          ctx.fillStyle = "#C62A20"; ctx.fillText(t, hx + 10 * dpr, hy - 8 * dpr);
+        }
+      }
     }
   }
   const draft = st.draft;
@@ -272,6 +328,7 @@ function drawEdit(
     ctx.beginPath(); pts.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
     void pxPerM;
   }
+  return { rot: handle, ext: extHandle };
 }
 
 const fmtT = (s: number) => {
@@ -341,6 +398,12 @@ export default function SimMap({
   const selectedRef = useRef<string | null>(null);
   const draftRef = useRef<[number, number][]>([]);
   const dragRef = useRef<{ id: string; start: [number, number]; last: [number, number]; moved: boolean } | null>(null);
+  /** 회전 손잡이 끌기 — 중심에서 마우스까지의 각도 변화만큼 돌린다. Shift 면 15° 단위 */
+  const rotRef = useRef<{ id: string; center: [number, number]; startDeg: number; deltaDeg: number; shift: boolean } | null>(null);
+  /** 손잡이의 화면 위치 — 그리기가 매 프레임 갱신하고, mousedown 이 맞힌다. rot=돌리기, ext=쫙 늘리기 */
+  const handleRef = useRef<{ rot: { x: number; y: number } | null; ext: { x: number; y: number } | null }>({ rot: null, ext: null });
+  /** 늘리기 끌기 — 축 방향 거리로 개수를 정한다 */
+  const extRef = useRef<{ id: string; center: [number, number]; axis: [number, number]; count: number; dir: 1 | -1 } | null>(null);
   const hoverRef = useRef<[number, number] | null>(null);
   /** 편집으로 바뀐 도면은 시뮬을 늦게(1.5초 뒤) 다시 만든다 — 끌 때마다 4초 멈추면 못 쓴다 */
   const editedRef = useRef(false);
@@ -565,10 +628,34 @@ export default function SimMap({
     const ll = map.unproject([e.clientX - r.left, e.clientY - r.top]);
     return proj.toM([ll.lng, ll.lat]) as [number, number];
   };
+  const overHandle = (e: React.MouseEvent, which: "rot" | "ext" = "rot") => {
+    const h = handleRef.current[which], el = mapEl.current;
+    if (!h || !el) return false;
+    const r = el.getBoundingClientRect();
+    return Math.hypot((e.clientX - r.left) * devicePixelRatio - h.x, (e.clientY - r.top) * devicePixelRatio - h.y) <= 12 * devicePixelRatio;
+  };
+  const degTo = (c: [number, number], m: [number, number]) => (Math.atan2(m[1] - c[1], m[0] - c[0]) * 180) / Math.PI;
   const onMouseDown = (e: React.MouseEvent) => {
     if (modeRef.current !== "select" || e.button !== 0) return;
     const m = toM(e), fc0 = fcRef.current, proj = projRef.current;
     if (!m || !fc0 || !proj) return;
+    // 회전 손잡이를 잡았나 — 고른 것이 있을 때만
+    const selId = selectedRef.current;
+    if (selId && (overHandle(e, "rot") || overHandle(e, "ext"))) {
+      const f = fc0.features.find((x) => x.properties?.id === selId);
+      if (f && f.geometry.type === "Polygon") {
+        const c = centroidM(f, proj);
+        if (overHandle(e, "ext")) {
+          const a = (orientationOf(f, proj) * Math.PI) / 180;
+          extRef.current = { id: selId, center: c, axis: [Math.cos(a), Math.sin(a)], count: 0, dir: 1 };
+        } else {
+          rotRef.current = { id: selId, center: c, startDeg: degTo(c, m), deltaDeg: 0, shift: e.shiftKey };
+        }
+        mapRef.current?.dragPan.disable();
+        e.preventDefault();
+        return;
+      }
+    }
     const hit = hitTest(fc0, proj, m);
     if (hit && typeof hit.properties?.id === "string") {
       setSelectedId(hit.properties.id);
@@ -583,10 +670,41 @@ export default function SimMap({
   const onMouseMove = (e: React.MouseEvent) => {
     const m = toM(e);
     hoverRef.current = m;
+    const rt = rotRef.current;
+    if (rt && m) {
+      let delta = degTo(rt.center, m) - rt.startDeg;
+      rt.shift = e.shiftKey;
+      if (rt.shift) delta = Math.round(delta / 15) * 15;
+      rt.deltaDeg = delta;
+      return;
+    }
+    const ex = extRef.current;
+    if (ex && m) {
+      // 축 방향 거리 → 개수. 첫 복제는 반 칸(1.75m)만 넘어도 선다
+      const t = (m[0] - ex.center[0]) * ex.axis[0] + (m[1] - ex.center[1]) * ex.axis[1];
+      ex.dir = t >= 0 ? 1 : -1;
+      ex.count = Math.max(0, Math.round(Math.abs(t) / 3.5));
+      return;
+    }
     const d = dragRef.current;
     if (d && m) { d.last = m; if (distM(d.start, m) > 0.2) d.moved = true; }
+    if (mapEl.current && modeRef.current === "select") mapEl.current.style.cursor = selectedRef.current && (overHandle(e, "rot") || overHandle(e, "ext")) ? "grab" : "";
   };
   const onMouseUp = () => {
+    const rt = rotRef.current;
+    if (rt) {
+      rotRef.current = null;
+      mapRef.current?.dragPan.enable();
+      if (Math.abs(rt.deltaDeg) > 0.05 && fcRef.current && projRef.current) commit(rotateFeature(fcRef.current, projRef.current, rt.id, rt.deltaDeg));
+      return;
+    }
+    const ex = extRef.current;
+    if (ex) {
+      extRef.current = null;
+      mapRef.current?.dragPan.enable();
+      if (ex.count > 0 && fcRef.current && projRef.current) commit(extendRow(fcRef.current, projRef.current, ex.id, ex.count, ex.dir));
+      return;
+    }
     const d = dragRef.current;
     dragRef.current = null;
     mapRef.current?.dragPan.enable();
@@ -687,9 +805,10 @@ export default function SimMap({
       const o = toScreen(0, 0), u = toScreen(1, 0);
       const pxPerM = Math.hypot(u[0] - o[0], u[1] - o[1]);
       if (venue) drawVenue(ctx, venue, toScreen, pxPerM, planRef.current);
-      drawEdit(ctx, toScreen, pxPerM, {
+      handleRef.current = drawEdit(ctx, toScreen, pxPerM, {
         fc: fcRef.current, proj, selectedId: selectedRef.current, drag: dragRef.current,
         draft: draftRef.current, hover: hoverRef.current, mode: modeRef.current, snap: snapRef.current,
+        rot: rotRef.current, ext: extRef.current,
       });
       if ((sh.heat || sh.peak) && meta && dens) {
         const src = sh.peak ? dens.peak : dens.density;
@@ -833,7 +952,7 @@ export default function SimMap({
         {(mode === "select" || mode === "booth") && (
           <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄·통로에 맞추기 (각도·3.5m 간격, 첫 부스는 도로 연석에)</span></label>
         )}
-        {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
+        {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 고른 것의 <strong>둥근 손잡이</strong>를 끌면 자유롭게 돌고(Shift 면 15° 단위), <strong>네모 손잡이</strong>를 끌면 그 방향으로 3.5m 마다 같은 부스가 이어진다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
         {mode === "booth" && (
           <>
             <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 선다(국내 조립부스 규격). 이웃 부스가 있으면 그 줄에, 없으면 가장 가까운 도로·산책로 방향으로 연석 바깥에 붙는다. 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>

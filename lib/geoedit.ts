@@ -263,3 +263,48 @@ export function alignToNeighbor(fc: FC, proj: Projection, id: string): FC {
   return nb ? rotateTo(fc, proj, id, orientationOf(nb, proj)) : fc;
 }
 
+/** "체험 17" → "체험 18", "본부" → "본부 2". 이미 있는 이름은 건너뛴다 */
+export function nextName(fc: FC, base: string): string {
+  const taken = new Set(fc.features.map((f) => String(f.properties?.name ?? "")));
+  const m = /^(.*?)(\d+)$/.exec(base.trim());
+  const stem = m ? m[1] : base.trim() + " ";
+  let n = m ? Number(m[2]) : 1;
+  for (let i = 0; i < 1000; i++) {
+    n += 1;
+    const cand = `${stem}${n}`;
+    if (!taken.has(cand)) return cand;
+  }
+  return `${stem}${n}`;
+}
+
+/**
+ * 부스를 잡고 "쫙" 늘리기 — 축(첫 변) 방향으로 pitch 간격에 count 개를 복제한다.
+ * 크기·분류·창구·처리시간·인기·줄 방향을 그대로 물려받고 이름은 번호를 올린다.
+ */
+export function extendRow(fc: FC, proj: Projection, id: string, count: number, dir: 1 | -1, pitch = 3.5): FC {
+  const f = fc.features.find((x) => x.properties?.id === id);
+  const ring = f ? ringM(f, proj) : null;
+  if (!f || !ring || ring.length < 4 || count <= 0) return fc;
+  const w = distM(ring[0], ring[1]), h = distM(ring[1], ring[2]);
+  const rot = orientationOf(f, proj);
+  const a = (rot * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+  const c = centroidM(f, proj);
+  const p = f.properties ?? {};
+  let out = fc;
+  let name = String(p.name ?? p.id ?? "부스");
+  for (let k = 1; k <= count; k++) {
+    name = nextName(out, name);
+    const at: [number, number] = [c[0] + ux * dir * pitch * k, c[1] + uy * dir * pitch * k];
+    out = addBooth(out, proj, at, {
+      name, cat: String(p.cat ?? ""), w, h, rotation: rot,
+      servers: typeof p.servers === "number" ? p.servers : undefined,
+      serviceSec: typeof p.serviceSec === "number" ? p.serviceSec : undefined,
+      popularity: typeof p.popularity === "number" ? p.popularity : undefined,
+    });
+    // addBooth 의 줄 방향은 회전 기준 남쪽이다 — 원본의 줄 방향을 그대로 물려준다
+    const last = out.features[out.features.length - 1];
+    if (Array.isArray(p.queueDir)) out = setProps(out, String(last.properties?.id), { queueDir: p.queueDir });
+  }
+  return out;
+}
+
