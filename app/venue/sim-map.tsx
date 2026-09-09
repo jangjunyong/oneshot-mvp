@@ -429,7 +429,9 @@ export default function SimMap({
   const [visits, setVisits] = useState(3);
   const [dwell, setDwell] = useState(300);
   const [seed, setSeed] = useState(1);
-  const [ppa, setPpa] = useState(3);
+  // 기본 1명. 3명이면 빠르지만 줄·서비스 자리 기하가 k 를 안 따라가 밀도가 부푼다(2026-09-09 실측: 같은 도면에서 3명 → 7.22 초과, 1명 → 2.00).
+  // 진단서에 남는 요약 카드가 이 값으로 돌기 때문에 정확한 쪽을 기본으로 둔다
+  const [ppa, setPpa] = useState(1);
   const [speed, setSpeed] = useState(20);
   const [show, setShow] = useState({ agents: true, heat: true, peak: false });
   const [running, setRunning] = useState(false);
@@ -1073,7 +1075,7 @@ export default function SimMap({
         <label className="sim-row"><span>점 하나 = 사람</span>
           <input type="number" value={ppa} min={1} max={10} onChange={(e) => setPpa(Number(e.target.value))} />
         </label>
-        <p className="sim-small">큰 시나리오는 점 하나가 여러 명이다. 밀도는 그만큼 곱해 센다. 1이 가장 정확하고, 브라우저가 버거우면 올린다.</p>
+        <p className="sim-small">1이 정확하다. 브라우저가 버거우면 올리되, 2 이상은 밀도가 부풀어 진단서 카드에 경고가 붙는다.</p>
 
         <h3>가정 바꿔 보기</h3>
         {gates.map((g) => {
@@ -1156,7 +1158,7 @@ export default function SimMap({
             ) : (
               <p className="note">5명/㎡ 60초 지속 지점은 없다. 근거를 못 찾은 것이지 안전하다는 뜻이 아니다.</p>
             )}
-            <p className="sim-small">가정 도면(부스 좌표 가정) 위에서 점 하나를 {Math.max(5, ppa)}명으로 놓고 {answer.minutes}분 돌린 결과다. 예측이 아니다.</p>
+            <p className="sim-small">가정 도면(부스 좌표 가정) 위에서 점 하나를 {Math.max(5, ppa)}명으로 놓고 {answer.minutes}분 돌린 결과다. 그만큼 밀도가 부풀 수 있어 순위와 지속 여부만 보고, 숫자는 재생(점 하나 1명)으로 확인한다. 예측이 아니다.</p>
           </div>
         )}
 
