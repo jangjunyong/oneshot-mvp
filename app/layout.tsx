@@ -23,9 +23,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "이 축제, 작년 그 축제처럼 무너집니다",
+  title: "이 기획안의 숫자, 작년 실측이 판정합니다",
   description:
-    "축제 기획안을 넣으면 닮은 과거 축제들이 실제로 어떻게 무너졌는지를 근거로 경보 등급을 낸다.",
+    "축제 기획안의 예상 방문객을 공사 KT 일별 실측과 같은 자로 재서 통과·주의·과대·성립 불가를 찍고 내년 배수 구간을 낸다. 닮은 과거 축제 619건은 보조 근거.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

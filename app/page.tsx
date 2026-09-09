@@ -180,19 +180,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <main>
         <span className="grid-ref">
-          <b>A-01</b> · 지자체 축제 담당자용 · 619개 축제 실측
+          <b>A-01</b> · 지자체 축제 담당자용 · 공사 KT 일별 실측 2019~2026 · 619개 축제
         </span>
         <h1 className="display">
-          이 축제,
+          이 기획안의 숫자,
           <br />
-          작년 그 축제처럼
+          작년 실측이
           <br />
-          무너집니다
+          판정합니다
         </h1>
         <p className="lede">
-          기획안을 넣으면 닮은 과거 축제들이 <strong>실제로 어떻게 됐는지</strong>를
-          근거로 경보 등급을 냅니다. 방문객 수는 예측하지 않습니다 — 지진
-          조기경보처럼, 과거 중 닮은 것을 찾아 등급만 매깁니다.
+          기획서를 넣으면 예상 방문객과 기간을 옮겨 적고, <strong>이 축제가 실제로 겪은 배수</strong>와 같은 자로
+          잽니다. 몇 명이 아니라 몇 배를, 점이 아니라 구간으로. 닮은 과거 축제 619건의 경보 등급은 보조 근거입니다.
+          방문객 수는 예측하지 않습니다.
         </p>
 
         {/* 처음 온 사람은 "무엇을 넣으면 무엇이 나오는가"를 3초 안에 알아야
@@ -201,25 +201,27 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <ol className="flow">
           <li>
             <b>기획안을 넣으면</b>
-            <span>지역, 개최 시기, 테마, 지역 인구, 접근성 다섯 가지를 봅니다</span>
+            <span>예상 방문객과 단위, 개최 기간, 지역을 문서에서 그대로 옮겨 적습니다. 근거 문장이 없는 값은 비웁니다</span>
           </li>
           <li>
-            <b>닮은 축제를 찾아</b>
-            <span>619건 중에서 고르고, 그 축제들이 평소의 몇 배를 겪었는지 봅니다</span>
-          </li>
-          <li>
-            <b>등급과 감당 범위를 냅니다</b>
+            <b>이 축제의 실측으로 판정합니다</b>
             <span>
-              이를테면 &ldquo;심각, 기준 축제가 감당한 수준의 최대 1.4배까지&rdquo;.
-              품목별 개수는 내지 않습니다
+              공사 KT 일별 방문자로 지난 회차의 배수를 재고, 기획안이 그 안에 있는지 셋으로 검사합니다. 통과·주의·과대·성립
+              불가 중 하나와 <strong>내년 배수 구간</strong>이 나옵니다
+            </span>
+          </li>
+          <li>
+            <b>종이로 나갑니다</b>
+            <span>
+              판정표·구간·보완·출처를 A4 두 장에 담습니다. 이력이 없는 첫 회 축제는 닮은 축제 619건의 등급이 대신 섭니다
             </span>
           </li>
         </ol>
 
         {/* 근거의 무게가 작은 글씨(A-01)에 묻혀 있었다. 쓰기 전에 보여야 한다 */}
         <p className="trust num">
-          배수는 KT 이동통신으로 잰 619건입니다(한국관광 데이터랩). 이 619건을
-          하나씩 빼고 다시 맞혀 보니 위험한 축제를 무작위의{" "}
+          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027 판정</Link>. 보조 근거인 닮은 축제 배수는 KT
+          이동통신으로 잰 619건입니다(한국관광 데이터랩). 이 619건을 하나씩 빼고 다시 맞혀 보니 위험한 축제를 무작위의{" "}
           <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
           정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
           {pct(LOO_PUBLISHED.recall)}. 절반 가까이는 놓칩니다. 경보이지 보증이
@@ -241,9 +243,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <>
           <h2>기획서 붙여넣기</h2>
           <p className="note">
-            지자체마다 양식이 달라도 됩니다. 기획안·계획서를 그대로 붙여넣으면
-            지역·시기·테마·인구·접근성을 뽑아 <strong>확인 화면</strong>에 채워
-            드립니다. 뽑은 값은 고칠 수 있습니다.
+            지자체마다 양식이 달라도 됩니다. 기획안·계획서를 그대로 붙여넣으면 예상 방문객·개최 기간과
+            지역·시기·테마·접근성을 뽑아 <strong>확인 화면</strong>에 채워 드립니다. 뽑은 값은 고칠 수 있고,
+            문서에 없는 값은 비워 둡니다.
           </p>
           <form action={추출}>
             <p>
@@ -358,6 +360,65 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           )}
 
+          {/* 기획안 팩트체크로 가는 다리. 여기 숫자는 문서에서 옮겨 적은 것이고, 판정은 /check 가
+              공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
+          {draft && checkUrlFromExtraction(draft) && (
+            <section className="check-bridge">
+              <h2>주 근거 — 기획안의 숫자를 이 축제의 실측으로 판정하기</h2>
+              <dl className="check-bridge-facts">
+                <dt>예상 방문객</dt>
+                <dd>
+                  {draft.facts?.expectedVisitors != null ? (
+                    <>
+                      <span className="num" data-num="" data-origin="input" data-source-api="기획안" data-source-value={String(draft.facts.expectedVisitors)} data-source-period="" data-source-date="">
+                        {draft.facts.expectedVisitors.toLocaleString("ko-KR")}명
+                      </span>
+                      {draft.facts.visitorBasis ? (draft.facts.visitorBasis === "peakDay" ? " · 일 최다" : " · 기간 총계") : " · 단위 미상"}
+                      {draft.facts.visitorCounting ? (draft.facts.visitorCounting === "unique" ? " · 실인원" : " · 연인원") : ""}
+                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.expectedVisitors}</span>
+                    </>
+                  ) : (
+                    <span className="note">문서에서 못 찾음</span>
+                  )}
+                </dd>
+                <dt>개최 기간</dt>
+                <dd>
+                  {draft.facts?.startDate && draft.facts?.endDate ? (
+                    <>
+                      {draft.facts.startDate} ~ {draft.facts.endDate}
+                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.startDate}</span>
+                    </>
+                  ) : (
+                    <span className="note">문서에서 못 찾음 (연·월·일이 다 있어야 한다)</span>
+                  )}
+                </dd>
+                <dt>주차면 · 부스 · 예산</dt>
+                <dd>
+                  {[
+                    draft.facts?.parkingSpaces != null ? `주차 ${draft.facts.parkingSpaces.toLocaleString("ko-KR")}면` : null,
+                    draft.facts?.boothCount != null ? `부스 ${draft.facts.boothCount.toLocaleString("ko-KR")}개` : null,
+                    draft.facts?.budgetManWon != null ? `예산 ${draft.facts.budgetManWon.toLocaleString("ko-KR")}만 원` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || <span className="note">문서에서 못 찾음</span>}
+                  <span className="note check-bridge-evidence">공사 데이터에 주차·부스·예산 실측이 없어 판정표에는 &ldquo;근거 없음&rdquo;으로 오른다.</span>
+                </dd>
+              </dl>
+              <p>
+                <Link className="button-link" href={checkUrlFromExtraction(draft, "")!}>
+                  이 숫자로 판정하러 가기 →
+                </Link>{" "}
+                <span className="note">지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다.</span>
+              </p>
+            </section>
+          )}
+
+          <h3 className="aux-head">보조 근거 — 닮은 과거 축제 619건으로 경보 등급</h3>
+          <p className="note">
+            자기 이력이 없는 첫 회 축제이거나, 판정과 나란히 놓을 또래 맥락이 필요할 때 씁니다. 지역·시기·테마·인구·접근성 다섯
+            축으로 닮은 축제를 찾고, 그 축제들이 실제로 겪은 배수로 등급을 냅니다.
+          </p>
+
           <form action={저장}>
             <Field
               id="sido"
@@ -432,59 +493,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <Link href="/">다른 기획서 넣기</Link>
             </p>
           </form>
-
-          {/* 기획안 팩트체크로 가는 다리. 여기 숫자는 문서에서 옮겨 적은 것이고, 판정은 /check 가
-              공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
-          {draft && checkUrlFromExtraction(draft) && (
-            <section className="check-bridge">
-              <h2>기획안의 숫자를 실측으로 판정하기</h2>
-              <dl className="check-bridge-facts">
-                <dt>예상 방문객</dt>
-                <dd>
-                  {draft.facts?.expectedVisitors != null ? (
-                    <>
-                      <span className="num" data-num="" data-origin="input" data-source-api="기획안" data-source-value={String(draft.facts.expectedVisitors)} data-source-period="" data-source-date="">
-                        {draft.facts.expectedVisitors.toLocaleString("ko-KR")}명
-                      </span>
-                      {draft.facts.visitorBasis ? (draft.facts.visitorBasis === "peakDay" ? " · 일 최다" : " · 기간 총계") : " · 단위 미상"}
-                      {draft.facts.visitorCounting ? (draft.facts.visitorCounting === "unique" ? " · 실인원" : " · 연인원") : ""}
-                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.expectedVisitors}</span>
-                    </>
-                  ) : (
-                    <span className="note">문서에서 못 찾음</span>
-                  )}
-                </dd>
-                <dt>개최 기간</dt>
-                <dd>
-                  {draft.facts?.startDate && draft.facts?.endDate ? (
-                    <>
-                      {draft.facts.startDate} ~ {draft.facts.endDate}
-                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.startDate}</span>
-                    </>
-                  ) : (
-                    <span className="note">문서에서 못 찾음 (연·월·일이 다 있어야 한다)</span>
-                  )}
-                </dd>
-                <dt>주차면 · 부스 · 예산</dt>
-                <dd>
-                  {[
-                    draft.facts?.parkingSpaces != null ? `주차 ${draft.facts.parkingSpaces.toLocaleString("ko-KR")}면` : null,
-                    draft.facts?.boothCount != null ? `부스 ${draft.facts.boothCount.toLocaleString("ko-KR")}개` : null,
-                    draft.facts?.budgetManWon != null ? `예산 ${draft.facts.budgetManWon.toLocaleString("ko-KR")}만 원` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || <span className="note">문서에서 못 찾음</span>}
-                  <span className="note check-bridge-evidence">공사 데이터에 주차·부스·예산 실측이 없어 판정표에는 &ldquo;근거 없음&rdquo;으로 오른다.</span>
-                </dd>
-              </dl>
-              <p>
-                <Link className="button-link" href={checkUrlFromExtraction(draft, "")!}>
-                  이 숫자로 판정하러 가기 →
-                </Link>{" "}
-                <span className="note">지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다.</span>
-              </p>
-            </section>
-          )}
         </>
       )}
 
@@ -493,6 +501,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </div>
 
       <h2>진단 이력 {조회실패 ? "" : `(${entries.length}건)`}</h2>
+      <p className="note">
+        여기 이력은 보조 근거(닮은 축제 등급)의 저장분이고, 로그인이 없어 이 주소를 연 모든 사람이 같은 목록을 봅니다.
+        기획안 판정은 저장하지 않습니다. 주소가 곧 판정이라 링크를 남기면 됩니다.
+      </p>
       {조회실패 && (
         <p role="alert">
           <strong>진단 이력을 불러오지 못했습니다.</strong> 저장은 그대로 남아
