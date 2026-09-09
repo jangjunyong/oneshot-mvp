@@ -45,6 +45,9 @@ export interface SurgeDay {
   dow: number;
   out: number;
   loc: number;
+  frn: number;
+  /** 현지인+외지인+외국인 — 그날 시군구에 있던 모든 사람. 1단계 상한의 분모 */
+  total: number;
   baseDow: number | null;
   baseDowLoc: number | null;
   deltaOut: number | null;
@@ -66,6 +69,12 @@ export interface SurgeOk {
   meanOut: number;
   peakOut: number;
   peakYmd: string;
+  /** 최대일(외지인 기준)의 전체 체류 */
+  peakTotal: number;
+  /** 축제일 외지인 합 (연인원) */
+  periodOutSum: number;
+  /** 축제일 전체 체류 합 (연인원) */
+  periodTotal: number;
   multMean: number;
   multPeak: number;
   /** peakOut / baselineWeekend — "평소 주말 대비" */
@@ -174,6 +183,8 @@ export function computeSurge(input: SurgeInput): SurgeResult {
       dow,
       out: r.out,
       loc: r.loc,
+      frn: r.frn,
+      total: r.loc + r.out + r.frn,
       baseDow,
       baseDowLoc,
       deltaOut: baseDow === null ? null : r.out - baseDow,
@@ -212,6 +223,9 @@ export function computeSurge(input: SurgeInput): SurgeResult {
     meanOut,
     peakOut: peak.out,
     peakYmd: peak.ymd,
+    peakTotal: peak.loc + peak.out + peak.frn,
+    periodOutSum: fest.reduce((s, r) => s + r.out, 0),
+    periodTotal: fest.reduce((s, r) => s + r.loc + r.out + r.frn, 0),
     multMean: meanOut / baseline,
     multPeak: peak.out / baseline,
     peakOverWeekend: baselineWeekend === null ? null : peak.out / baselineWeekend,
