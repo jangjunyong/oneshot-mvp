@@ -366,6 +366,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                   출처: 한국관광공사 {KT_API} (KT 이동통신, 시군구 {code}) · 조회 {fetchedAt} ·{" "}
                   <Link href={`/evidence${qs}`}>일별 곡선과 근거 표 →</Link>
                 </p>
+                <p>
+                  <Link href={`/report/check${qs}`}>검증 보고서 두 장 (인쇄용) →</Link>
+                </p>
               </aside>
             </div>
           </>

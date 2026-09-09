@@ -404,3 +404,20 @@ test("실측 근거 — 곡선 3장, 연도별 표, 일별 표가 자바스크�
   const 없음 = (await (await fetch(`${BASE}/evidence?sido=경기&sigungu=없는시`)).text()).replace(/<!--\s*-->/g, "");
   assert.match(없음, /찾지 못했다/, "없는 시군구를 그냥 넘겼다");
 });
+
+test("검증 보고서 두 장 — 판정·구간·보완·근거 표가 자바스크립트 없이 나오고 명 수는 출처 셀 안에", async () => {
+  const html = await (await fetch(BASE + "/report/check")).text();
+  const 본문 = html.replace(/<!--\s*-->/g, "");
+  assert.equal((html.match(/class="report-page"/g) ?? []).length, 2, "두 장이 아니다");
+  assert.match(본문, /기획안 검증 보고서/);
+  assert.match(본문, /견본 · 결재용 아님/, "견본 표시가 종이에 없다");
+  assert.match(본문, /예상 방문객 성립 불가/, "결론이 없다");
+  assert.match(본문, /1\.4~1\.6배/, "내년 구간이 없다");
+  assert.match(본문, /<h2>보완<\/h2>/, "보완 절이 없다");
+  assert.match(본문, /근거 2 — 판정에 쓴 실측 셀과 출처/, "출처 표가 없다");
+  assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+  assert.doesNotMatch(본문, /안전합니다/, "안전하다고 말한다");
+  // 입력이 깨지면 보고서를 만들지 않는다
+  const 깨짐 = await (await fetch(BASE + "/report/check?sido=경기&sigungu=군포시&n=-1")).text();
+  assert.match(깨짐, /보고서를 만들 수 없습니다/);
+});

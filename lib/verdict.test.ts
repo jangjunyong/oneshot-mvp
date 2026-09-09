@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { checkVisitors, checkSchedule, explainVisitors, type VisitorVerdict } from "@/lib/verdict";
+import { adviseVisitors, checkVisitors, checkSchedule, explainVisitors, type VisitorVerdict } from "@/lib/verdict";
 import { historyOf } from "@/lib/history";
 import { type DailyRow } from "@/lib/surge";
 import fx from "@/data/kto/fixtures/41410.json";
@@ -121,4 +121,24 @@ test("일정: 군포 2027 (4.17 토~4.25 일) 은 통과, 평일만이면 과대
   assert.equal(weekdayOnly.label, "과대");
   const none = checkSchedule({ start: "20270419", end: "20270423" }, []);
   assert.equal(none.label, "근거 없음");
+});
+
+test("보완 문장 — 라벨마다 있고, 명 수가 없고, 안전하다는 말이 없다", () => {
+  const cases = [
+    checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, history),
+    checkVisitors({ n: 110184, basis: "peakDay", counting: "unique" }, history),
+    checkVisitors({ n: 620000, basis: "period", counting: "personDays" }, history),
+    checkVisitors({ n: 50000, basis: "peakDay", counting: "unique" }, history),
+    checkVisitors({ n: 1000, basis: null, counting: null }, history),
+    checkVisitors({ n: 1000, basis: "peakDay", counting: "unique" }, []),
+  ];
+  const labels = new Set(cases.map((c) => c.verdict.label));
+  assert.ok(labels.size >= 5, [...labels].join());
+  for (const c of cases) {
+    const seg = adviseVisitors(c.verdict);
+    const text = seg.map((s) => ("t" in s ? s.t : "")).join("");
+    assert.ok(text.length > 30, c.verdict.label);
+    assert.ok(!/\d[\d,]*\s*명/.test(text), `${c.verdict.label}: 명 수`);
+    assert.ok(!/안전합니다|안전하다\./.test(text), `${c.verdict.label}: 안전 단언`);
+  }
 });

@@ -942,3 +942,24 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .ev-line { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
 .ev-peak { fill: var(--severe); }
 .ev-tick { font-family: var(--font-mono); font-size: 10px; fill: var(--concrete); }
+
+/* ── 기획안 검증 보고서 (/report/check, A4 두 장) ──
+   장은 .report-page 하나씩. 화면에서는 종이처럼 떨어져 보이고 인쇄에서는 장이 갈린다 */
+.report-check { max-width: 200mm; }
+.report-page { padding-bottom: var(--s3); margin-bottom: var(--s4); border-bottom: 1px dashed var(--line-strong); }
+.report-page:last-child { border-bottom: 0; }
+.report-check .report-table td { white-space: normal; }
+.report-check .report-table td.num { white-space: nowrap; }
+/* 항목 이름은 한 줄 반, 판정 라벨은 한 줄 — 결재자 눈이 왼쪽에서 오른쪽으로 한 번에 간다 */
+.report-check .report-table td:first-child { width: 20%; }
+.report-check .report-table td.report-label { white-space: nowrap; }
+.report-cell-label { display: block; color: var(--concrete); font-size: 8pt; }
+.report-check .report-range p, .report-check .report-advice p { font-size: 9.5pt; }
+.report-caveat { color: var(--concrete); }
+.report-check .report-foot { margin-top: var(--s2); }
+@media print {
+  .report-page { border-bottom: 0; margin: 0; padding: 0; break-after: page; }
+  .report-page:last-child { break-after: auto; }
+  .report-check .report-range p, .report-check .report-advice p { font-size: 8.5pt; }
+  .report-check .report-limits .report-list { display: block; }
+}
