@@ -1025,3 +1025,12 @@ lng 117.99~129.46 이었다 — 남한이 아니다.
 - **또래 구간은 재계산 619건**(`data/festivals.surge.json`)에서 같은 인구 구간의 중앙값~상위 5% 다. 옛 `actualVisitSurge` 는 `/` 진단이 계속 쓰고, `/check` 는 새 정의만 쓴다 — 두 화면의 배수 정의가 다르다는 것을 알고 있다. `/` 를 새 정의로 옮기는 것(08 "grade/eval 폐기")은 이번에 안 했다.
 - 하지 않은 것: LLM 추출 9축 개정(`extract.ts`, 08 #6b) — `/check` 는 직접 입력만. 지수 카드(`AreaTarResDemService`, 키 미등록). 반경 50km 경쟁 경고(`overlap.ts` 재연결). `/report` 판정 보고서 A4 2장(08 #12). 그대로인 것: `/` 의 예전 진단·`/venue` 시뮬.
 - 검증: 유닛 250 · e2e 11 · 린트 0 오류 · `npm run typecheck` 통과(`verdict.ts` 가 더는 빌드를 막지 않는다) · 크롬 실측(판정표·구간 카드·곡선 3장).
+
+## 2026-09-09 오후 — 검증 보고서 A4 두 장 (`/report/check`)
+
+- **새 라우트, 옛 진단서 불변.** `app/report/page.tsx`(옛 619 정의 진단서)는 그대로 두고 `app/report/check/page.tsx` 를 뒀다. 두 문서의 배수 정의가 다르므로 한 파일에 섞지 않는다.
+- **입력은 `/check` 와 같은 URL.** 저장이 없으니 보고서 id 도 없다. `/check` 하단 링크가 같은 쿼리로 넘긴다. 같은 순수 함수(verdict·history·range·peerband)를 다시 돌려 화면과 종이의 숫자가 갈릴 통로가 없다.
+- **장 나누기는 `.report-page` 두 개 + `break-after: page`.** 지면 실측(HANDOFF 의 인쇄 규칙 주입 스크립트): 1장 **208mm**, 2장 **159mm** (가용 273mm). 판정표 첫 열 20%, 판정 라벨 셀만 nowrap(`td.report-label` — nth-child 로 잡았다가 colSpan 행에서 임계 셀이 nowrap 이 되어 298mm 로 튀었다), 기간 셀은 두 줄로 흐른다.
+- **보완 문장은 `lib/verdict.ts adviseVisitors`** — 라벨마다 한 단락, 숫자는 비(배)·슬롯뿐, "안전" 단언 없음(테스트). 
+- 2장 "근거 2" 표는 판정에 쓴 `Measured` 셀을 그대로 나열한다(셀·값·출처·기간·조회일) — 결재자가 "이 숫자 어디서 났나"를 표 한 장에서 본다.
+- e2e 12건째: 두 장·견본 꼬리말·결론·구간·보완·출처 표·출처 셀 밖 "N명" 0건·"안전합니다" 0건·깨진 입력이면 보고서 없음.
