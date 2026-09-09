@@ -94,3 +94,4 @@
 .sim-hidden-form { display: none; }
 .sim-map[data-mode="select"] { cursor: default; }
 .sim-map[data-mode="booth"], .sim-map[data-mode="corridor"], .sim-map[data-mode="measure"] { cursor: crosshair; }
+.sim-four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0; }

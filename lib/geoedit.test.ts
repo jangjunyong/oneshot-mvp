@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  addBooth, addCorridor, centroidM, hitCorridor, hitTest, nextId, projectionOf, remove, rotate, translate, type FC,
+  addBooth, addCorridor, alignToNeighbor, centroidM, hitCorridor, hitTest, nextId, orientationOf, projectionOf, remove, rotate, rotateTo, snapToRow, translate, type FC,
 } from "@/lib/geoedit";
 
 const base: FC = { type: "FeatureCollection", origin: [126.925, 37.355], features: [] };
@@ -58,5 +58,39 @@ describe("geoedit — 부스 놓기·옮기기·돌리기는 m 평면에서 정�
     assert.equal(fc.features[0].properties?.id, "c1");
     assert.ok(hitCorridor(fc, proj, [5, 2.5]));
     assert.equal(hitCorridor(fc, proj, [5, 3.5]), null);
+  });
+});
+
+describe("이웃 줄에 맞추기 — 15° 눌러서는 도로 각도에 못 맞춘다", () => {
+  it("orientationOf 는 놓은 각도를 돌려준다", () => {
+    const fc = addBooth(base, proj, [0, 0], { name: "a", cat: "x", rotation: 8.6 });
+    assert.ok(Math.abs(orientationOf(fc.features[0], proj) - 8.6) < 1e-6);
+  });
+  it("snapToRow: 이웃 옆을 누르면 같은 각도·3.5m 피치 자리로", () => {
+    const fc = addBooth(base, proj, [0, 0], { name: "a", cat: "x", rotation: 30 });
+    const a = (30 * Math.PI) / 180;
+    // 축 방향으로 3.2m, 옆으로 0.4m 어긋난 점 → 3.5m 자리, 옆 어긋남 0
+    const p: [number, number] = [3.2 * Math.cos(a) - 0.4 * Math.sin(a), 3.2 * Math.sin(a) + 0.4 * Math.cos(a)];
+    const r = snapToRow(fc, proj, p);
+    assert.ok(Math.abs(r.rotation - 30) < 1e-6);
+    assert.ok(Math.abs(r.at[0] - 3.5 * Math.cos(a)) < 1e-6 && Math.abs(r.at[1] - 3.5 * Math.sin(a)) < 1e-6);
+    assert.equal(r.neighbor?.properties?.id, "b1");
+  });
+  it("snapToRow: 옆으로 멀면 각도만, 이웃이 없으면 그대로", () => {
+    const fc = addBooth(base, proj, [0, 0], { name: "a", cat: "x", rotation: 30 });
+    const far = snapToRow(fc, proj, [0, 5]);
+    assert.ok(Math.abs(far.rotation - 30) < 1e-6);
+    assert.deepEqual(far.at, [0, 5]);
+    const none = snapToRow(fc, proj, [50, 50]);
+    assert.equal(none.neighbor, null);
+    assert.equal(none.rotation, 0);
+  });
+  it("rotateTo·alignToNeighbor 는 절대 각도로 맞춘다", () => {
+    let fc = addBooth(base, proj, [0, 0], { name: "a", cat: "x", rotation: 8.6 });
+    fc = addBooth(fc, proj, [4, 0], { name: "b", cat: "x", rotation: 45 });
+    fc = rotateTo(fc, proj, "b2", 100);
+    assert.ok(Math.abs(orientationOf(fc.features[1], proj) - 100) < 1e-6);
+    fc = alignToNeighbor(fc, proj, "b2");
+    assert.ok(Math.abs(orientationOf(fc.features[1], proj) - 8.6) < 1e-6);
   });
 });

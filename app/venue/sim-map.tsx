@@ -19,8 +19,8 @@ import type { Frame, FromWorker, GridMeta, ToWorker } from "./sim-protocol";
 import { askScenario } from "@/app/venue/ask-action";
 import type { AskScenario, VenueIndex } from "@/lib/simask";
 import {
-  addBooth, addCorridor, distM, hitCorridor, hitTest, remove as removeFeature, rotate as rotateFeature,
-  setProps, translate as translateFeature,
+  addBooth, addCorridor, alignToNeighbor, centroidM, distM, hitCorridor, hitTest, orientationOf, projectionOf,
+  remove as removeFeature, rotate as rotateFeature, rotateTo, setProps, snapToRow, translate as translateFeature,
 } from "@/lib/geoedit";
 import type { Venue } from "@/lib/venue";
 import {
@@ -227,7 +227,7 @@ function drawEdit(
   st: {
     fc: FC | null; proj: Projection | null; selectedId: string | null;
     drag: { id: string; start: [number, number]; last: [number, number] } | null;
-    draft: [number, number][]; hover: [number, number] | null; mode: EditMode;
+    draft: [number, number][]; hover: [number, number] | null; mode: EditMode; snap: boolean;
   },
 ) {
   const dpr = devicePixelRatio;
@@ -264,10 +264,13 @@ function drawEdit(
     for (const [x, y] of draft) { const [sx, sy] = toScreen(x, y); ctx.fillStyle = "#C62A20"; ctx.beginPath(); ctx.arc(sx, sy, 3 * dpr, 0, Math.PI * 2); ctx.fill(); }
   }
   if (st.mode === "booth" && st.hover) {
-    // 놓일 자리 미리 보기 — 3×3
-    const h = 1.5 * pxPerM; const [cx, cy] = toScreen(st.hover[0], st.hover[1]);
-    ctx.strokeStyle = "#C62A20"; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([4 * dpr, 3 * dpr]);
-    ctx.strokeRect(cx - h, cy - h, 2 * h, 2 * h); ctx.setLineDash([]);
+    // 놓일 자리 미리 보기 — 3×3. 이웃 줄에 붙으면 그 각도·자리로 보인다
+    const sn = st.snap && st.fc && st.proj ? snapToRow(st.fc, st.proj, st.hover) : { at: st.hover, rotation: 0, neighbor: null };
+    const a = (sn.rotation * Math.PI) / 180, c = Math.cos(a), sgn = Math.sin(a);
+    const pts: [number, number][] = [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]].map(([x, y]) => toScreen(sn.at[0] + x * c - y * sgn, sn.at[1] + x * sgn + y * c));
+    ctx.strokeStyle = sn.neighbor ? "#171717" : "#C62A20"; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.beginPath(); pts.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    void pxPerM;
   }
 }
 
@@ -380,6 +383,10 @@ export default function SimMap({
   const [draftN, setDraftN] = useState(0);
   const [corridorW, setCorridorW] = useState(4);
   const [newBooth, setNewBooth] = useState({ name: "", cat: "판매", servers: 2, serviceSec: 60 });
+  /** 놓고 끌 때 이웃 부스의 각도·3.5m 피치에 붙인다. 15° 로는 도로 각도(8.6°)에 못 맞춘다는 지적(2026-09-09) */
+  const [snapRow, setSnapRow] = useState(true);
+  const snapRef = useRef(true);
+  useEffect(() => { snapRef.current = snapRow; }, [snapRow]);
 
   // ── 지도 생성 (한 번) ─────────────────────────────────────────────
   useEffect(() => {
@@ -584,7 +591,18 @@ export default function SimMap({
     dragRef.current = null;
     mapRef.current?.dragPan.enable();
     if (d && d.moved && fcRef.current && projRef.current) {
-      commit(translateFeature(fcRef.current, projRef.current, d.id, d.last[0] - d.start[0], d.last[1] - d.start[1]));
+      const fc0 = fcRef.current, proj = projRef.current;
+      let next = translateFeature(fc0, proj, d.id, d.last[0] - d.start[0], d.last[1] - d.start[1]);
+      const f = next.features.find((x) => x.properties?.id === d.id);
+      if (snapRef.current && f && f.properties?.kind === "booth") {
+        const c = centroidM(f, proj);
+        const sn = snapToRow(next, proj, c, 3.5, d.id);
+        if (sn.neighbor) {
+          next = translateFeature(next, proj, d.id, sn.at[0] - c[0], sn.at[1] - c[1]);
+          next = rotateTo(next, proj, d.id, sn.rotation);
+        }
+      }
+      commit(next);
     }
   };
   const onClick = (e: React.MouseEvent) => {
@@ -593,7 +611,8 @@ export default function SimMap({
     const md = modeRef.current;
     if (md === "booth") {
       const n = fc0.features.filter((f) => f.properties?.kind === "booth").length + 1;
-      commit(addBooth(fc0, proj, m, { name: newBooth.name.trim() || `${newBooth.cat} ${n}`, cat: newBooth.cat, servers: newBooth.servers, serviceSec: newBooth.serviceSec }));
+      const sn = snapRef.current ? snapToRow(fc0, proj, m) : { at: m, rotation: 0, neighbor: null };
+      commit(addBooth(fc0, proj, sn.at, { name: newBooth.name.trim() || `${newBooth.cat} ${n}`, cat: newBooth.cat, servers: newBooth.servers, serviceSec: newBooth.serviceSec, rotation: sn.rotation }));
     } else if (md === "corridor") {
       draftRef.current = [...draftRef.current, m];
       setDraftN(draftRef.current.length);
@@ -633,6 +652,8 @@ export default function SimMap({
     return () => window.removeEventListener("keydown", h);
   }, []);
   const rotateSel = (deg: number) => { if (selectedId && fcRef.current && projRef.current) commit(rotateFeature(fcRef.current, projRef.current, selectedId, deg)); };
+  const rotateSelTo = (deg: number) => { if (selectedId && fcRef.current && projRef.current && Number.isFinite(deg)) commit(rotateTo(fcRef.current, projRef.current, selectedId, deg)); };
+  const alignSel = () => { if (selectedId && fcRef.current && projRef.current) commit(alignToNeighbor(fcRef.current, projRef.current, selectedId)); };
   const setSelProp = (k: string, v: unknown) => { if (selectedId && fcRef.current) commit(setProps(fcRef.current, selectedId, { [k]: v })); };
   const saveGeo = () => {
     const form = geoFormRef.current, fc0 = fcRef.current;
@@ -668,7 +689,7 @@ export default function SimMap({
       if (venue) drawVenue(ctx, venue, toScreen, pxPerM, planRef.current);
       drawEdit(ctx, toScreen, pxPerM, {
         fc: fcRef.current, proj, selectedId: selectedRef.current, drag: dragRef.current,
-        draft: draftRef.current, hover: hoverRef.current, mode: modeRef.current,
+        draft: draftRef.current, hover: hoverRef.current, mode: modeRef.current, snap: snapRef.current,
       });
       if ((sh.heat || sh.peak) && meta && dens) {
         const src = sh.peak ? dens.peak : dens.density;
@@ -788,6 +809,8 @@ export default function SimMap({
     if (sc.inflowScale !== null) setScale(sc.inflowScale);
   };
 
+  // 렌더에서 ref 를 읽지 않는다 — 각도 표시는 도면(fc)에서 투영을 다시 만든다(싸다)
+  const projView = fc ? projectionOf(fc) : null;
   const gates = fc?.features.filter((f) => f.properties?.kind === "gate") ?? [];
   const cats = Array.from(new Set(
     fc?.features.filter((f) => f.properties?.kind === "booth" && typeof f.properties?.cat === "string").map((f) => String(f.properties?.cat)) ?? [],
@@ -807,6 +830,9 @@ export default function SimMap({
             <button key={k} type="button" className={"sim-mode" + (mode === k ? " is-on" : "")} onClick={() => changeMode(k)}>{MODE_LABEL[k]}</button>
           ))}
         </div>
+        {(mode === "select" || mode === "booth") && (
+          <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄에 맞추기 (각도·3.5m 간격)</span></label>
+        )}
         {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
         {mode === "booth" && (
           <>
@@ -852,10 +878,16 @@ export default function SimMap({
                   {p.kind === "gate" && (
                     <label className="sim-row"><span>유입 몫</span><input type="number" min={0} max={1} step={0.05} value={gateShare[selectedId] ?? Number(p.share ?? 0)} onChange={(e) => setGateShare({ ...gateShare, [selectedId]: Number(e.target.value) })} /></label>
                   )}
-                  <div className="sim-two">
-                    <button type="button" className="btn" onClick={() => rotateSel(-15)}>↺ 15°</button>
-                    <button type="button" className="btn" onClick={() => rotateSel(15)}>↻ 15°</button>
+                  <label className="sim-row"><span>각도(°) — 첫 변 기준</span>
+                    <input type="number" step={0.5} value={projView ? Math.round(orientationOf(f, projView) * 10) / 10 : 0} onChange={(e) => rotateSelTo(Number(e.target.value))} />
+                  </label>
+                  <div className="sim-four">
+                    <button type="button" className="btn" onClick={() => rotateSel(-15)}>↺15</button>
+                    <button type="button" className="btn" onClick={() => rotateSel(-1)}>↺1</button>
+                    <button type="button" className="btn" onClick={() => rotateSel(1)}>↻1</button>
+                    <button type="button" className="btn" onClick={() => rotateSel(15)}>↻15</button>
                   </div>
+                  <button type="button" className="btn" onClick={alignSel}>이웃 부스와 평행하게</button>
                 </>
               )}
               <button type="button" className="btn sim-danger" onClick={deleteSel}>지우기</button>

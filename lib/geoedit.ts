@@ -175,3 +175,56 @@ export function hitCorridor(fc: FC, proj: Projection, p: [number, number], slack
 }
 
 export const distM = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+/** 사각형 부스의 방향(도) — 첫 변의 각도. 같은 줄의 부스는 같은 값이다 */
+export function orientationOf(f: Feature, proj: Projection): number {
+  const ring = ringM(f, proj);
+  if (!ring || ring.length < 2) return 0;
+  const [a, b] = ring;
+  return (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+}
+
+/** 점(m)에서 가장 가까운 부스(자기 자신 제외). maxDist 안에 없으면 null */
+export function nearestBooth(fc: FC, proj: Projection, p: [number, number], maxDist = 8, exceptId: string | null = null): Feature | null {
+  let best: { f: Feature; d: number } | null = null;
+  for (const f of fc.features) {
+    if (f.properties?.kind !== "booth" || f.properties?.id === exceptId) continue;
+    const d = distM(centroidM(f, proj), p);
+    if (d <= maxDist && (!best || d < best.d)) best = { f, d };
+  }
+  return best?.f ?? null;
+}
+
+/**
+ * 이웃 줄에 맞춘 자리와 각도. 15° 눌러서는 도로 각도(8.6°)에 못 맞춘다는 지적(2026-09-09)에서 나왔다.
+ * 이웃 부스의 축(첫 변) 위로 점을 내려 3.5m 피치(부스 3m + 틈 0.5m)로 반올림한다.
+ * 옆으로 2.5m 넘게 떨어져 누른 점은 새 줄로 보고 각도만 맞춘다.
+ */
+export function snapToRow(fc: FC, proj: Projection, p: [number, number], pitch = 3.5, exceptId: string | null = null): { at: [number, number]; rotation: number; neighbor: Feature | null } {
+  const nb = nearestBooth(fc, proj, p, 8, exceptId);
+  if (!nb) return { at: p, rotation: 0, neighbor: null };
+  const rot = orientationOf(nb, proj);
+  const a = (rot * Math.PI) / 180, ax = Math.cos(a), ay = Math.sin(a);
+  const c = centroidM(nb, proj);
+  const dx = p[0] - c[0], dy = p[1] - c[1];
+  const along = dx * ax + dy * ay, lateral = -dx * ay + dy * ax;
+  const t = Math.round(along / pitch) * pitch;
+  if (Math.abs(lateral) > 2.5) return { at: p, rotation: rot, neighbor: nb };
+  return { at: [c[0] + ax * t, c[1] + ay * t], rotation: rot, neighbor: nb };
+}
+
+/** 절대 각도(도)로 돌린다 */
+export function rotateTo(fc: FC, proj: Projection, id: string, deg: number): FC {
+  const f = fc.features.find((x) => x.properties?.id === id);
+  if (!f) return fc;
+  return rotate(fc, proj, id, deg - orientationOf(f, proj));
+}
+
+/** 가장 가까운 다른 부스와 평행하게 */
+export function alignToNeighbor(fc: FC, proj: Projection, id: string): FC {
+  const f = fc.features.find((x) => x.properties?.id === id);
+  if (!f) return fc;
+  const nb = nearestBooth(fc, proj, centroidM(f, proj), 20, id);
+  return nb ? rotateTo(fc, proj, id, orientationOf(nb, proj)) : fc;
+}
+
