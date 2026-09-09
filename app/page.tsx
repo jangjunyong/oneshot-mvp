@@ -595,9 +595,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 {고름.e.id === DEMO_ENTRY_ID && (
                   <p className="alert" data-level="근거없음">
                     {DEMO_LABEL}입니다. 저장된 진단이 없어 예시 기획안 하나를
-                    대신 펴 뒀습니다. 강원 횡성군에서 6월에 음악·공연 축제를 새로
+                    대신 펴 뒀습니다. 강원 속초시에서 6월에 음식·미식 축제를 새로
                     연다고 가정한 것입니다. 지역·인구·접근성은 619건에 등록된
-                    횡성군 값이고, <strong>아래 배수는 전부 실측</strong>입니다.
+                    속초시 값이고, <strong>아래 배수는 전부 실측</strong>입니다.
                   </p>
                 )}
                 <p className="num">

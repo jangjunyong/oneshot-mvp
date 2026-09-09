@@ -26,6 +26,9 @@ import { peerBandFor } from "@/lib/peerband";
 import { populationOf } from "@/lib/festivals";
 import { 긴시각 } from "@/lib/datetime";
 import { Num, measured } from "@/app/_components/num";
+import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
+import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
+import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +96,21 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const schedule = q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = nextYearRange(hist.years, peer);
   const by = new Map<string, Measured>((visitors?.evidence ?? []).map((m) => [m.key, m]));
+  const last = hist.years.length ? hist.years[hist.years.length - 1] : null;
+  let 경쟁: Competitor[] = [];
+  let 경쟁상태: CompetitionStatus = "none";
+  if (last) {
+    if (!hasTourKey()) 경쟁상태 = "nokey";
+    else {
+      try {
+        경쟁 = competitorsNear(coordsOf(q.sido, q.sigungu), await searchFestivalsInPeriod(last.start, last.end));
+        경쟁상태 = "ok";
+      } catch {
+        경쟁상태 = "fail";
+      }
+    }
+  }
+  const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
   const cell = (key: string) => {
     const m = by.get(key);
     return m ? <Num m={m} /> : "—";
@@ -246,6 +264,11 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
             <p className="num">예상 방문객을 단위와 함께 적고 다시 판정합니다.</p>
           )}
           {schedule && schedule.label !== "통과" && <p className="num">개최 기간·요일: {schedule.note}</p>}
+          {귀속경고 && (
+            <p className="num report-caveat">
+              <strong>귀속 경고</strong> {귀속경고}
+            </p>
+          )}
           {visitors?.verdict.caveats.map((c) => (
             <p key={c} className="num report-caveat">
               {c}

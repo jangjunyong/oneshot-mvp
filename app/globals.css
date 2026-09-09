@@ -976,3 +976,5 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 
 /* 확인 화면의 보조 근거 머리 — 주 근거(다리) 아래에 조용히 */
 .aux-head { margin: var(--s4) 0 var(--s1); font-size: var(--text-base); font-weight: 500; color: var(--concrete); }
+
+.attribution[data-status="fail"] { color: var(--caution); }

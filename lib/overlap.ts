@@ -132,3 +132,24 @@ export function competitionHeadline(
   const 최대 = Math.max(...실측.map((c) => c.surge as number));
   return `${때}에는 반경 ${radiusKm}km 안에서 축제 ${list.length}곳이 함께 열렸고, 그중 하나는 평소의 ${최대.toFixed(2)}배를 불렀습니다`;
 }
+
+/** 경쟁 조회의 상태. "none" 은 조회할 이력이 없어 시도조차 안 한 것 */
+export type CompetitionStatus = "ok" | "nokey" | "fail" | "none";
+
+/**
+ * 순증 귀속 경고 — 작년 축제 기간 반경 안에 다른 축제가 있었으면 배수·순증은 이 축제 몫만이 아니다
+ * (기획/08 §2.2 단서, §4 #12). 이름과 거리만 적고 사람 수는 적지 않는다.
+ * TourAPI 에 등록되지 않은 행사는 못 보므로 0건이 "없었다"는 뜻은 아니다.
+ */
+export function attributionCaveat(year: string, list: readonly Competitor[], status: CompetitionStatus, radiusKm = NEARBY_RADIUS_KM): string | null {
+  if (status === "none" || status === "nokey") return null;
+  if (status === "fail") return `${year} 축제 기간의 반경 ${radiusKm}km 경쟁 축제 조회에 실패했다 — 귀속 경고를 확인하지 못했다.`;
+  if (list.length === 0) return `${year} 축제 기간에 반경 ${radiusKm}km 안에 공사 TourAPI 등록 축제가 없었다. 등록되지 않은 행사·연휴는 못 본다.`;
+  const names = [...list]
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, 3)
+    .map((c) => `${c.title}(${Math.round(c.distanceKm)}km)`)
+    .join(" · ");
+  const rest = list.length > 3 ? ` 외 ${list.length - 3}곳` : "";
+  return `${year} 축제 기간에 반경 ${radiusKm}km 안에서 다른 축제 ${list.length}건이 같이 열렸다(공사 TourAPI 등록 기준): ${names}${rest}. 위 배수와 순증은 개최 주 시군구 배수이고 이 축제 몫만이 아니다.`;
+}

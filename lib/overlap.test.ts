@@ -14,6 +14,7 @@ import {
   NEARBY_RADIUS_KM,
   type PeriodFestival,
 } from "@/lib/overlap";
+import { attributionCaveat } from "@/lib/overlap";
 import { FESTIVALS } from "@/lib/festivals";
 
 const 후보 = (
@@ -149,4 +150,17 @@ test("날짜 표기 — 형식이 어긋나면 원문을 그대로 둔다", () =
   assert.equal(dayLabel("20261003"), "10월 3일");
   assert.equal(dayLabel(""), "");
   assert.equal(dayLabel("미정"), "미정");
+});
+
+test("귀속 경고 문장 — 이름·거리만 적고 사람 수는 없다, 0건은 '없었다'가 아니다", () => {
+  const c = (title: string, km: number) => ({ contentId: title, title, addr1: "", eventStartDate: "20260418", eventEndDate: "20260426", lat: 0, lng: 0, distanceKm: km, surge: null });
+  const many = attributionCaveat("2026", [c("가", 30), c("나", 5), c("다", 12), c("라", 40)], "ok")!;
+  assert.match(many, /4건/);
+  assert.match(many, /나\(5km\) · 다\(12km\) · 가\(30km\) 외 1곳/);
+  assert.match(many, /개최 주 시군구 배수/);
+  assert.doesNotMatch(many, /\d[\d,]*\s*명/);
+  assert.match(attributionCaveat("2026", [], "ok")!, /등록되지 않은/);
+  assert.match(attributionCaveat("2026", [], "fail")!, /실패/);
+  assert.equal(attributionCaveat("2026", [], "nokey"), null);
+  assert.equal(attributionCaveat("2026", [], "none"), null);
 });

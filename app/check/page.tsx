@@ -26,6 +26,9 @@ import { peerBandFor } from "@/lib/peerband";
 import { populationOf } from "@/lib/festivals";
 import { ymdDashed } from "@/lib/history";
 import { Num } from "@/app/_components/num";
+import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
+import { attributionCaveat, competitorsNear, NEARBY_RADIUS_KM, type Competitor, type CompetitionStatus } from "@/lib/overlap";
+import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +83,25 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const schedule = 판정가능 && q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = 판정가능 ? nextYearRange(hist.years, peer) : null;
   const by = new Map<string, Measured>((visitors?.evidence ?? []).map((m) => [m.key, m]));
+
+  // 순증 귀속 경고 — 작년(이력 중 최근 해) 축제 기간에 반경 50km 다른 축제가 있었나. 공사 TourAPI 실시간.
+  // 죽어도 판정은 나가야 하므로 실패는 상태로만 남긴다
+  const last = hist.years.length ? hist.years[hist.years.length - 1] : null;
+  let 경쟁: Competitor[] = [];
+  let 경쟁상태: CompetitionStatus = "none";
+  if (판정가능 && last) {
+    if (!hasTourKey()) 경쟁상태 = "nokey";
+    else {
+      try {
+        경쟁 = competitorsNear(coordsOf(q.sido, q.sigungu), await searchFestivalsInPeriod(last.start, last.end));
+        경쟁상태 = "ok";
+      } catch {
+        경쟁상태 = "fail";
+      }
+    }
+  }
+  const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
+  const 시군구배수 = 경쟁.length > 0;
   const stageNum = (key: string) => {
     const m = by.get(key);
     return m ? <Num m={m} /> : <span className="note">—</span>;
@@ -267,11 +289,16 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                   </tbody>
                 </table>
 
-                {visitors && visitors.verdict.caveats.length > 0 && (
+                {(visitors || 귀속경고) && (
                   <details className="selfcheck" open>
                     <summary>단서 — 이 판정이 말하지 않는 것</summary>
                     <ul>
-                      {visitors.verdict.caveats.map((c) => (
+                      {귀속경고 && (
+                        <li className="attribution" data-status={경쟁상태}>
+                          <strong>귀속 경고</strong> {귀속경고}
+                        </li>
+                      )}
+                      {visitors?.verdict.caveats.map((c) => (
                         <li key={c}>{c}</li>
                       ))}
                       <li>
@@ -323,7 +350,10 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         </p>
                       </>
                     )}
-                    <p className="note">배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다.</p>
+                    <p className="note">
+                      배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다.
+                      {시군구배수 && ` 작년 기간에 반경 ${NEARBY_RADIUS_KM}km 다른 축제가 있어 이 배수는 개최 주 시군구 배수다.`}
+                    </p>
                   </div>
                 )}
 

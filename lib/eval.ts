@@ -139,13 +139,14 @@ export function leaveOneOut(weights: AxisWeight = WEIGHT): LooReport {
  * (그 전, 테마 가중치 재보정 전에는 정밀도 56.8% · 재현율 54.1% · 리프트 2.41)
  */
 export const LOO_PUBLISHED: LooReport = {
+  // 2026-09-09 재계산본(lib/surge.ts 정의, 619/619) 기준. 옛 수집값 기준은 정밀도 0.618·재현율 0.555·리프트 2.62 였다
   n: 619,
-  baseRate: 0.2358642972536349,
-  precision: 0.6183206106870229,
-  recall: 0.5547945205479452,
-  lift: 2.6215099864059397,
-  medianAbsErr: 0.1200000000000001,
-  withinRatio: 0.789983844911147,
+  baseRate: 0.20193861066235863,
+  precision: 0.6581196581196581,
+  recall: 0.616,
+  lift: 3.259008547008547,
+  medianAbsErr: 0.133,
+  withinRatio: 0.8093699515347335,
   unjudged: 0,
 };
 

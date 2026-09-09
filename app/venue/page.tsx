@@ -167,7 +167,7 @@ export default async function VenuePage({
       )}
       {entryId === DEMO_ENTRY_ID ? (
         <p className="note">
-          <strong>{DEMO_LABEL}</strong>의 도면입니다. 강원 횡성군 좌표에 예시
+          <strong>{DEMO_LABEL}</strong>의 도면입니다. 강원 속초시 좌표에 예시
           배치를 깔아 둔 것이고, 저장하면 연결 없는 새 도면으로 따로 남습니다.
         </p>
       ) : (

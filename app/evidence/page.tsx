@@ -11,6 +11,9 @@ import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
 import { measured, Num } from "@/app/_components/num";
+import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
+import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
+import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +114,22 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
   yMax = yMax > 0 ? yMax * 1.08 : 1;
 
   const period = (y: HistoryYear) => `${DATE(y.start)}~${DATE(y.end)}`;
+
+  const last = years[0] ?? null;
+  let 경쟁: Competitor[] = [];
+  let 경쟁상태: CompetitionStatus = "none";
+  if (code && last) {
+    if (!hasTourKey()) 경쟁상태 = "nokey";
+    else {
+      try {
+        경쟁 = competitorsNear(coordsOf(q.sido, q.sigungu), await searchFestivalsInPeriod(last.start, last.end));
+        경쟁상태 = "ok";
+      } catch {
+        경쟁상태 = "fail";
+      }
+    }
+  }
+  const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
   const m = (y: HistoryYear, key: string, label: string, value: number, unit: "명" | "배" | "일", p = period(y)) =>
     measured(`${y.year}-${key}`, label, value, unit, KT_API, p, y.fetchedAt);
 
@@ -226,6 +245,11 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
               축제 연인원 산출은 순증의 합이고, 반경 50km 다른 축제·연휴가 섞여 귀속 100% 가 아니다. 현지인 참여가 큰 축제는
               과소 평가된다.
             </p>
+            {귀속경고 && (
+              <p className="note attribution" data-status={경쟁상태}>
+                <strong>귀속 경고</strong> {귀속경고}
+              </p>
+            )}
 
             <div className="dim">
               <span>SECTION C — 일별 표 (최근 회차)</span>
