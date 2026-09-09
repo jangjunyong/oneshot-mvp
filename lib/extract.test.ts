@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { extractPlan, extractFailureMessage, hasModelKey, sanitizeFacts, shortSido } from "@/lib/extract";
+import { budgetManWonFromEvidence, evidenceHasDay, extractPlan, extractFailureMessage, hasModelKey, sanitizeFacts, shortSido } from "@/lib/extract";
 import { checkUrlFromExtraction } from "@/lib/checkquery";
 import { populationOf } from "@/lib/festivals";
 import { findSimilar } from "@/lib/match";
@@ -224,10 +224,41 @@ test("초안 → /check 링크: 뽑힌 값만 옮기고 이력은 비워 둔다"
   assert.equal(p.get("counting"), null);
   assert.equal(p.get("start"), "2024-10-25");
   assert.equal(p.get("h1s"), null);
-  // 시군구가 없으면 링크도 없다
-  assert.equal(checkUrlFromExtraction({ ...초안, sigungu: null }), null);
+  // 시군구가 없어도 링크는 선다 — /check 가 그 칸을 비운 채 열린다
+  const noRegion = new URLSearchParams(checkUrlFromExtraction({ ...초안, sigungu: null }).split("?")[1]);
+  assert.equal(noRegion.get("sigungu"), "");
+  assert.equal(noRegion.get("n"), "100000");
   // 옛 초안(facts 없음)도 링크는 선다 — 시군구만 넘긴다
   const { facts: _f, ...옛 } = 초안;
   void _f;
-  assert.match(checkUrlFromExtraction(옛)!, /^\/check\?sido=/);
+  assert.match(checkUrlFromExtraction(옛), /^\/check\?sido=/);
+});
+
+test("날짜는 근거에 일(日)이 있어야 남는다 — 사업기간 '~ 2022 11' 에서 01·30 을 지어내면 버린다 (고한 실측)", () => {
+  assert.equal(evidenceHasDay("사업기간 계약일로부터 년 월: ~ 2022 11"), false);
+  assert.equal(evidenceHasDay("개최 기간: 2024. 10. 25.(금) ~ 10. 27.(일)"), true);
+  assert.equal(evidenceHasDay("2027-04-17부터"), true);
+  assert.equal(evidenceHasDay("4월 17일(토)"), true);
+  assert.equal(evidenceHasDay(undefined), false);
+  const f = sanitizeFacts({
+    sido: null, sigungu: null, month: null, themeCode: null, accessibility: null,
+    startDate: "2022-05-01", endDate: "2022-11-30",
+    evidence: { startDate: "사업기간 계약일로부터 년 월: ~ 2022 11", endDate: "사업기간 계약일로부터 년 월: ~ 2022 11" },
+  });
+  assert.equal(f.startDate, null);
+  assert.equal(f.endDate, null);
+});
+
+test("예산은 근거의 단위로 다시 센다 — 90,000 천원은 9,000만 원이다 (고한 실측: 모델은 90,000만 원이라 했다)", () => {
+  assert.equal(budgetManWonFromEvidence("사 업 비 천원 일금구천만원정: 90,000 ( )"), 9000);
+  assert.equal(budgetManWonFromEvidence("총사업비 1,200백만원"), 120000);
+  assert.equal(budgetManWonFromEvidence("예산 3억 원"), 30000);
+  assert.equal(budgetManWonFromEvidence("예산 2,500만 원"), 2500);
+  assert.equal(budgetManWonFromEvidence("예산은 추후 확정"), null);
+  const f = sanitizeFacts({
+    sido: null, sigungu: null, month: null, themeCode: null, accessibility: null,
+    budgetManWon: 90000,
+    evidence: { budgetManWon: "사 업 비 천원 일금구천만원정: 90,000 ( )" },
+  });
+  assert.equal(f.budgetManWon, 9000);
 });

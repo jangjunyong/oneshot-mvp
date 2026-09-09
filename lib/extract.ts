@@ -78,8 +78,10 @@ const SYSTEM = `너는 한국 지자체의 축제 기획서에서 정해진 항�
 - 예상 방문객은 문서에 적힌 숫자를 **그대로 옮긴다**. 계산하거나 추정하지 않는다. 숫자가 없으면 null.
   visitorBasis 는 그 숫자가 기간 전체 합계면 "period", 하루 최다면 "peakDay". 문서가 말하지 않으면 null.
   visitorCounting 은 연인원(누적)이면 "personDays", 실인원(고유 방문자)이면 "unique". 문서가 말하지 않으면 null.
-- startDate·endDate 는 YYYY-MM-DD. 연도나 날짜가 문서에 없으면 null (월만 있으면 null).
-- parkingSpaces 는 주차 면수, boothCount 는 부스·판매대 수, budgetManWon 은 총예산(만 원). 단위를 만 원으로 환산해 적는다.
+- startDate·endDate 는 **축제가 열리는 날**(관람객이 오는 첫날·마지막날) YYYY-MM-DD. 사업기간·용역기간·준비기간·계약기간은 아니다.
+  연도·월·일이 문서에 다 있어야 한다. 일(日)이 없으면 null (월만 있으면 null).
+- parkingSpaces 는 주차 면수, boothCount 는 부스·판매대 수, budgetManWon 은 총예산(만 원). 문서가 천원 단위면 10 으로 나누고
+  백만원이면 100 을 곱해 만 원으로 환산한다. evidence 에는 단위가 적힌 원문을 그대로 옮긴다.
 
 themeCode 는 다음 중 하나: ${themeChoices}
 accessibility 는 교통 접근성이다. 다음 중 하나: ${accessChoices}
@@ -201,6 +203,37 @@ const SAMPLE: ModelOutput = {
 };
 
 const FACT_KEYS: FactKey[] = ["expectedVisitors", "startDate", "endDate", "parkingSpaces", "boothCount", "budgetManWon"];
+
+/**
+ * 원문에 일(日)이 있는가. 모델은 "사업기간 ~ 2022 11" 같은 월 단위 문장에서 01·30 일을 지어낸다(2026-09-09 고한 기획서 실측).
+ * 근거 문장에 일이 없으면 날짜는 없는 것이다.
+ */
+export function evidenceHasDay(e: string | undefined): boolean {
+  if (!e) return false;
+  return /\d{1,2}\s*일|\d{4}\s*[-./년]\s*\d{1,2}\s*[-./월]\s*\d{1,2}|\b\d{1,2}\.\s*\d{1,2}\b|\d{1,2}\/\d{1,2}/.test(e);
+}
+
+/**
+ * 근거 문장의 "숫자 + 단위"로 예산을 만 원으로 다시 센다. 모델의 환산은 믿지 않는다 —
+ * 같은 실측에서 "90,000 천원"을 90,000만 원으로 옮겼다(9,000만 원이 맞다). 규칙이 모델을 이긴다.
+ * 단위를 못 읽으면 null 을 돌려 모델 값을 그대로 쓴다.
+ */
+export function budgetManWonFromEvidence(e: string | undefined): number | null {
+  if (!e) return null;
+  const UNIT = /(천\s*원|천원|만\s*원|만원|백만\s*원|백만원|억\s*원|억원|억)/;
+  const NUM = /\d[\d,]*(?:\.\d+)?/g;
+  // "90,000천원"처럼 숫자 뒤에 단위가 붙은 것이 보통. PDF 글자 추출은 순서를 흩뜨려
+  // "천원 일금구천만원정: 90,000" 이 되기도 하므로(고한 실측) 단위만 있고 붙은 숫자가 없으면 문장의 가장 큰 숫자를 쓴다
+  const adj = new RegExp(`(\d[\d,]*(?:\.\d+)?)\s*${UNIT.source}`).exec(e);
+  const um = UNIT.exec(e);
+  if (!um) return null;
+  const nums = (e.match(NUM) ?? []).map((x) => Number(x.replace(/,/g, ""))).filter((x) => Number.isFinite(x) && x > 0);
+  const n = adj ? Number(adj[1].replace(/,/g, "")) : nums.length ? Math.max(...nums) : NaN;
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const u = (adj ? adj[2] : um[1]).replace(/\s+/g, "");
+  const per = u.startsWith("천") ? 0.1 : u.startsWith("백만") ? 100 : u.startsWith("억") ? 10000 : 1;
+  return Math.round(n * per);
+}
 const isYmd = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isCount = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v > 0;
 
@@ -224,11 +257,11 @@ export function sanitizeFacts(out: ModelOutput): PlanFacts {
     expectedVisitors,
     visitorBasis: expectedVisitors === null ? null : basis,
     visitorCounting: expectedVisitors === null ? null : counting,
-    startDate: keep("startDate", out.startDate, isYmd),
-    endDate: keep("endDate", out.endDate, isYmd),
+    startDate: evidenceHasDay(ev.startDate) ? keep("startDate", out.startDate, isYmd) : null,
+    endDate: evidenceHasDay(ev.endDate) ? keep("endDate", out.endDate, isYmd) : null,
     parkingSpaces: keep("parkingSpaces", out.parkingSpaces, isCount),
     boothCount: keep("boothCount", out.boothCount, isCount),
-    budgetManWon: keep("budgetManWon", out.budgetManWon, isCount),
+    budgetManWon: budgetManWonFromEvidence(ev.budgetManWon) ?? keep("budgetManWon", out.budgetManWon, isCount),
     evidence: ev,
   };
 }

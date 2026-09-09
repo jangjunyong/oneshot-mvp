@@ -362,7 +362,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
           {/* 기획안 팩트체크로 가는 다리. 여기 숫자는 문서에서 옮겨 적은 것이고, 판정은 /check 가
               공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
-          {draft && checkUrlFromExtraction(draft) && (
+          {draft && (draft.facts || (draft.sido && draft.sigungu)) && (
             <section className="check-bridge">
               <h2>주 근거 · 기획안의 숫자를 이 축제의 실측으로 판정하기</h2>
               <dl className="check-bridge-facts">
@@ -405,10 +405,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 </dd>
               </dl>
               <p>
-                <Link className="button-link" href={checkUrlFromExtraction(draft, "")!}>
+                <Link className="button-link" href={checkUrlFromExtraction(draft, "")}>
                   이 숫자로 판정하러 가기 →
                 </Link>{" "}
-                <span className="note">지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다.</span>
+                <span className="note">
+                  {draft.sido && draft.sigungu
+                    ? "지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다."
+                    : "문서에 시도·시군구가 없다. 판정 화면에서 적으면 그 지역의 실측으로 잰다."}
+                </span>
               </p>
             </section>
           )}

@@ -127,15 +127,15 @@ export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
 
 /**
  * 기획서 초안(lib/extract.ts) → /check 링크. 뽑힌 값만 옮기고, 이력 기간은 담당자가 /check 에서 적는다.
- * 시군구가 없으면 null — /check 는 시군구 없이 판정하지 못한다.
+ * 시군구를 못 뽑았어도 링크는 선다 — /check 폼이 그 칸만 비운 채 열리고 "시도와 시군구를 적어 주세요"라고 말한다
+ * (실측 2026-09-09: 고한읍 기획서는 군·도가 문서에 없어 시군구가 비었다. 그때 다리가 통째로 사라지면 뽑은 예산·기간도 못 본다).
  */
-export function checkUrlFromExtraction(e: Extraction, name = ""): string | null {
-  if (!e.sido || !e.sigungu) return null;
+export function checkUrlFromExtraction(e: Extraction, name = ""): string {
   const f = e.facts;
   const q: CheckQuery = {
     name,
-    sido: e.sido,
-    sigungu: e.sigungu,
+    sido: e.sido ?? "",
+    sigungu: e.sigungu ?? "",
     n: f?.expectedVisitors ?? null,
     basis: f?.visitorBasis ?? null,
     counting: f?.visitorCounting ?? null,
