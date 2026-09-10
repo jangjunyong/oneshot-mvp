@@ -191,7 +191,9 @@ export function checkVisitors(
   let breakevenTurnover: number | null = null;
   // 연인원(한 사람이 여러 번 잡힘)을 KT 실인원(하루 체류)으로 나누면 "불가"가 아니라 "몇 번 잡혀야 서는가"다.
   // 회전율 값은 가정하지 않고 손익분기만 낸다 (AR-2, 2026-09-10 M6)
-  const breakeven = (denom: number) => (claim.counting === "personDays" && denom > 0 ? claim.n / (THRESHOLDS.cap.impossible * denom) : null);
+  // 상한 아래(비 < 0.80)면 회전율 1 미만이라 뜻이 없다 — 상한 초과일 때만 낸다
+  const breakeven = (denom: number) =>
+    claim.counting === "personDays" && denom > 0 && claim.n / denom >= THRESHOLDS.cap.impossible ? claim.n / (THRESHOLDS.cap.impossible * denom) : null;
   if (last) {
     if (basis === "peakDay") {
       evidence.push({

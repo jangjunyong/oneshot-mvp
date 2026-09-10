@@ -63,6 +63,13 @@ test("음성: 작년 실측 110,184 그대로 → 통과 (결정론)", () => {
   assert.equal(a.verdict.breakevenTurnover, null, "실인원인데 회전율이 나왔다");
 });
 
+test("회전율은 상한 초과일 때만 낸다 — 상한 아래 연인원(60만 기간 총계)은 null", () => {
+  const v = checkVisitors({ n: 600000, basis: "period", counting: "personDays" }, history);
+  assert.equal(v.verdict.label, "주의");
+  assert.equal(stage(v.verdict, "cap").result, "통과");
+  assert.equal(v.verdict.breakevenTurnover, null);
+});
+
 test("M6-1 연인원↔실인원을 바꾸면 출력이 실제로 달라진다 — 회전율과 문장", () => {
   const pd = checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, history);
   const uq = checkVisitors({ n: 217502, basis: "peakDay", counting: "unique" }, history);

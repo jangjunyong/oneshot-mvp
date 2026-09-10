@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
-import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
 import { measured, Num } from "@/app/_components/num";
@@ -92,7 +92,7 @@ function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly Da
 
 export default async function EvidencePage({ searchParams }: PageProps<"/evidence">) {
   const params = await searchParams;
-  const { query: q, isDemo, errors } = parseCheckQuery(params);
+  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
   const qs = checkQueryString(q, isDemo);
   const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
   const rows = code ? loadDaily(code) : [];
@@ -163,9 +163,10 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
           평소(전후 4주) 대비 배수와 같은 요일 대비 순증으로 축제 몫을 뽑습니다. 산출식은 <code>lib/surge.ts</code> 한 곳입니다.
         </p>
 
-        {isDemo && (
+        {isDemo && demo && (
           <p className="alert" data-level="근거없음">
-            <strong>견본</strong>입니다. 군포시(41410)의 2024·2025·2026 군포철쭉축제 기간을 봅니다.
+            <strong>견본</strong>입니다. {q.sido} {q.sigungu}의 {q.history.map((h) => h.year).join("·")} {q.name} 기간을 봅니다. 기간 출처:{" "}
+            {q.history.map((h) => `${h.year} ${h.source ?? "—"}`).join(" / ")}. {DEMOS[demo].why}.
           </p>
         )}
         {errors.map((e) => (

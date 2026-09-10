@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
 import { historyOf } from "@/lib/history";
-import { checkQueryString, DEMO_BUDGET_SOURCE, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
 import {
   checkSchedule,
@@ -69,7 +69,9 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const params = await searchParams;
-  const { query: q, isDemo, errors } = parseCheckQuery(params);
+  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
+  const 견본 = demo ? DEMOS[demo] : null;
+  const 다른견본 = demo === "gunpo" ? DEMOS.hwacheon : demo === "hwacheon" ? DEMOS.gunpo : null;
   const qs = checkQueryString(q, isDemo);
 
   const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
@@ -140,10 +142,15 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
           아니라 몇 배를, 점이 아니라 구간으로. 판정과 구간은 규칙이 내고 모델은 부르지 않습니다.
         </p>
 
-        {isDemo && (
+        {견본 && (
           <p className="alert" data-level="근거없음">
-            <strong>견본</strong>입니다. 군포철쭉축제 2027 기획안이고, 예상 방문객은 2025년 발표 최다일 값, 이력은
-            2024·2025·2026 세 해입니다. 아래 칸을 고쳐 다른 축제를 넣을 수 있습니다.
+            <strong>견본</strong>입니다. {견본.banner}
+            {다른견본 && (
+              <>
+                {" "}
+                다른 견본: <Link href={`/check${checkQueryString(다른견본.query, true) || "?demo=gunpo"}`}>{다른견본.query.name} →</Link>
+              </>
+            )}
           </p>
         )}
         {errors.map((e) => (
@@ -368,7 +375,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       <p className="note">
                         총예산 {stageNum("budget")}
                         {budget.verdict.ratio !== null && <> · 실측 기준이 기획안 기준의 {budget.verdict.ratio.toFixed(1)}배</>}. {budget.verdict.note}
-                        {isDemo && " 견본 예산은 가정값이다."}
+                        {isDemo && q.budgetManWon !== null && " 견본 예산은 가정값이다."}
                       </p>
                     </div>
                   </>

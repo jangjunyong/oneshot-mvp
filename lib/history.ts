@@ -13,6 +13,8 @@ export interface Period {
   /** YYYYMMDD */
   start: string;
   end: string;
+  /** 견본 픽스처가 이 기간을 어디서 가져왔는지 (기사·공지·조회일). 담당자 입력엔 없다 */
+  source?: string;
 }
 
 export interface HistorySkip {

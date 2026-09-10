@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { checkQueryString, GUNPO_2027, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMOS, GUNPO_2027, HWACHEON_2027, parseCheckQuery } from "@/lib/checkquery";
+import { manifest } from "@/lib/kto/daily";
 
 test("빈 URL 이면 군포 2027 견본", () => {
   const p = parseCheckQuery({});
@@ -39,7 +40,8 @@ test("왕복 — 쿼리 문자열로 옮겨 다시 읽으면 같다", () => {
   const qs = checkQueryString(GUNPO_2027, false);
   const params = Object.fromEntries(new URLSearchParams(qs.slice(1)).entries());
   const p = parseCheckQuery(params);
-  assert.deepEqual(p.query, GUNPO_2027);
+  // 이력의 출처(source)는 픽스처 전용이라 URL 에 실리지 않는다 — 그것만 빼고 같아야 한다
+  assert.deepEqual(p.query, { ...GUNPO_2027, history: GUNPO_2027.history.map(({ year, start, end }) => ({ year, start, end })) });
 });
 
 test("단위를 안 고르면 null 로 남긴다 — 판정 엔진이 '단위 미상'을 낸다", () => {
@@ -70,4 +72,37 @@ test("예산(만 원)은 budget 으로 받고 왕복하며, 견본에는 가정�
   const bad = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", budget: "-3" });
   assert.ok(bad.errors.some((e) => e.includes("예산")));
   assert.ok(GUNPO_2027.budgetManWon !== null && GUNPO_2027.budgetManWon > 0, "견본 예산이 없으면 판정 항목이 셋이 못 된다");
+});
+
+test("M7-1 견본은 둘, 서로 다른 시도, demo 파라미터로 고르고 링크가 왕복한다", () => {
+  assert.equal(Object.keys(DEMOS).length, 2);
+  assert.notEqual(GUNPO_2027.sido, HWACHEON_2027.sido);
+  const h = parseCheckQuery({ demo: "hwacheon" });
+  assert.equal(h.isDemo, true);
+  assert.equal(h.demo, "hwacheon");
+  assert.deepEqual(h.query, HWACHEON_2027);
+  assert.equal(checkQueryString(h.query, true), "?demo=hwacheon");
+  const g = parseCheckQuery({});
+  assert.equal(g.demo, "gunpo");
+  assert.equal(checkQueryString(g.query, true), "");
+  const x = parseCheckQuery({ demo: "없는것" });
+  assert.equal(x.demo, "gunpo", "모르는 견본 이름은 기본 견본으로");
+});
+
+test("M7-2 견본 이력은 연도마다 출처가 있고 날짜가 KT 자료 범위 안이다", () => {
+  const m = manifest();
+  for (const d of Object.values(DEMOS)) {
+    assert.ok(d.banner.length > 40 && d.why.length > 10, d.key);
+    assert.ok(d.claimSource.length > 10, `${d.key} 예상 방문객 출처`);
+    assert.ok(d.query.history.length >= 2, `${d.key} 이력 2년 이상`);
+    for (const h of d.query.history) {
+      assert.ok(h.source && h.source.length > 5, `${d.key} ${h.year} 출처 없음`);
+      assert.ok(h.start <= h.end, `${d.key} ${h.year} 기간`);
+      assert.ok(m.from !== null && m.to !== null && h.start >= m.from && h.end <= m.to, `${d.key} ${h.year} 자료 밖: ${h.start}~${h.end}`);
+    }
+  }
+});
+
+test("M7-3 하나는 문체부 지정축제(글로벌축제)다", () => {
+  assert.ok(Object.values(DEMOS).some((d) => d.designated), "지정축제 견본이 없다");
 });

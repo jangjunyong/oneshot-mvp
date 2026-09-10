@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
-import { checkQueryString, DEMO_BUDGET_SOURCE, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
@@ -68,7 +68,7 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckReportPage({ searchParams }: PageProps<"/report/check">) {
   const params = await searchParams;
-  const { query: q, isDemo, errors } = parseCheckQuery(params);
+  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
   const qs = checkQueryString(q, isDemo);
   const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
 
@@ -135,9 +135,9 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
       <section className="report-page">
         <header className="report-head">
           <h1>기획안 검증 보고서</h1>
-          {isDemo && (
+          {isDemo && demo && (
             <p className="report-demo">
-              <strong>견본</strong> · 군포철쭉축제 2027 예시 기획안으로 만든 견본입니다. 결재에 쓸 문서가 아닙니다.
+              <strong>견본</strong> · {DEMOS[demo].banner} 결재에 쓸 문서가 아닙니다. 예상 방문객 출처: {DEMOS[demo].claimSource}.
             </p>
           )}
           <p className="num">
@@ -252,7 +252,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     {budget.verdict.label}
                     <span className="report-cell-label">방문객 판정 상속</span>
                   </td>
-                  <td>임계 없음. 비는 2단계 순증분 비와 같다. 1인당 예산의 오차는 예상 방문객의 오차라 그 판정을 물려받는다{isDemo && ". 견본 예산은 가정값"}</td>
+                  <td>임계 없음. 비는 2단계 순증분 비와 같다. 1인당 예산의 오차는 예상 방문객의 오차라 그 판정을 물려받는다{isDemo && q.budgetManWon !== null && ". 견본 예산은 가정값"}</td>
                 </tr>
               ) : (
                 <tr>

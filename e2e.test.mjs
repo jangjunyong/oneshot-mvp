@@ -379,13 +379,12 @@ function 출처셀걷기(html) {
     .replace(/<!--\s*-->/g, "");
 }
 
-test("판정 견본 — 군포 2027 은 상한 초과(손익분기 회전율 1.04), 명 수는 전부 출처 셀 안에", async () => {
+test("판정 견본 — 군포 2027(목표 60만) 은 주의, 명 수는 전부 출처 셀 안에", async () => {
   const html = await (await fetch(BASE + "/check")).text();
   const 본문 = html.replace(/<!--\s*-->/g, "");
   assert.match(본문, /견본/, "견본 표시가 없다");
-  assert.match(본문, /예상 방문객 상한 초과/, "최종 판정이 없다");
-  assert.match(본문, /손익분기 회전율/, "연인원인데 손익분기 회전율이 없다");
-  assert.match(본문, /1\.04/, "회전율 값이 없다");
+  assert.match(본문, /예상 방문객 주의/, "최종 판정이 없다");
+  assert.match(본문, /경인일보/, "견본 방문객의 출처가 없다");
   assert.match(본문, /1\.1~1\.3배/, "내년 구간(평균)이 없다");
   assert.match(본문, /1\.4~1\.6배/, "내년 구간(최대일)이 없다");
   // 안 잰 적중률에 신뢰도 라벨을 붙이지 않는다 (M1)
@@ -433,8 +432,7 @@ test("검증 보고서 두 장 — 판정·구간·보완·근거 표가 자바�
   assert.equal((html.match(/class="report-page"/g) ?? []).length, 2, "두 장이 아니다");
   assert.match(본문, /기획안 검증 보고서/);
   assert.match(본문, /견본 · 결재용 아님/, "견본 표시가 종이에 없다");
-  assert.match(본문, /예상 방문객 상한 초과/, "결론이 없다");
-  assert.match(본문, /손익분기 회전율/, "보고서에 손익분기 회전율이 없다");
+  assert.match(본문, /예상 방문객 주의/, "결론이 없다");
   assert.match(본문, /1\.4~1\.6배/, "내년 구간이 없다");
   assert.match(본문, /이력 범위\(3년\)\. 적중률은 −52주 근사로만 쟀다/, "보고서 구간 줄이 적중률의 한계를 말하지 않는다");
   assert.match(본문, /<h2>보완<\/h2>/, "보완 절이 없다");
@@ -476,4 +474,24 @@ test("−52주 근사 백테스트 — 두 화면에 근사·표본 N건·편향
     assert.doesNotMatch(본문, /[^의]적중률 \d/, `${path}: 한정어 없는 적중률 숫자`);
     assert.doesNotMatch(본문, /신뢰도 높음/, `${path}: 안 잰 신뢰도 라벨`);
   }
+});
+
+test("견본 2건 — 화천산천어축제(글로벌축제)는 상한 초과 + 손익분기 회전율, 두 견본 모두 '근거 없음' 아님 (M7)", async () => {
+  const 화천 = (await (await fetch(BASE + "/check?demo=hwacheon")).text()).replace(/<!--\s*-->/g, "");
+  assert.match(화천, /견본/, "견본 표시가 없다");
+  assert.match(화천, /화천산천어축제/, "화천 견본이 아니다");
+  assert.match(화천, /예상 방문객 상한 초과/, "화천 판정이 없다");
+  assert.match(화천, /손익분기 회전율/, "연인원인데 회전율이 없다");
+  assert.match(화천, /글로벌축제|지정축제/, "지정축제 표기가 없다");
+  assert.doesNotMatch(화천, /예상 방문객 근거 없음/, "화천이 근거 없음이다");
+  assert.doesNotMatch(출처셀걷기(화천), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+  const 군포 = (await (await fetch(BASE + "/check")).text()).replace(/<!--\s*-->/g, "");
+  assert.doesNotMatch(군포, /예상 방문객 근거 없음/, "군포가 근거 없음이다");
+  assert.match(군포, /demo=hwacheon/, "군포 견본에서 화천 견본으로 가는 링크가 없다");
+  // 근거·보고서도 같은 견본을 물고 간다
+  const 근거 = await (await fetch(BASE + "/evidence?demo=hwacheon")).text();
+  assert.match(근거, /화천/, "실측 근거가 화천 견본을 잃었다");
+  const 보고서 = (await (await fetch(BASE + "/report/check?demo=hwacheon")).text()).replace(/<!--\s*-->/g, "");
+  assert.match(보고서, /화천산천어축제/, "보고서가 화천 견본을 잃었다");
+  assert.match(보고서, /손익분기 회전율/, "보고서에 회전율이 없다");
 });
