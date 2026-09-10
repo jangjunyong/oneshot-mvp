@@ -32,12 +32,14 @@ function medianOf(sorted: readonly number[]): number | null {
 }
 
 /** 재계산이 선 또래의 (평균, 최대일) 배수 쌍 */
-export function peerSurgePairs(populationManMyeong: number): { mean: number; peak: number }[] {
+/** excludeId — 백테스트처럼 자기 자신을 또래에서 빼야 할 때 */
+export function peerSurgePairs(populationManMyeong: number, excludeId?: string): { mean: number; peak: number }[] {
   if (!Number.isFinite(populationManMyeong) || populationManMyeong < 0) return [];
   const b = POPULATION_BUCKETS.find((x) => populationManMyeong >= x.min && populationManMyeong < x.max);
   if (!b) return [];
   const out: { mean: number; peak: number }[] = [];
   for (const f of FESTIVALS) {
+    if (excludeId !== undefined && f.id === excludeId) continue;
     if (f.populationManMyeong < b.min || f.populationManMyeong >= b.max) continue;
     const s = SURGES[f.id];
     if (!s?.ok || s.surgeMean === undefined || s.surgePeak === undefined) continue;
@@ -46,8 +48,8 @@ export function peerSurgePairs(populationManMyeong: number): { mean: number; pea
   return out;
 }
 
-export function peerBandFor(populationManMyeong: number): PeerBand | null {
-  const pairs = peerSurgePairs(populationManMyeong);
+export function peerBandFor(populationManMyeong: number, excludeId?: string): PeerBand | null {
+  const pairs = peerSurgePairs(populationManMyeong, excludeId);
   if (pairs.length === 0) return null;
   const b = POPULATION_BUCKETS.find((x) => populationManMyeong >= x.min && populationManMyeong < x.max)!;
   const means = pairs.map((p) => p.mean).sort((a, c) => a - c);

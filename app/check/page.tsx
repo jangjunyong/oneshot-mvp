@@ -23,6 +23,7 @@ import {
   type Segment,
 } from "@/lib/verdict";
 import { bandText, nextYearRange } from "@/lib/range";
+import { backtestSentence, RANGE_BACKTEST_PUBLISHED } from "@/lib/backtest";
 import { peerBandFor } from "@/lib/peerband";
 import { populationOf } from "@/lib/festivals";
 import { ymdDashed } from "@/lib/history";
@@ -380,8 +381,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         </p>
                         <p className="note">
                           자기 이력 {range.years.join("·")} 의 연도별 배수를 0.1 단위로 바깥 반올림한 구간. 이력 범위({range.years.length}년).
-                          적중률은 아직 재지 못했다.{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
+                          적중률은 −52주 근사로만 쟀다(아래).{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
                         </p>
+                        <p className="note backtest">{backtestSentence(RANGE_BACKTEST_PUBLISHED)}</p>
                       </>
                     ) : (
                       <p className="note">자기 이력이 없어 또래 구간만 낸다.</p>

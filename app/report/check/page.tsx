@@ -23,6 +23,7 @@ import {
   type Segment,
 } from "@/lib/verdict";
 import { bandText, nextYearRange } from "@/lib/range";
+import { backtestSentence, RANGE_BACKTEST_PUBLISHED } from "@/lib/backtest";
 import { peerBandFor } from "@/lib/peerband";
 import { populationOf } from "@/lib/festivals";
 import { 긴시각 } from "@/lib/datetime";
@@ -266,7 +267,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           <p className="num">
             {range.mean ? (
               <>
-                자기 이력 {range.years.join("·")}: <strong>평균 {bandText(range.mean)} · 최대일 {bandText(range.peak)}</strong>. 이력 범위({range.years.length}년). 적중률은 아직 재지 못했다.{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
+                자기 이력 {range.years.join("·")}: <strong>평균 {bandText(range.mean)} · 최대일 {bandText(range.peak)}</strong>. 이력 범위({range.years.length}년). 적중률은 −52주 근사로만 쟀다(아래).{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
               </>
             ) : (
               <>자기 이력이 없어 구간을 내지 못했습니다.</>
@@ -281,6 +282,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
             연도별 배수의 최소~최대를 0.1 단위로 바깥 반올림한 구간입니다. 배수는 평소(축제 전후 4주 외지인 중앙값) 대비이며 명 수로 바꾸지
             않습니다. 그해 평소 값에 이 구간을 곱하는 것은 담당 부서의 판단입니다.
           </p>
+          <p className="num backtest">{backtestSentence(RANGE_BACKTEST_PUBLISHED)}</p>
         </section>
 
         <section className="report-advice">
@@ -309,7 +311,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           {isDemo && <span className="report-foot-demo">견본 · 결재용 아님</span>}
           <span>1/2</span>
           <span>인쇄 {긴시각()}</span>
-          <span>출처 한국관광공사 {KT_API} · 조회 {fetchedAt}</span>
+          <span>출처 한국관광공사 TourAPI · {KT_API} · 조회 {fetchedAt}</span>
         </footer>
       </section>
 
@@ -435,7 +437,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           {isDemo && <span className="report-foot-demo">견본 · 결재용 아님</span>}
           <span>2/2</span>
           <span>인쇄 {긴시각()}</span>
-          <span>출처 한국관광공사 TourAPI · {KT_API} · 조회 {fetchedAt}</span>
+          <span>출처 한국관광공사 {KT_API} · 조회 {fetchedAt}</span>
           <span>기획안 팩트체크</span>
         </footer>
       </section>
