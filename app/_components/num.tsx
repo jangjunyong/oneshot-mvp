@@ -13,7 +13,12 @@ export function formatMeasured(m: Measured): string {
 }
 
 export function Num({ m }: { m: Measured }) {
-  const 출처 = m.origin === "input" ? `${m.label} · 담당자 입력` : `${m.label} · ${m.api} · ${m.period} · 조회 ${m.date}`;
+  const 출처 =
+    m.origin === "input"
+      ? `${m.label} · 담당자 입력`
+      : m.origin === "derived"
+        ? `${m.label} · ${m.api} (입력 ÷ 실측) · ${m.period} · 조회 ${m.date}`
+        : `${m.label} · ${m.api} · ${m.period} · 조회 ${m.date}`;
   return (
     <span
       className="num"

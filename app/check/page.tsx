@@ -32,6 +32,7 @@ import { attributionCaveat, competitorsNear, NEARBY_RADIUS_KM, type Competitor, 
 import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "기획안 판정 · 기획안 팩트체크" };
 
 /** 라벨 → 경보 색. 통과는 무채색이다 — "안전하다"가 아니라 "기획안이 이력 안에 있다"일 뿐 */
 const LEVEL_OF: Record<Label, string | undefined> = {
@@ -294,6 +295,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <span className="chip" data-level={LEVEL_OF[budget.verdict.label]}>
                             {budget.verdict.label}
                           </span>
+                          <span className="note check-cell-label">방문객 판정 상속</span>
                         </td>
                       </tr>
                     )}

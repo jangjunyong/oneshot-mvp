@@ -1024,7 +1024,7 @@ export default function SimMap({
           <button type="button" className="btn" disabled={history.length === 0} onClick={undo}>되돌리기 ({history.length})</button>
           <button type="button" className="btn sim-primary" disabled={!dirty && !(sum && sum.time > 0)} onClick={saveGeo}>도면 저장</button>
         </div>
-        {dirty && <p className="sim-small">저장 안 된 변경이 있다. 저장하면 이 주소로 다시 열 수 있다.{sum && sum.time > 0 ? " 지금까지 돌린 시뮬 요약이 진단서 근거 3 에 같이 들어간다." : ""}</p>}
+        {dirty && <p className="sim-small">저장 안 된 변경이 있다. 저장하면 이 주소로 다시 열 수 있다.{sum && sum.time > 0 ? (entryId ? " 지금까지 돌린 시뮬 요약이 진단서 근거 3 에 같이 들어간다." : " 진단과 연결되지 않은 도면이라 진단서에는 들어가지 않는다.") : ""}</p>}
 
         <h3>도면</h3>
         <label className="sim-row"><span>배경</span>
@@ -1042,7 +1042,7 @@ export default function SimMap({
 
         <h3>유입 시나리오</h3>
         <p className="sim-small">
-          시간대별 시간당 입장 인원. 배수 기본값은 진단의 쌍둥이 실측 배수다.
+          시간대별 시간당 입장 인원. 기본 배열은 출처 없음, 순수 가정이며 여기서 고친다. 배수 기본값은 진단의 쌍둥이 실측 배수다.
           {scenario?.label && <> ({scenario.label})</>} <strong>이 숫자는 예측이 아니라 시나리오다.</strong>
         </p>
         <label className="sim-row"><span>시간대별 유입(명/시)</span>
@@ -1101,7 +1101,7 @@ export default function SimMap({
 
       <div className="sim-map-col">
         <div className="sim-toolbar">
-          <button type="button" className="btn" disabled={running || !ready} onClick={() => { runningRef.current = true; setRunning(true); send({ type: "run" }); }}>재생</button>
+          <button type="button" className="btn" disabled={running || !ready || !!stressMsg} onClick={() => { runningRef.current = true; setRunning(true); send({ type: "run" }); }}>재생</button>
           <button type="button" className="btn" disabled={!running} onClick={() => { runningRef.current = false; setRunning(false); send({ type: "pause" }); }}>멈춤</button>
           <button type="button" className="btn" onClick={() => setWhatif({ ...whatif })}>처음부터</button>
           <label className="sim-inline"><span>배속</span>
@@ -1175,6 +1175,7 @@ export default function SimMap({
             <span key={l.grade}><i style={{ background: l.color }} />{l.grade}{l.max === Infinity ? "" : ` <${l.max}`}</span>
           ))}
         </p>
+        <p className="sim-small">등급 경계 3·5명/㎡는 행안부 다중운집인파사고 안전관리 가이드라인(2024.9)의 값이고, 그 사이 등급 이름은 자체 세분이다.</p>
         {worst ? (
           <p className="alert" data-level="심각">
             행안부 &quot;주의&quot;(3명/㎡) 이상이 <b className="num">{worst.secAboveD.toFixed(0)}초</b> 지속된 지점이 있다. 최대 <b className="num">{worst.peak.toFixed(2)}명/㎡</b> ({losOf(worst.peak).grade}). 지도의 짙은 칸이 그 자리다.
@@ -1234,7 +1235,7 @@ export default function SimMap({
             )}
           </>
         )}
-        <p className="sim-small">엔진은 폭 2m 통로 정상류에서 Weidmann 기본도표 ±30% 안(7점 중 6점, 전부 느린 쪽)을 통과했다(2026-09-09). 5명/㎡ 위 구간은 어떤 모델도 검증 밖이라, 상한 배수는 <strong>구간</strong>으로 읽을 것.</p>
+        <p className="sim-small">엔진은 폭 2m 통로 정상류에서 Weidmann 기본도표 ±30% 안(7점 중 6점, 전부 느린 쪽 = 밀도 과대·상한 배수 과소, 안전 측)을 통과했다(2026-09-09). 5명/㎡ 위 구간은 어떤 모델도 검증 밖이라, 상한 배수는 <strong>구간</strong>으로 읽을 것.</p>
       </aside>
     </div>
   );

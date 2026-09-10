@@ -40,8 +40,9 @@ test("군포 양성: 10억 ÷ 217,502 와 10억 ÷ 2026 최대일 순증 28,215 
   assert.equal(perClaim.unit, "원");
   assert.ok(Math.abs(perClaim.value - 1_000_000_000 / 217502) < 0.01);
   const perMeasured = by.get("perMeasured")!;
-  assert.equal(perMeasured.origin, "measured");
-  assert.equal(perMeasured.api, KT_API);
+  // 분자는 담당자(또는 견본 가정) 예산이고 분모만 공사 실측이다. "measured" 로 찍으면 출처 세탁이다
+  assert.equal(perMeasured.origin, "derived");
+  assert.ok(perMeasured.api.includes(KT_API) && perMeasured.api.includes("÷"), perMeasured.api);
   assert.ok(perMeasured.period && perMeasured.date, "출처 4속성");
   assert.ok(Math.abs(perMeasured.value - 1_000_000_000 / 28215) < 2, String(perMeasured.value));
   assert.equal(b.verdict.slots.perMeasured, "perMeasured");
@@ -70,6 +71,13 @@ test("단위 미상·이력 없음이면 라벨을 물려받고 실측 셀은 �
   const 첫회 = checkBudget(100000, checkVisitors({ n: 30000, basis: "peakDay", counting: "unique" }, []))!;
   assert.equal(첫회.verdict.label, "근거 없음");
   assert.ok(!첫회.evidence.some((m) => m.key === "perMeasured"));
+});
+
+test("예산 문구는 '분모가 같다'고 말하지 않는다 — 라벨은 같은 입력 N 에서 나온다", () => {
+  const v = checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, history);
+  const b = checkBudget(100000, v)!;
+  assert.ok(!b.verdict.note.includes("분모가 같"), b.verdict.note);
+  assert.ok(b.verdict.note.includes("2단계"), b.verdict.note);
 });
 
 test("예산 판정에는 명·원 스칼라가 없다 — 비·라벨·키뿐", () => {

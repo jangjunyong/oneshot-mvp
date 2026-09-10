@@ -15,6 +15,7 @@ import { EditorShell } from "@/app/venue/editor-shell";
 import { SimShell } from "@/app/venue/sim-shell";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "행사장 도면 · 기획안 팩트체크" };
 
 const 오류로 = (message: string, extra = "") =>
   redirect("/venue?err=" + encodeURIComponent(message) + extra);
@@ -214,11 +215,11 @@ export default async function VenuePage({
         </div>
         <div>
           <dt>Entry</dt>
-          <dd className="num">{entryId ? `#${entryId}` : "연결 없음"}</dd>
+          <dd className="num">{entryId ? `#${entryId}` : "진단 미연결"}</dd>
         </div>
         <div>
           <dt>Items</dt>
-          <dd className="num">{venue.items.length}개 배치</dd>
+          <dd className="num">{venue.items.length || (venue.geo?.features.length ?? 0)}개 배치</dd>
         </div>
       </footer>
     </div>

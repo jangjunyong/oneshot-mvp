@@ -37,8 +37,10 @@
   /* 서체 — var(--font-*-loaded) 는 next/font 등에서 주입되면 우선한다 */
   --font-display: var(--font-display-loaded), "Archivo", "Pretendard", "IBM Plex Sans KR", sans-serif;
   --font-body:    var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
-  --font-serif:   "Noto Serif KR", "Nanum Myeongjo", serif;
-  --font-mono:    var(--font-mono-loaded), "IBM Plex Mono", "Consolas", monospace;
+  /* 세리프는 아무도 로드하지 않아 바탕체로 떨어졌다 — 본문 서체로 (2026-09-10) */
+  --font-serif:   var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
+  /* 모노는 라틴 전용이라 한글이 시스템 폴백으로 떨어진다. 글자 단위 폴백이므로 KR 서체를 사슬에 끼운다 */
+  --font-mono:    var(--font-mono-loaded), "IBM Plex Mono", var(--font-body-loaded), "IBM Plex Sans KR", "Pretendard", "Consolas", monospace;
 
   /* 타입 스케일 (1.333 배수 기반) */
   --text-xs:   0.75rem;

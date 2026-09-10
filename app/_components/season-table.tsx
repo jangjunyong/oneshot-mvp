@@ -37,7 +37,7 @@ export function SeasonTable({ scan }: { scan: SeasonScan }) {
         </p>
       ) : scan.flat ? (
         <p className="season-head num">
-          달을 바꿔도 쌍둥이 배수 폭이{" "}
+          달을 바꿔도 쌍둥이 중앙 배수 폭이{" "}
           <strong>
             {Math.min(
               ...scan.months.map((m) => m.medianSurge ?? Infinity),
@@ -62,7 +62,7 @@ export function SeasonTable({ scan }: { scan: SeasonScan }) {
       <table className="season-table">
         <thead>
           <tr>
-            <th>물은 달</th>
+            <th>물어본 달</th>
             <th>쌍둥이</th>
             <th>배수</th>
             <th>중앙</th>

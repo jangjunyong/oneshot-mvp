@@ -921,6 +921,7 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .check-table tr[data-peak] th { color: var(--redline); }
 [data-num][data-origin="measured"] { border-bottom: 1px dotted var(--line-strong); cursor: help; }
 [data-num][data-origin="input"] { border-bottom: 1px solid var(--ink); }
+[data-num][data-origin="derived"] { border-bottom: 1px dashed var(--ink); cursor: help; }
 .chip[data-level="근거없음"] { color: var(--concrete); border-color: var(--line-strong); }
 .range-card {
   border: 1px solid var(--line-strong);

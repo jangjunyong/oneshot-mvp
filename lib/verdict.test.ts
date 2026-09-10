@@ -40,6 +40,8 @@ test("양성: 군포 2025 발표 217,502 (일 최다·연인원) → 성립 불�
   assert.equal(stage(verdict, "multiple").result, "과대");
   assert.equal(verdict.confidence, "high");
   assert.deepEqual(verdict.historyYears, ["2024", "2025", "2026"]);
+  // 연인원 ÷ KT 실인원인데 보정이 없다는 사실을 단서로 적는다 (2026-09-10 critic). M6 이 회전율로 바꾼다
+  assert.ok(verdict.caveats.some((c) => c.includes("연인원") && c.includes("보정")), verdict.caveats.join(" | "));
   // 근거 셀은 전부 출처 4필드를 갖는다
   for (const m of evidence.filter((m) => m.origin === "measured")) {
     assert.ok(m.api && m.period && m.date, `${m.key} 출처 누락`);
@@ -55,6 +57,7 @@ test("음성: 작년 실측 110,184 그대로 → 통과 (결정론)", () => {
   near(stage(a.verdict, "increment").ratio, 3.9, 0.02, "증분비");
   assert.equal(stage(a.verdict, "increment").result, "신호 없음");
   near(a.verdict.r, 0.99, 0.01, "r");
+  assert.ok(!a.verdict.caveats.some((c) => c.includes("연인원") && c.includes("보정")), "실인원 입력에 연인원 단서가 붙었다");
 });
 
 test("기간 총계 62만 (2026 발표) → 분모가 기간 전체 체류·베이스라인×일수로 바뀐다", () => {

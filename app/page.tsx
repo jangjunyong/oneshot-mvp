@@ -10,7 +10,7 @@ import {
 } from "@/lib/store";
 import { planInputOf, type Entry } from "@/lib/types";
 import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
-import { hasModelKey, modelName } from "@/lib/extract";
+import { hasModelKey } from "@/lib/extract";
 import { checkUrlFromExtraction } from "@/lib/checkquery";
 import {
   festivalDetail,
@@ -221,7 +221,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
         {/* 근거의 무게가 작은 글씨(A-01)에 묻혀 있었다. 쓰기 전에 보여야 한다 */}
         <p className="trust num">
-          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027 판정</Link>. 보조 근거인 닮은 축제 배수는 KT
+          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027 판정</Link>. 아래 수치는 보조 근거(닮은 축제 등급)의
+          적중률이고 기획안 판정의 적중률이 아닙니다. 보조 근거인 닮은 축제 배수는 KT
           이동통신으로 잰 619건입니다(한국관광 데이터랩). 이 619건을 하나씩 빼고 다시 맞혀 보니 위험한 축제를 무작위의{" "}
           <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
           정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
@@ -274,7 +275,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               스캔본 제외) · 텍스트는 최대 {MAX_PLAN_TEXT.toLocaleString()}자 ·
               하루 {DAILY_EXTRACT_LIMIT}건까지
               {hasModelKey()
-                ? ` · ${modelName()}`
+                ? " · 문서에서 숫자를 옮겨 적는 데만 모델을 씁니다. 판정에는 쓰지 않습니다"
                 : " · 키가 없어 고정 샘플로 채웁니다"}
             </p>
             <p>
@@ -968,7 +969,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <footer className="titleblock">
         <div>
           <dt>Project</dt>
-          <dd>축제 위험 경보</dd>
+          <dd>기획안 팩트체크</dd>
         </div>
         <div>
           <dt>Dataset</dt>

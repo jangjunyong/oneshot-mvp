@@ -4,7 +4,8 @@
 //   기획안 예산 ÷ 작년 같은 단위 실측 순증     (분모는 공사 KT 실측, 방문객 판정 2단계와 같은 셀)
 //
 // 새 자료 0, 새 라벨 0, 새 임계 0. 1인당 예산의 오차는 예상 방문객의 오차 그대로이므로
-// 라벨은 방문객 판정을 물려받는다 — 분모가 같기 때문이다. 순수 함수.
+// 라벨은 같은 입력 N 에서 나온 방문객 판정을 물려받는다. 실측으로 나눈 1인당 값의 비는
+// 판정표 2단계(순증분) 비와 같은 값이다 — 새 정보가 아니라 같은 사실을 원 단위로 다시 보인 것. 순수 함수.
 // 이 파일이 내는 BudgetVerdict 에도 명·원 스칼라는 없다. 원 값은 Measured 로만 나간다.
 
 import { KT_API, type Label, type Measured, type VisitorCheck } from "@/lib/verdict";
@@ -58,8 +59,9 @@ export function checkBudget(budgetManWon: number | null, visitors: VisitorCheck,
       label: `기획안 총예산 ÷ ${denom.label}`,
       value: won / denom.value,
       unit: "원",
-      origin: "measured",
-      api: KT_API,
+      // 분자는 담당자(또는 견본 가정) 예산, 분모만 공사 실측 — measured 가 아니라 derived
+      origin: "derived",
+      api: `${budgetSource} ÷ ${KT_API}`,
       period: denom.period,
       date: denom.date,
     });
@@ -70,7 +72,7 @@ export function checkBudget(budgetManWon: number | null, visitors: VisitorCheck,
   const note =
     ratio === null
       ? "작년 같은 단위 실측이 없어 기획안 값으로 나눈 1인당 예산만 낸다."
-      : "1인당 예산의 오차는 예상 방문객의 오차와 같다. 판정은 방문객 판정을 그대로 따른다.";
+      : "1인당 예산의 오차는 예상 방문객의 오차와 같다. 이 비는 판정표 2단계 순증분 비와 같은 값이다. 판정은 같은 입력에서 나온 방문객 판정을 그대로 따른다.";
 
   return {
     verdict: { item: "budget", label: v.label, ratio, denominatorKey: denom ? denomKey : "", slots, note },

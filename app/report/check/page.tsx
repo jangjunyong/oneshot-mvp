@@ -32,6 +32,7 @@ import { attributionCaveat, competitorsNear, type Competitor, type CompetitionSt
 import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "기획안 검증 보고서 · 기획안 팩트체크" };
 
 const LEVEL_OF: Record<Label, string | undefined> = {
   "성립 불가": "심각",
@@ -241,8 +242,11 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     )}
                   </td>
                   <td className="num">{budget.verdict.ratio === null ? "—" : budget.verdict.ratio.toFixed(2)}</td>
-                  <td className="report-label">{budget.verdict.label}</td>
-                  <td>임계 없음. 1인당 예산의 오차는 예상 방문객의 오차와 같아 그 판정을 물려받는다{isDemo && ". 견본 예산은 가정값"}</td>
+                  <td className="report-label">
+                    {budget.verdict.label}
+                    <span className="report-cell-label">방문객 판정 상속</span>
+                  </td>
+                  <td>임계 없음. 비는 2단계 순증분 비와 같다. 1인당 예산의 오차는 예상 방문객의 오차라 그 판정을 물려받는다{isDemo && ". 견본 예산은 가정값"}</td>
                 </tr>
               ) : (
                 <tr>
@@ -391,7 +395,9 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     <td className="num">
                       <Num m={m} />
                     </td>
-                    <td>{m.origin === "input" ? (m.api === "기획안" ? "담당자 기획안" : m.api) : `한국관광공사 ${m.api}`}</td>
+                    <td>
+                      {m.origin === "input" ? (m.api === "기획안" ? "담당자 기획안" : m.api) : m.origin === "derived" ? `${m.api} (입력 ÷ 실측)` : `한국관광공사 ${m.api}`}
+                    </td>
                     <td className="num">{m.period || "—"}</td>
                     <td className="num">{m.date || "—"}</td>
                   </tr>
@@ -429,8 +435,8 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           {isDemo && <span className="report-foot-demo">견본 · 결재용 아님</span>}
           <span>2/2</span>
           <span>인쇄 {긴시각()}</span>
-          <span>출처 한국관광공사 TourAPI {KT_API} · 조회 {fetchedAt}</span>
-          <span>축제 위험 경보 · 기획안 팩트체크</span>
+          <span>출처 한국관광공사 TourAPI · {KT_API} · 조회 {fetchedAt}</span>
+          <span>기획안 팩트체크</span>
         </footer>
       </section>
     </div>

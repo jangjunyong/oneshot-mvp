@@ -180,7 +180,7 @@ test("핵심 흐름 — 조건을 저장하면 목록에 남고 경보 등급이
   assert.doesNotMatch(본문, /안전합니다|안전한/, "안전 판정을 하고 있다");
 
   // 5. 시연 중 쌓인 것을 그 자리에서 지울 수 있다 (screens.md 구멍 B-1)
-  const entryId = 뒤.match(/name="entryId" value="(\d+)"/)?.[1];
+  const entryId = 뒤.match(/name="entryId" value="([^"]+)"/)?.[1];
   assert.ok(entryId, "지우기 폼이 이력에 없다");
   const 지우기폼 = 뒤
     .split("<form")
@@ -227,7 +227,7 @@ test("지도는 한 장이고, 핀을 누르면 그 축제의 근거가 펴진�
   );
 
   // 핀은 자바스크립트 없이 눌린다 — 링크가 실제 주소여야 한다
-  const 핀 = 홈.match(/href="\/\?entry=(\d+)&(?:amp;)?pin=([^"#]+)#twin"/);
+  const 핀 = 홈.match(/href="\/\?entry=([^"&]+)&(?:amp;)?pin=([^"#]+)#twin"/);
   assert.ok(핀, "핀에 걸린 주소가 없다");
 
   const 펴짐 = await (
@@ -253,7 +253,7 @@ test("진단서 한 장 — 결론과 근거와 한계가 자바스크립트 없
     theme: "1", population: "14", accessibility: "2",
   });
   const 홈 = await (await fetch(BASE + "/")).text();
-  const id = 홈.match(/name="entryId" value="(\d+)"/)?.[1];
+  const id = 홈.match(/name="entryId" value="([^"]+)"/)?.[1];
   assert.ok(id, "진단 이력이 없다");
 
   // 진단 화면에서 진단서로 가는 길이 있어야 한다
@@ -449,7 +449,7 @@ test("1인당 예산 대조 — 견본에 기획안 1인당·실측 1인당이 �
   const 카드 = 본문.match(/<div class="range-card budget-card"[\s\S]*?<\/div>/)?.[0];
   assert.ok(카드, "예산 카드가 없다");
   assert.match(카드, /data-origin="input"[^>]*data-source-api="[^"]*기획안[^"]*"/, "기획안 1인당 셀이 없다");
-  assert.match(카드, /data-origin="measured"[^>]*data-source-api="DataLabService\/locgoRegnVisitrDDList"/, "실측 1인당 셀이 없다");
+  assert.match(카드, /data-origin="derived"[^>]*data-source-api="[^"]*DataLabService\/locgoRegnVisitrDDList"/, "실측으로 나눈 1인당 셀이 없다 (derived)");
   assert.ok((본문.match(/data-labeled=""/g) ?? []).length >= 3, "판정 라벨이 붙은 항목이 셋 미만");
   assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*원(?!정)/, "출처 셀 밖에 원 값이 있다");
   // 예산이 없으면 카드가 안 뜨고 '예산 미공개' 행이 그대로

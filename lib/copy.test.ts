@@ -104,3 +104,51 @@ test("M4-3 옛 진단서 상단에 검증 보고서 링크와 '보조 근거 진
   assert.ok(src.includes('href="/report/check'), "/report/check 링크가 없다");
   assert.ok(src.includes("보조 근거 진단서"), "'보조 근거 진단서' 문구가 없다");
 });
+
+
+// ── 2026-09-10 엔드포인트별 적대적 검증(docs/critic_endpoints_2026-09-10.md)에서 확정한 결함 ──
+test("V1-1 철회한 임계 근거 0.2674 가 화면·문서에 없다 (정정값 0.2371)", () => {
+  for (const f of ["app/report/page.tsx", "docs/기능설명서.md"]) {
+    assert.ok(!read(f).includes("0.2674"), `${f} 에 옛 값이 남았다`);
+  }
+});
+
+test("V1-2 내부 상태·옛 이름이 화면 문자열에 없다", () => {
+  const app = ["app/page.tsx", "app/venue/page.tsx", "app/report/check/page.tsx", "lib/store.ts"].map(read).join("\n");
+  for (const bad of ["DATABASE_URL 없음", "축제 위험 경보 · 기획안 팩트체크", "<dd>축제 위험 경보</dd>"]) {
+    assert.ok(!app.includes(bad), `남은 문자열: ${bad}`);
+  }
+});
+
+test("V1-3 모노 서체 사슬에 한글 글리프 서체가 있고 세리프 변수는 로드된 서체를 쓴다", () => {
+  const css = read("app/design-system.css");
+  const mono = css.match(/--font-mono:\s*([^;]+);/)![1];
+  assert.match(mono, /IBM Plex Sans KR|Pretendard/, mono);
+  const serif = css.match(/--font-serif:\s*([^;]+);/)![1];
+  assert.ok(!/Noto Serif KR/.test(serif) || /var\(--font-/.test(serif), serif);
+});
+
+test("V1-4 보고서 2장 각주는 두 API 를 구분해 적고, 619 적중률 문단은 보조 근거임을 먼저 말한다", () => {
+  assert.ok(read("app/report/check/page.tsx").includes("TourAPI · {KT_API}"), "TourAPI 와 DataLab 이 붙어 있다");
+  const p = read("app/page.tsx");
+  const i = p.indexOf("LOO_PUBLISHED.lift");
+  assert.ok(i > 0 && p.slice(Math.max(0, i - 400), i).includes("보조 근거"), "619 적중률 앞에 '보조 근거' 가 없다");
+});
+
+test("V1-5 화면마다 metadata title 이 다르다", () => {
+  const titles = new Set<string>();
+  for (const f of ["app/check/page.tsx", "app/evidence/page.tsx", "app/venue/page.tsx", "app/report/page.tsx", "app/report/check/page.tsx"]) {
+    const m = read(f).match(/export const metadata[^=]*=\s*\{[^}]*title:\s*"([^"]+)"/);
+    assert.ok(m, `${f} 에 metadata.title 이 없다`);
+    titles.add(m[1]);
+  }
+  assert.equal(titles.size, 5);
+});
+
+test("V1-6 /venue: 스트레스 중엔 재생이 막히고, 유입 배열·밀도 등급의 출처 문구가 있다", () => {
+  const s = read("app/venue/sim-map.tsx");
+  assert.ok(s.includes("disabled={running || !ready || !!stressMsg}"), "스트레스 중 재생이 안 막힌다");
+  assert.ok(s.includes("출처 없음"), "유입 배열에 출처 없음 표기가 없다");
+  assert.ok(s.includes("행안부"), "밀도 등급 출처가 화면에 없다");
+  assert.ok(s.includes("상한 배수 과소"), "Weidmann 편향 방향이 없다");
+});

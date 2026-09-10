@@ -16,6 +16,7 @@ import { attributionCaveat, competitorsNear, type Competitor, type CompetitionSt
 import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "실측 근거 · 기획안 팩트체크" };
 
 const DAY = 86400000;
 const toTime = (s: string) => Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
@@ -63,8 +64,8 @@ function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly Da
           </g>
         ))}
         <line className="ev-base" x1={PAD.l} x2={W - PAD.r} y1={yy(y.baseline)} y2={yy(y.baseline)} />
-        <text className="ev-tick" x={PAD.l + 4} y={yy(y.baseline) - 4}>
-          평소 {Math.round(y.baseline / 1000)}k
+        <text className="ev-tick" x={W - PAD.r - 4} y={yy(y.baseline) - 4} textAnchor="end">
+          평소
         </text>
         <polyline className="ev-line" points={pts.join(" ")} />
         {by.get(y.peakYmd) && <circle className="ev-peak" cx={x(pi)} cy={yy(y.peakOut)} r={3.5} />}

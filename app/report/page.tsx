@@ -37,6 +37,7 @@ import {
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "진단서(보조 근거) · 기획안 팩트체크" };
 
 /**
  * 진단서에 이름을 적는 경쟁 축제 수.
@@ -143,7 +144,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
     <div className="report">
       <p className="no-print report-hint">
         <span className="logo">기획안 팩트체크</span> 이 문서는 619건 닮은 축제로 낸 <strong>보조 근거 진단서</strong>입니다. 결재에 붙이는 주
-        산출물은 <Link href="/report/check">기획안 검증 보고서</Link>입니다. 브라우저 인쇄(Ctrl+P)에서 대상을 PDF로 저장하면 A4 한
+        산출물은 <Link href="/report/check">기획안 검증 보고서</Link>입니다. 이 진단서는 브라우저 인쇄(Ctrl+P)에서 대상을 PDF로 저장하면 A4 한
         장으로 나옵니다. <Link href={`/?entry=${entry.id}#twin`}>진단으로 돌아가기</Link>
       </p>
 
@@ -352,7 +353,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
               <table className="report-table">
                 <thead>
                   <tr>
-                    <th>물은 달</th>
+                    <th>물어본 달</th>
                     <th>쌍둥이</th>
                     <th>배수</th>
                     <th>중앙</th>
@@ -392,7 +393,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             흔들리는가입니다.{" "}
             {시기.measured < 시기.months.length &&
               `12달 중 ${시기.measured}달만 잴 수 있었고, `}
-            물은 달에 실제로 열린 쌍둥이는{" "}
+            물어본 달에 실제로 열린 쌍둥이는{" "}
             {Math.round((시기.monthMatchRate ?? 0) * 100)}%뿐이라 &ldquo;그 달로
             옮기면 이렇게 된다&rdquo;로 읽으면 안 됩니다.
             {!시기.robust && " 쌍둥이를 5·7곳으로 잡으면 일부 달의 등급이 바뀝니다."}
@@ -474,7 +475,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
           </li>
           <li>
             닮음의 임계값은 {DISTANCE_THRESHOLD} 입니다 — 619건 leave-one-out
-            실측에서 진짜 축제의 3번째 이웃 거리가 최대 0.2674 였습니다. 그 밖은
+            실측에서 진짜 축제의 3번째 이웃 거리가 최대 0.2371 이었습니다. 그 밖은
             실측이 보증하지 않아 비교하지 않습니다.
           </li>
           <li>

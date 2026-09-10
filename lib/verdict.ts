@@ -82,7 +82,8 @@ export interface Measured {
   label: string;
   value: number;
   unit: "명" | "배" | "일" | "원";
-  origin: "measured" | "input";
+  /** derived = 담당자 입력 ÷ 공사 실측처럼 두 출처가 섞인 값. measured 로 찍으면 출처 세탁이다 */
+  origin: "measured" | "input" | "derived";
   api: string;
   period: string;
   date: string;
@@ -386,6 +387,10 @@ export function checkVisitors(
   } else if (capLabel) label = capLabel;
   else label = "근거 없음";
 
+  if (claim.counting === "personDays") {
+    // 연인원 입력을 KT 실인원(하루 체류)으로 나눈다. 보정은 없다 — M6 이 손익분기 회전율로 바꾼다 (2026-09-10 critic)
+    base.caveats.push("연인원 입력을 KT 실인원(하루 체류)으로 나눴다. 연인원↔실인원 보정은 없다. 1단계 상한비는 그만큼 보수적으로 읽는다.");
+  }
   base.caveats.push("순증은 귀속 100%가 아니다. 같은 기간 반경 50km 다른 축제·연휴가 섞인다.");
   base.caveats.push("현지인 참여가 큰 축제는 외지인 기준 순증이 과소 평가된다.");
 

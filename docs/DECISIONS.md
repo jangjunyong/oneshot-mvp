@@ -1095,3 +1095,11 @@ lng 117.99~129.46 이었다 — 남한이 아니다.
 - **기계 검사**: `lib/copy.test.ts` M4-1(로고 유일값 1)·M4-2(nav 링크 순서와 "보조")·M4-3(링크·문구 문자열).
 - **회귀**: 유닛 274 · e2e 13 · 린트 0 오류 · typecheck·build 통과.
 
+## 2026-09-10 낮 — 사용자 요청: taste-skill 설치·디자인 계획안·엔드포인트별 적대적 검증(V1)
+
+- **taste-skill**: `npx skills add Leonxlnx/taste-skill -g -a claude-code -s design-taste-frontend -s redesign-existing-projects -s minimalist-ui -s imagegen-frontend-web --copy`. 본체 스킬은 스스로 "대시보드·데이터 표엔 안 맞는다"고 하므로 `/` 첫 화면과 문구 규율에만 쓰고 나머지 화면은 redesign 감사 목록으로. 모션·아이콘 라이브러리는 불문율(새 의존성 0)에 막혀 안 쓴다.
+- **디자인 계획안** `docs/design_plan_2026-09-10.md`: 클릭 관찰에서 AI 티·마감 결함 12건(T1~T12). 접근 A(마감 0.5일)/B(편집형+AI 삽화 1.5일)/C(전면 3일+). 추천 "A 지금, B 는 M12 뒤". 브레인스토밍 규약대로 구현은 사용자 승인 뒤. "이런 느낌" 참고 이미지는 세션에 안 보였다.
+- **엔드포인트별 적대적 검증** `docs/critic_endpoints_2026-09-10.md`: 크롬으로 버튼을 눌러 관찰 → critic 3인(주인공 축 / 보조 축 / 시뮬). 확정 CRITICAL 6 중 5를 이 회차에 고쳤다. 핵심 결정 — ① 예산 ÷ 실측 셀은 `origin:"derived"`(verdict M3-1 와 다르게 감: 출처 세탁 방지) ② 연인원 입력이면 "보정 없음" 단서(M6 이 정식 처리) ③ 옛 진단서의 0.2674 를 정정값 0.2371 로 ④ 메모리 저장소 id 를 UUID 로(동시 접속 충돌) ⑤ 서체 사슬에 KR 서체(모노·세리프 폴백 결함) ⑥ 화면마다 `metadata.title`. 견본 교체(60만) 제안은 M7 로.
+- **크롬 도구 함정**: 확장 좌표가 dpr 1.8 로 축척돼 버튼 클릭이 빗나간다. `getBoundingClientRect` 로 재서 0.98 배로 누른다. `/venue` 재생은 정상이었다.
+- **회귀**: 유닛 281 · e2e 13 · 린트 0 오류 · typecheck·build 통과.
+

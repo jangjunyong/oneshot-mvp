@@ -90,7 +90,8 @@ export async function save(e: Omit<Entry, "id" | "savedAt">): Promise<void> {
   if (!sql) {
     g.__oneshotEntries!.unshift({
       ...e,
-      id: String(g.__oneshotEntries!.length + 1),
+      // 길이+1 은 지운 뒤 저장하면 겹친다 — 심사위원 둘이 동시에 쓰면 남의 진단이 열린다 (2026-09-10 critic)
+      id: crypto.randomUUID(),
       savedAt: new Date().toISOString(),
     });
     return;
@@ -133,8 +134,9 @@ export async function getEntry(id: string): Promise<Entry | null> {
   // 시연용 예시는 저장소가 아니라 코드에 있다 (lib/demo.ts). 진단서·도면
   // 링크가 이력이 빈 상태에서도 열려야 하므로 여기서 먼저 답한다.
   if (id === DEMO_ENTRY_ID) return DEMO_ENTRY;
-  if (!/^\d+$/.test(id)) return null;
+  // 메모리 저장소의 id 는 UUID 다. 숫자 검사는 SQL 경로에서만
   if (!sql) return g.__oneshotEntries!.find((e) => e.id === id) ?? null;
+  if (!/^\d+$/.test(id)) return null;
   await ready();
   const rows = await sql`
     SELECT id, sido, sigungu, month, theme, population, accessibility, saved_at
@@ -159,11 +161,11 @@ export async function getEntry(id: string): Promise<Entry | null> {
  * id 는 폼에서 온다 — 숫자가 아니면 질의에 넣지 않고 조용히 무시한다.
  */
 export async function deleteEntry(id: string): Promise<void> {
-  if (!/^\d+$/.test(id)) return;
   if (!sql) {
     g.__oneshotEntries = g.__oneshotEntries!.filter((e) => e.id !== id);
     return;
   }
+  if (!/^\d+$/.test(id)) return;
   await ready();
   await sql`DELETE FROM entries WHERE id = ${Number(id)}`;
 }
@@ -209,7 +211,7 @@ export async function saveVenue(
   // "잠시 후 다시 눌러 주세요"라며 **영원히 성공하지 않을 재시도**를
   // 안내하면서 편집 중이던 배치를 통째로 잃었다.
   // 숫자가 아닌 id 는 연결 없는 도면으로 남긴다 — 저장은 되게 한다.
-  const 연결 = /^\d+$/.test(entryId ?? "") ? entryId : null;
+  const 연결 = entryId && (sql ? /^\d+$/.test(entryId) : true) ? entryId : null;
   if (!sql) {
     const id = String(gv.__oneshotVenues!.length + 1);
     gv.__oneshotVenues!.unshift({ id, entryId: 연결, venue });
@@ -237,12 +239,12 @@ export async function latestVenueForEntry(
   // 시연용 진단에는 시연용 도면이 붙어 있다. 이것이 있어야 진단서의
   // 근거 3(도면 쏠림)이 손작업 없이 채워진다.
   if (entryId === DEMO_ENTRY_ID) return { id: DEMO_VENUE_ID, venue: demoVenue() };
-  if (!/^\d+$/.test(entryId)) return null;
   if (!sql) {
     // 메모리 저장소는 최신이 앞이다 (saveVenue 가 unshift 한다)
     const row = gv.__oneshotVenues!.find((r) => r.entryId === entryId);
     return row ? { id: row.id, venue: row.venue } : null;
   }
+  if (!/^\d+$/.test(entryId)) return null;
   await venueReady();
   const rows = await sql`
     SELECT id, payload FROM venues
@@ -274,7 +276,7 @@ export async function getVenue(
 
 // 배포본에서 어느 저장소를 쓰고 있는지 화면으로 확인하기 위한 진단용.
 export function storageMode(): string {
-  return sql ? "Postgres" : "메모리 (DATABASE_URL 없음)";
+  return sql ? "Postgres" : "세션 메모리";
 }
 
 // ─────────────────────────────────────────────────────────────
