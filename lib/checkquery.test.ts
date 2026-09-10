@@ -57,3 +57,17 @@ test("고칠 것은 errors 로 — 잘못된 날짜·뒤집힌 기간·반쪽 �
   assert.ok(p.errors.some((e) => e.includes("이력 2")));
   assert.ok(p.errors.some((e) => e.includes("시도와 시군구")));
 });
+
+test("예산(만 원)은 budget 으로 받고 왕복하며, 견본에는 가정값이 들어 있다 (M3)", () => {
+  const p = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", budget: "12,500" });
+  assert.equal(p.query.budgetManWon, 12500);
+  assert.deepEqual(p.errors, []);
+  const qs = checkQueryString(p.query, false);
+  assert.match(qs, /budget=12500/);
+  const none = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000" });
+  assert.equal(none.query.budgetManWon, null);
+  assert.ok(!checkQueryString(none.query, false).includes("budget="));
+  const bad = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", budget: "-3" });
+  assert.ok(bad.errors.some((e) => e.includes("예산")));
+  assert.ok(GUNPO_2027.budgetManWon !== null && GUNPO_2027.budgetManWon > 0, "견본 예산이 없으면 판정 항목이 셋이 못 된다");
+});

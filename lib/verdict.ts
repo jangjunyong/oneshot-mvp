@@ -81,7 +81,7 @@ export interface Measured {
   key: string;
   label: string;
   value: number;
-  unit: "명" | "배" | "일";
+  unit: "명" | "배" | "일" | "원";
   origin: "measured" | "input";
   api: string;
   period: string;

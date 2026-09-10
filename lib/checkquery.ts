@@ -15,6 +15,8 @@ export interface CheckQuery {
   n: number | null;
   basis: Basis | null;
   counting: Counting | null;
+  /** 기획안 총예산(만 원). 비었으면 null. lib/extract.ts 의 budgetManWon 과 같은 단위 */
+  budgetManWon: number | null;
   /** 기획 기간 YYYYMMDD. 비었으면 "" */
   start: string;
   end: string;
@@ -24,7 +26,10 @@ export interface CheckQuery {
 
 export const HISTORY_SLOTS = 3;
 
-/** 견본 — 군포철쭉축제 2027 기획안. 예상 방문객은 2025 발표 최다일 217,502(일 최다·연인원) */
+/** 견본 예산의 출처 표기 — 공개된 예산 수치를 못 찾아(군포시·문화재단·뉴스 2026-09-10 검색) 가정값이다 */
+export const DEMO_BUDGET_SOURCE = "기획안(견본 가정값 · 출처 없음)";
+
+/** 견본 — 군포철쭉축제 2027 기획안. 예상 방문객은 2025 발표 최다일 217,502(일 최다·연인원). 예산 10억은 가정값 */
 export const GUNPO_2027: CheckQuery = {
   name: "군포철쭉축제",
   sido: "경기",
@@ -32,6 +37,7 @@ export const GUNPO_2027: CheckQuery = {
   n: 217502,
   basis: "peakDay",
   counting: "personDays",
+  budgetManWon: 100000,
   start: "20270417",
   end: "20270425",
   history: [
@@ -59,6 +65,9 @@ export function parseCheckQuery(params: Params): ParsedCheck {
   const nRaw = str(params, "n").replace(/,/g, "");
   const n = nRaw === "" ? null : Number(nRaw);
   if (n !== null && !(n > 0 && Number.isFinite(n))) errors.push("예상 방문객은 0보다 큰 숫자여야 합니다");
+  const budgetRaw = str(params, "budget").replace(/,/g, "");
+  const budgetManWon = budgetRaw === "" ? null : Number(budgetRaw);
+  if (budgetManWon !== null && !(budgetManWon > 0 && Number.isFinite(budgetManWon))) errors.push("예산은 0보다 큰 숫자(만 원)여야 합니다");
 
   const basisRaw = str(params, "basis");
   const basis: Basis | null = basisRaw === "period" || basisRaw === "peakDay" ? basisRaw : null;
@@ -99,7 +108,7 @@ export function parseCheckQuery(params: Params): ParsedCheck {
   if (!sido || !sigungu) errors.push("시도와 시군구를 적어 주세요");
 
   return {
-    query: { name: str(params, "name"), sido, sigungu, n, basis, counting, start, end, history },
+    query: { name: str(params, "name"), sido, sigungu, n, basis, counting, budgetManWon, start, end, history },
     isDemo: false,
     errors,
   };
@@ -116,6 +125,7 @@ export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
   if (q.n !== null) p.set("n", String(q.n));
   if (q.basis) p.set("basis", q.basis);
   if (q.counting) p.set("counting", q.counting);
+  if (q.budgetManWon !== null) p.set("budget", String(q.budgetManWon));
   if (q.start) p.set("start", dash(q.start));
   if (q.end) p.set("end", dash(q.end));
   q.history.forEach((h, i) => {
@@ -139,6 +149,7 @@ export function checkUrlFromExtraction(e: Extraction, name = ""): string {
     n: f?.expectedVisitors ?? null,
     basis: f?.visitorBasis ?? null,
     counting: f?.visitorCounting ?? null,
+    budgetManWon: f?.budgetManWon ?? null,
     start: f?.startDate ? ymdCompact(f.startDate) : "",
     end: f?.endDate ? ymdCompact(f.endDate) : "",
     history: [],

@@ -1,12 +1,14 @@
-// 명·배·일 숫자는 이 컴포넌트로만 화면에 나간다 — 출처 4속성(API·값·기간·조회일)이 없으면
+// 명·배·일·원 숫자는 이 컴포넌트로만 화면에 나간다 — 출처 4속성(API·값·기간·조회일)이 없으면
 // 그릴 수 없게 타입이 강제한다. e2e 가 `[data-num]` 을 걷어낸 본문에 "N명" 이 남는지 센다.
 // 그것이 불문율 1·4(예측 명 수 0건, 출처 없는 숫자 0건)의 집행기다 (기획/08 §2.4).
 
 import type { Measured } from "@/lib/verdict";
+import { formatWon } from "@/lib/budget";
 
 export function formatMeasured(m: Measured): string {
   if (m.unit === "명") return Math.round(m.value).toLocaleString("ko-KR") + "명";
   if (m.unit === "배") return m.value.toFixed(2) + "배";
+  if (m.unit === "원") return formatWon(m.value);
   return String(Math.round(m.value)) + "일";
 }
 

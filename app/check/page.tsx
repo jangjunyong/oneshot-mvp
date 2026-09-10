@@ -8,7 +8,8 @@
 import Link from "next/link";
 import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
 import { historyOf } from "@/lib/history";
-import { checkQueryString, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMO_BUDGET_SOURCE, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
+import { checkBudget } from "@/lib/budget";
 import {
   checkSchedule,
   checkVisitors,
@@ -82,7 +83,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
     판정가능 && q.n !== null ? checkVisitors({ n: q.n, basis: q.basis, counting: q.counting }, hist.years, peer) : null;
   const schedule = 판정가능 && q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = 판정가능 ? nextYearRange(hist.years, peer) : null;
-  const by = new Map<string, Measured>((visitors?.evidence ?? []).map((m) => [m.key, m]));
+  // 1인당 예산 대조 — 새 자료·새 라벨 0. 분모는 방문객 판정 2단계의 실측 셀(같은 단위)
+  const budget = visitors ? checkBudget(q.budgetManWon, visitors, isDemo ? DEMO_BUDGET_SOURCE : "기획안") : null;
+  const by = new Map<string, Measured>([...(visitors?.evidence ?? []), ...(budget?.evidence ?? [])].map((m) => [m.key, m]));
 
   // 순증 귀속 경고 — 작년(이력 중 최근 해) 축제 기간에 반경 50km 다른 축제가 있었나. 공사 TourAPI 실시간.
   // 죽어도 판정은 나가야 하므로 실패는 상태로만 남긴다
@@ -171,7 +174,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
                 {visitors ? (
                   <>
-                    <p className="alert" data-level={LEVEL_OF[visitors.verdict.label]}>
+                    <p className="alert" data-level={LEVEL_OF[visitors.verdict.label]} data-labeled="">
                       <strong>예상 방문객 {visitors.verdict.label}</strong>
                       {visitors.verdict.confidence === "low" && " · 신뢰도 낮음"}
                       {visitors.verdict.confidence === "none" && " · 비교할 이력이 없다"}
@@ -249,7 +252,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
+                    <tr data-labeled={schedule ? "" : undefined}>
                       <th>개최 기간·요일</th>
                       <td>
                         {schedule ? (
@@ -270,10 +273,34 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         )}
                       </td>
                     </tr>
+                    {budget && (
+                      <tr data-labeled="">
+                        <th>예산 · 1인당</th>
+                        <td>
+                          {stageNum("budget")}
+                          <span className="note check-cell-label"> 기획안대로면 1인당 {stageNum("perClaim")}</span>
+                        </td>
+                        <td>
+                          {budget.verdict.slots.perMeasured ? (
+                            <>
+                              작년 같은 단위 실측 순증으로 나누면 1인당 {stageNum("perMeasured")}
+                              <span className="note check-cell-label"> {by.get("perMeasured")!.label}</span>
+                            </>
+                          ) : (
+                            <span className="note">{budget.verdict.note}</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="chip" data-level={LEVEL_OF[budget.verdict.label]}>
+                            {budget.verdict.label}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
                     {[
                       noEvidence("주차면", "주차 수요를 잴 공사 데이터가 없다. 담당자 확인."),
                       noEvidence("부스 수", "부스 수요를 잴 공사 데이터가 없다. 행사장 도면 시뮬로 통로 밀도만 본다."),
-                      noEvidence("예산", "문체부 예산 자료에 2026·2027 행이 없다. 예산 미공개."),
+                      ...(budget ? [] : [noEvidence("예산", "기획안에 예산이 없다. 예산 미공개. 적으면 1인당 예산을 대조한다.")]),
                     ].map((v) => (
                       <tr key={v.item}>
                         <th>{v.item}</th>
@@ -314,6 +341,28 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
               </section>
 
               <aside className="check-side">
+                {budget && (
+                  <>
+                    <h2>1인당 예산</h2>
+                    <div className="range-card budget-card" data-level={LEVEL_OF[budget.verdict.label]}>
+                      <p className="range-line">
+                        <span>기획안대로</span>
+                        <strong className="num">{stageNum("perClaim")}</strong>
+                      </p>
+                      {budget.verdict.slots.perMeasured && (
+                        <p className="range-line">
+                          <span>작년 실측 순증</span>
+                          <strong className="num">{stageNum("perMeasured")}</strong>
+                        </p>
+                      )}
+                      <p className="note">
+                        총예산 {stageNum("budget")}
+                        {budget.verdict.ratio !== null && <> · 실측 기준이 기획안 기준의 {budget.verdict.ratio.toFixed(1)}배</>}. {budget.verdict.note}
+                        {isDemo && " 견본 예산은 가정값이다."}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <h2>내년 배수 구간</h2>
                 {range && (
                   <div className="range-card" data-years={range.years.length}>
@@ -443,6 +492,11 @@ function CheckForm({ q }: { q: CheckQuery }) {
         </label>
         <span className="note">발표치는 대개 일 최다·연인원, KT 는 일 단위 실인원이다.</span>
       </fieldset>
+      <p>
+        <label htmlFor="budget">총예산</label>
+        <input id="budget" name="budget" inputMode="numeric" defaultValue={q.budgetManWon === null ? "" : String(q.budgetManWon)} placeholder="기획안의 총예산" />
+        <span className="note">만 원 · 적으면 1인당 예산을 대조한다</span>
+      </p>
       <p>
         <label htmlFor="start">기획 기간</label>
         <input id="start" name="start" type="date" defaultValue={d(q.start)} />

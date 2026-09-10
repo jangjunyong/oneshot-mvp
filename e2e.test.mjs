@@ -442,3 +442,22 @@ test("검증 보고서 두 장 — 판정·구간·보완·근거 표가 자바�
   const 깨짐 = await (await fetch(BASE + "/report/check?sido=경기&sigungu=군포시&n=-1")).text();
   assert.match(깨짐, /보고서를 만들 수 없습니다/);
 });
+
+test("1인당 예산 대조 — 견본에 기획안 1인당·실측 1인당이 나란히, 판정 라벨 항목 3개 이상, 예산 없으면 카드 없음 (M3)", async () => {
+  const html = await (await fetch(BASE + "/check")).text();
+  const 본문 = html.replace(/<!--\s*-->/g, "");
+  const 카드 = 본문.match(/<div class="range-card budget-card"[\s\S]*?<\/div>/)?.[0];
+  assert.ok(카드, "예산 카드가 없다");
+  assert.match(카드, /data-origin="input"[^>]*data-source-api="[^"]*기획안[^"]*"/, "기획안 1인당 셀이 없다");
+  assert.match(카드, /data-origin="measured"[^>]*data-source-api="DataLabService\/locgoRegnVisitrDDList"/, "실측 1인당 셀이 없다");
+  assert.ok((본문.match(/data-labeled=""/g) ?? []).length >= 3, "판정 라벨이 붙은 항목이 셋 미만");
+  assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*원(?!정)/, "출처 셀 밖에 원 값이 있다");
+  // 예산이 없으면 카드가 안 뜨고 '예산 미공개' 행이 그대로
+  const 없음 = (await (await fetch(`${BASE}/check?sido=경기&sigungu=군포시&h1s=2026-04-18&h1e=2026-04-26&n=110184&basis=peakDay&counting=unique`)).text()).replace(/<!--\s*-->/g, "");
+  assert.doesNotMatch(없음, /budget-card/, "예산 없는데 카드가 떴다");
+  assert.match(없음, /예산 미공개/, "예산 미공개 행이 사라졌다");
+  // 보고서에도 같은 행
+  const 보고서 = await (await fetch(BASE + "/report/check")).text();
+  assert.match(보고서, /기획안 총예산 ÷/, "보고서 판정표에 예산 행이 없다");
+  assert.doesNotMatch(출처셀걷기(보고서), /\d[\d,]*\s*원(?!정)/, "보고서 출처 셀 밖에 원 값이 있다");
+});

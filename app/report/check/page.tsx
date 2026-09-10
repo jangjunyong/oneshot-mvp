@@ -8,7 +8,8 @@
 import Link from "next/link";
 import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
-import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, DEMO_BUDGET_SOURCE, parseCheckQuery } from "@/lib/checkquery";
+import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
   checkSchedule,
@@ -95,7 +96,9 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const visitors = q.n !== null ? checkVisitors({ n: q.n, basis: q.basis, counting: q.counting }, hist.years, peer) : null;
   const schedule = q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = nextYearRange(hist.years, peer);
-  const by = new Map<string, Measured>((visitors?.evidence ?? []).map((m) => [m.key, m]));
+  const budget = visitors ? checkBudget(q.budgetManWon, visitors, isDemo ? DEMO_BUDGET_SOURCE : "기획안") : null;
+  const evidence: Measured[] = [...(visitors?.evidence ?? []), ...(budget?.evidence ?? [])];
+  const by = new Map<string, Measured>(evidence.map((m) => [m.key, m]));
   const last = hist.years.length ? hist.years[hist.years.length - 1] : null;
   let 경쟁: Competitor[] = [];
   let 경쟁상태: CompetitionStatus = "none";
@@ -220,13 +223,36 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                 <td className="report-label">근거 없음</td>
                 <td>—</td>
               </tr>
-              <tr>
-                <td>예산</td>
-                <td>—</td>
-                <td colSpan={2}>문체부 예산 자료에 2026·2027 행이 없다. 예산 미공개.</td>
-                <td className="report-label">근거 없음</td>
-                <td>—</td>
-              </tr>
+              {budget ? (
+                <tr>
+                  <td>예산 · 1인당</td>
+                  <td className="num">
+                    {cell("budget")}
+                    <span className="report-cell-label">기획안 총예산 ÷ 예상 방문객 = {cell("perClaim")}</span>
+                  </td>
+                  <td>
+                    {budget.verdict.slots.perMeasured ? (
+                      <>
+                        {cell("perMeasured")}
+                        <span className="report-cell-label">{by.get("perMeasured")!.label}</span>
+                      </>
+                    ) : (
+                      budget.verdict.note
+                    )}
+                  </td>
+                  <td className="num">{budget.verdict.ratio === null ? "—" : budget.verdict.ratio.toFixed(2)}</td>
+                  <td className="report-label">{budget.verdict.label}</td>
+                  <td>임계 없음. 1인당 예산의 오차는 예상 방문객의 오차와 같아 그 판정을 물려받는다{isDemo && ". 견본 예산은 가정값"}</td>
+                </tr>
+              ) : (
+                <tr>
+                  <td>예산</td>
+                  <td>—</td>
+                  <td colSpan={2}>기획안에 예산이 없다. 예산 미공개.</td>
+                  <td className="report-label">근거 없음</td>
+                  <td>—</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </section>
@@ -359,13 +385,13 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                 </tr>
               </thead>
               <tbody>
-                {visitors.evidence.map((m) => (
+                {evidence.map((m) => (
                   <tr key={m.key}>
                     <td>{m.label}</td>
                     <td className="num">
                       <Num m={m} />
                     </td>
-                    <td>{m.origin === "input" ? "담당자 기획안" : `한국관광공사 ${m.api}`}</td>
+                    <td>{m.origin === "input" ? (m.api === "기획안" ? "담당자 기획안" : m.api) : `한국관광공사 ${m.api}`}</td>
                     <td className="num">{m.period || "—"}</td>
                     <td className="num">{m.date || "—"}</td>
                   </tr>
