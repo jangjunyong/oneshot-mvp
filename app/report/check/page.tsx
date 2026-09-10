@@ -236,8 +236,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           <p className="num">
             {range.mean ? (
               <>
-                자기 이력 {range.years.join("·")}: <strong>평균 {bandText(range.mean)} · 최대일 {bandText(range.peak)}</strong>
-                {range.confidence === "low" && " (이력 1년, 신뢰도 낮음)"}.
+                자기 이력 {range.years.join("·")}: <strong>평균 {bandText(range.mean)} · 최대일 {bandText(range.peak)}</strong>. 이력 범위({range.years.length}년). 적중률은 아직 재지 못했다.{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
               </>
             ) : (
               <>자기 이력이 없어 구간을 내지 못했습니다.</>

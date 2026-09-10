@@ -316,7 +316,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
               <aside className="check-side">
                 <h2>내년 배수 구간</h2>
                 {range && (
-                  <div className="range-card" data-confidence={range.confidence}>
+                  <div className="range-card" data-years={range.years.length}>
                     {range.mean ? (
                       <>
                         <p className="range-line">
@@ -328,8 +328,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <strong className="num">{bandText(range.peak)}</strong>
                         </p>
                         <p className="note">
-                          자기 이력 {range.years.join("·")} 의 연도별 배수를 0.1 단위로 바깥 반올림한 구간.{" "}
-                          {range.confidence === "high" ? "이력 2년 이상." : "이력이 1년뿐이라 신뢰도가 낮다."}
+                          자기 이력 {range.years.join("·")} 의 연도별 배수를 0.1 단위로 바깥 반올림한 구간. 이력 범위({range.years.length}년).
+                          적중률은 아직 재지 못했다.{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
                         </p>
                       </>
                     ) : (
