@@ -152,3 +152,19 @@ test("V1-6 /venue: 스트레스 중엔 재생이 막히고, 유입 배열·밀�
   assert.ok(s.includes("행안부"), "밀도 등급 출처가 화면에 없다");
   assert.ok(s.includes("상한 배수 과소"), "Weidmann 편향 방향이 없다");
 });
+
+
+test("M6-3 옛 라벨 '성립 불가' 와 가정 회전율 구간 '1.0~2.0' 이 코드·화면·e2e 에 없다", () => {
+  const files = ["lib/verdict.ts", "lib/budget.ts", "app/check/page.tsx", "app/report/check/page.tsx", "app/layout.tsx", "e2e.test.mjs", "lib/verdict.test.ts", "lib/budget.test.ts"];
+  for (const f of files) {
+    const s = read(f);
+    assert.ok(!s.includes("성립 불가"), `${f} 에 '성립 불가' 가 남았다`);
+    assert.ok(!s.includes("1.0~2.0"), `${f} 에 가정 회전율 구간이 있다`);
+  }
+});
+
+test("M6-5 단위 안내에 '둘 다 골라야 판정한다' 와 회전율 한 줄이 있다", () => {
+  const s = read("app/check/page.tsx");
+  assert.ok(s.includes("둘 다 골라야 판정한다"));
+  assert.ok(s.includes("이 선택이 손익분기 회전율 표시를 바꾼다"));
+});

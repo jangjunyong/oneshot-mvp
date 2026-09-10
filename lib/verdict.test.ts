@@ -27,11 +27,13 @@ const near = (a: number | null, b: number, tol: number, msg: string) =>
   assert.ok(a !== null && Math.abs(a - b) <= tol, `${msg}: ${a} vs ${b}`);
 const stage = (v: VisitorVerdict, id: string) => v.stages.find((s) => s.id === id)!;
 
-test("양성: 군포 2025 발표 217,502 (일 최다·연인원) → 성립 불가", () => {
+test("양성: 군포 2025 발표 217,502 (일 최다·연인원) → 상한 초과, 손익분기 회전율 1.04", () => {
   const { verdict, evidence } = checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, history);
-  assert.equal(verdict.label, "성립 불가");
+  assert.equal(verdict.label, "상한 초과");
   near(stage(verdict, "cap").ratio, 0.829, 0.005, "상한비");
-  assert.equal(stage(verdict, "cap").result, "성립 불가");
+  assert.equal(stage(verdict, "cap").result, "상한 초과");
+  // 연인원이면 "불가"가 아니라 "한 사람이 평균 몇 번 잡혀야 서는가"다. 217,502 ÷ (0.80 × 262,457) = 1.04. 회전율은 가정하지 않는다
+  near(verdict.breakevenTurnover, 1.036, 0.005, "손익분기 회전율");
   near(stage(verdict, "increment").ratio, 7.71, 0.05, "증분비");
   assert.equal(stage(verdict, "increment").result, "주의 신호");
   near(verdict.requiredMult, 2.97, 0.01, "요구 배수");
@@ -58,6 +60,18 @@ test("음성: 작년 실측 110,184 그대로 → 통과 (결정론)", () => {
   assert.equal(stage(a.verdict, "increment").result, "신호 없음");
   near(a.verdict.r, 0.99, 0.01, "r");
   assert.ok(!a.verdict.caveats.some((c) => c.includes("연인원") && c.includes("보정")), "실인원 입력에 연인원 단서가 붙었다");
+  assert.equal(a.verdict.breakevenTurnover, null, "실인원인데 회전율이 나왔다");
+});
+
+test("M6-1 연인원↔실인원을 바꾸면 출력이 실제로 달라진다 — 회전율과 문장", () => {
+  const pd = checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, history);
+  const uq = checkVisitors({ n: 217502, basis: "peakDay", counting: "unique" }, history);
+  assert.notEqual(pd.verdict.breakevenTurnover, uq.verdict.breakevenTurnover);
+  const text = (v: VisitorVerdict) => explainVisitors(v).map((s) => ("t" in s ? s.t : "ratio" in s ? s.ratio.toFixed(s.digits ?? 2) : `[${s.num}]`)).join("");
+  assert.ok(text(pd.verdict).includes("회전율"), text(pd.verdict));
+  assert.ok(!text(uq.verdict).includes("회전율"), text(uq.verdict));
+  // 가정한 회전율 구간은 어디에도 없다
+  assert.ok(!/1\.0~2\.0/.test(text(pd.verdict) + JSON.stringify(pd.verdict)));
 });
 
 test("기간 총계 62만 (2026 발표) → 분모가 기간 전체 체류·베이스라인×일수로 바뀐다", () => {
@@ -102,7 +116,7 @@ test("Verdict 에 명·원 스칼라가 없다 — 숫자 필드는 비·배수�
   const numericKeys = Object.entries(verdict)
     .filter(([, v]) => typeof v === "number")
     .map(([k]) => k);
-  assert.deepEqual(numericKeys.sort(), ["historyMult", "r", "requiredMult"]);
+  assert.deepEqual(numericKeys.sort(), ["breakevenTurnover", "historyMult", "r", "requiredMult"]);
   const text = JSON.stringify(verdict);
   assert.ok(!text.includes("217502"), "입력 명 수가 verdict 에 섞였다");
 });
@@ -113,7 +127,7 @@ test("설명 문장은 숫자를 슬롯으로 남긴다", () => {
   const text = seg.map((s) => ("t" in s ? s.t : "")).join("");
   assert.ok(!/\d[\d,]*\s*명/.test(text), "문장 조각에 명 수가 들어 있다");
   assert.ok(seg.some((s) => "num" in s && s.num === "claim"));
-  assert.ok(text.includes("성립 불가"));
+  assert.ok(text.includes("상한 초과"));
 });
 
 test("일정: 군포 2027 (4.17 토~4.25 일) 은 통과, 평일만이면 과대", () => {

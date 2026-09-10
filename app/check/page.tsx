@@ -37,7 +37,7 @@ export const metadata = { title: "기획안 판정 · 기획안 팩트체크" };
 
 /** 라벨 → 경보 색. 통과는 무채색이다 — "안전하다"가 아니라 "기획안이 이력 안에 있다"일 뿐 */
 const LEVEL_OF: Record<Label, string | undefined> = {
-  "성립 불가": "심각",
+  "상한 초과": "심각",
   과대: "심각",
   주의: "주의",
   과소: "주의",
@@ -220,7 +220,14 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                                 {s.result}
                               </span>
                             </td>
-                            <td className="note">{s.threshold}</td>
+                            <td className="note">
+                              {s.threshold}
+                              {s.id === "cap" && visitors.verdict.breakevenTurnover !== null && (
+                                <>
+                                  {" "}· 손익분기 회전율 <span className="num">{visitors.verdict.breakevenTurnover.toFixed(2)}</span>회 = N ÷ (0.80 × 상한)
+                                </>
+                              )}
+                            </td>
                           </tr>
                         ))}
                         {visitors.verdict.r !== null && (
@@ -494,7 +501,7 @@ function CheckForm({ q }: { q: CheckQuery }) {
         <label>
           <input type="radio" name="counting" value="unique" defaultChecked={q.counting === "unique"} /> 실인원
         </label>
-        <span className="note">발표치는 대개 일 최다·연인원, KT 는 일 단위 실인원이다.</span>
+        <span className="note">발표치는 대개 일 최다·연인원, KT 는 일 단위 실인원이다. 이 선택이 손익분기 회전율 표시를 바꾼다.</span>
       </fieldset>
       <p>
         <label htmlFor="budget">총예산</label>

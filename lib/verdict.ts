@@ -8,16 +8,17 @@
 //
 // 예상 방문객 3단 검사(역할 분리):
 //   1단계 모집단 상한(하드 게이트)  상한비 = N ÷ 작년 축제일 중 최대 전체 체류(현지인+외지인+외국인)
-//                                    ≥0.80 성립 불가 / 0.50~0.79 과대 / <0.50 통과
+//                                    ≥0.80 상한 초과 / 0.50~0.79 과대 / <0.50 통과
+//                                    연인원 입력이면 손익분기 회전율 X = N ÷ (0.80 × 상한)을 같이 낸다. 회전율은 가정하지 않는다
 //   2단계 순증분(보조 신호)          증분비 = N ÷ 작년 순증 (일 최다: 최대일 외지인 − 평소 주말 외지인 / 기간: 축제 연인원 산출값)
 //                                    임계 ≥ 정한 값(일 최다 5.0, 기간 3.0) → 주의 신호. 단독으로는 "주의"까지
 //   3단계 동일 정의 배수(주 근거)    요구 배수 = N ÷ 작년 베이스라인(일 최다) 또는 베이스라인×일수(기간)
 //                                    r = 요구 배수 ÷ 이력 최대 배수.  r<0.70 과소 / ≤1.00 통과 / ≤1.30 주의 / >1.30 과대
-//   최종: 1단계 성립 불가면 즉시. 아니면 3단계, 2단계 주의 신호면 통과를 주의로 한 단계만 올린다.
+//   최종: 1단계 상한 초과면 즉시. 아니면 3단계, 2단계 주의 신호면 통과를 주의로 한 단계만 올린다.
 //
 // 임계값은 전부 "정한 값"이다 (군포 2025 양성 7.6 · 음성 3.87 사이). 화면에 그대로 적는다.
 
-export type Label = "통과" | "주의" | "과대" | "과소" | "성립 불가" | "근거 없음" | "단위 미상";
+export type Label = "통과" | "주의" | "과대" | "과소" | "상한 초과" | "근거 없음" | "단위 미상";
 
 /** 담당자가 라디오로 고르는 단위. 둘 다 있어야 판정이 돈다 */
 export type Basis = "period" | "peakDay";
@@ -109,6 +110,8 @@ export interface VisitorVerdict {
   stages: Stage[];
   /** 3단계 r */
   r: number | null;
+  /** 연인원 입력일 때만: N ÷ (상한 임계 × 상한 분모). 한 사람이 평균 몇 번 잡혀야 이 값이 서는가. 실인원이면 null */
+  breakevenTurnover: number | null;
   requiredMult: number | null;
   historyMult: number | null;
   /** 이력 2년↑ high / 1년 또는 또래 low / 없음 none */
@@ -141,7 +144,7 @@ export function checkVisitors(
 ): VisitorCheck {
   const evidence: Measured[] = [];
   const years = [...history].map((h) => h.year).sort();
-  const base: Omit<VisitorVerdict, "label" | "stages" | "r" | "requiredMult" | "historyMult" | "confidence"> = {
+  const base: Omit<VisitorVerdict, "label" | "stages" | "r" | "breakevenTurnover" | "requiredMult" | "historyMult" | "confidence"> = {
     item: "visitors",
     basis: claim.basis,
     counting: claim.counting,
@@ -168,6 +171,7 @@ export function checkVisitors(
         label: "단위 미상",
         stages: [],
         r: null,
+        breakevenTurnover: null,
         requiredMult: null,
         historyMult: null,
         confidence: "none",
@@ -184,6 +188,10 @@ export function checkVisitors(
 
   // ---- 1단계 상한 --------------------------------------------------------
   let capLabel: Label | null = null;
+  let breakevenTurnover: number | null = null;
+  // 연인원(한 사람이 여러 번 잡힘)을 KT 실인원(하루 체류)으로 나누면 "불가"가 아니라 "몇 번 잡혀야 서는가"다.
+  // 회전율 값은 가정하지 않고 손익분기만 낸다 (AR-2, 2026-09-10 M6)
+  const breakeven = (denom: number) => (claim.counting === "personDays" && denom > 0 ? claim.n / (THRESHOLDS.cap.impossible * denom) : null);
   if (last) {
     if (basis === "peakDay") {
       evidence.push({
@@ -197,13 +205,14 @@ export function checkVisitors(
         date: last.fetchedAt,
       });
       const ratio = claim.n / last.maxDayTotal;
-      capLabel = ratio >= THRESHOLDS.cap.impossible ? "성립 불가" : ratio >= THRESHOLDS.cap.over ? "과대" : "통과";
+      capLabel = ratio >= THRESHOLDS.cap.impossible ? "상한 초과" : ratio >= THRESHOLDS.cap.over ? "과대" : "통과";
+      breakevenTurnover = breakeven(last.maxDayTotal);
       stages.push({
         id: "cap",
         title: "모집단 상한",
         ratio,
         result: capLabel,
-        threshold: "≥0.80 성립 불가 · 0.50~0.79 과대 · <0.50 통과",
+        threshold: "≥0.80 상한 초과(실인원 기준) · 0.50~0.79 과대 · <0.50 통과",
         slots: { numerator: "claim", denominator: "maxDayTotal" },
       });
     } else {
@@ -220,13 +229,14 @@ export function checkVisitors(
         date: last.fetchedAt,
       });
       const ratio = claim.n / total;
-      capLabel = ratio >= THRESHOLDS.cap.impossible ? "성립 불가" : ratio >= THRESHOLDS.cap.over ? "과대" : "통과";
+      capLabel = ratio >= THRESHOLDS.cap.impossible ? "상한 초과" : ratio >= THRESHOLDS.cap.over ? "과대" : "통과";
+      breakevenTurnover = breakeven(total);
       stages.push({
         id: "cap",
         title: "모집단 상한",
         ratio,
         result: capLabel,
-        threshold: "≥0.80 성립 불가 · 0.50~0.79 과대 · <0.50 통과",
+        threshold: "≥0.80 상한 초과(실인원 기준) · 0.50~0.79 과대 · <0.50 통과",
         slots: { numerator: "claim", denominator: "periodTotal" },
       });
     }
@@ -380,7 +390,7 @@ export function checkVisitors(
 
   // ---- 최종 집계 --------------------------------------------------------
   let label: Label;
-  if (capLabel === "성립 불가") label = "성립 불가";
+  if (capLabel === "상한 초과") label = "상한 초과";
   else if (multLabel) {
     label = multLabel;
     if (incrementCaution && label === "통과") label = "주의";
@@ -388,8 +398,11 @@ export function checkVisitors(
   else label = "근거 없음";
 
   if (claim.counting === "personDays") {
-    // 연인원 입력을 KT 실인원(하루 체류)으로 나눈다. 보정은 없다 — M6 이 손익분기 회전율로 바꾼다 (2026-09-10 critic)
-    base.caveats.push("연인원 입력을 KT 실인원(하루 체류)으로 나눴다. 연인원↔실인원 보정은 없다. 1단계 상한비는 그만큼 보수적으로 읽는다.");
+    base.caveats.push(
+      breakevenTurnover !== null
+        ? `연인원 입력을 KT 실인원(하루 체류)으로 나눴다. 연인원↔실인원 보정을 가정하지 않는다. 대신 손익분기 회전율 ${breakevenTurnover.toFixed(2)}회(= N ÷ (0.80 × 상한))만 낸다. 그 회전율의 근거는 담당자가 낸다.`
+        : "연인원 입력을 KT 실인원(하루 체류)으로 나눴다. 연인원↔실인원 보정을 가정하지 않는다.",
+    );
   }
   base.caveats.push("순증은 귀속 100%가 아니다. 같은 기간 반경 50km 다른 축제·연휴가 섞인다.");
   base.caveats.push("현지인 참여가 큰 축제는 외지인 기준 순증이 과소 평가된다.");
@@ -400,6 +413,7 @@ export function checkVisitors(
       label,
       stages,
       r,
+      breakevenTurnover,
       requiredMult,
       historyMult,
       confidence,
@@ -437,6 +451,13 @@ export function explainVisitors(v: VisitorVerdict): Segment[] {
       { ratio: cap.ratio * 100, digits: 0 },
       { t: "%이다. " },
     );
+    if (v.breakevenTurnover !== null) {
+      seg.push(
+        { t: "연인원으로 적었으므로 한 사람이 평균 " },
+        { ratio: v.breakevenTurnover, digits: 2 },
+        { t: "회 이상 잡혀야 이 값이 선다(손익분기 회전율). 회전율은 가정하지 않는다. " },
+      );
+    }
   }
   const mult = v.stages.find((s) => s.id === "multiple");
   if (mult?.ratio !== null && mult?.ratio !== undefined && v.requiredMult !== null && v.historyMult !== null) {
@@ -472,11 +493,15 @@ export function adviseVisitors(v: VisitorVerdict): Segment[] {
       return [{ t: "예상 방문객의 단위(기간 총계/일 최다, 연인원/실인원)를 기획안에 적고 다시 판정한다. 발표치를 옮겨 적었다면 그 산정 방식(통신사·현장 계수·추정)을 함께 적는다." }];
     case "근거 없음":
       return [{ t: "자기 이력이 없어 실측으로 판정하지 못했다. 지난 회차 기간을 적거나, 첫 회면 또래 구간을 상한으로 두고 물량을 잡는다. 이 문서는 근거를 못 찾은 것이지 안전하다는 뜻이 아니다." }];
-    case "성립 불가":
+    case "상한 초과":
       return [
         { t: `기획안의 ${unit} 값은 작년 축제일에 이 시군구에 있던 모든 사람의 ` },
         { ratio: (v.stages.find((s) => s.id === "cap")?.ratio ?? 0) * 100, digits: 0 },
-        { t: "%다. 축제 방문객이 아니라 시 전체 유동인구 규모를 옮겨 적은 값으로 보인다. 예상 방문객을 이 축제 이력 배수" },
+        { t: "%다. " },
+        ...(v.breakevenTurnover !== null
+          ? [{ t: "연인원으로 셌다면 한 사람이 평균 " }, { ratio: v.breakevenTurnover, digits: 2 }, { t: "회 잡혀야 서는 값이다. 그 회전율의 근거(입장 집계 방식)를 기획안에 적거나 실인원 기준으로 다시 잡는다. " }]
+          : [{ t: "축제 방문객이 아니라 시 전체 유동인구 규모를 옮겨 적은 값으로 보인다. " }]),
+        { t: "예상 방문객을 이 축제 이력 배수" },
         ...(hist !== null ? [{ t: "(" }, { ratio: hist, digits: 2 }, { t: "배)" }] : []),
         { t: " 안에서 다시 잡고, 원래 숫자의 출처와 산정 방식을 기획안에 밝힌다. 물량·예산은 이 값이 아니라 이력 배수 구간으로 편성한다." },
       ];

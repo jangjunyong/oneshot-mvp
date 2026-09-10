@@ -36,7 +36,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "기획안 검증 보고서 · 기획안 팩트체크" };
 
 const LEVEL_OF: Record<Label, string | undefined> = {
-  "성립 불가": "심각",
+  "상한 초과": "심각",
   과대: "심각",
   주의: "주의",
   과소: "주의",
@@ -185,7 +185,12 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                   </td>
                   <td className="num">{s.ratio === null ? "—" : s.ratio.toFixed(2)}</td>
                   <td className="report-label">{s.result}</td>
-                  <td>{s.threshold}</td>
+                  <td>
+                    {s.threshold}
+                    {s.id === "cap" && visitors.verdict.breakevenTurnover !== null && (
+                      <span className="report-cell-label">손익분기 회전율 {visitors.verdict.breakevenTurnover.toFixed(2)}회 = N ÷ (0.80 × 상한). 회전율은 가정하지 않는다</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {visitors && visitors.verdict.r !== null && (
@@ -197,7 +202,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                   <td className="report-label">
                     <strong>{visitors.verdict.label}</strong>
                   </td>
-                  <td>1단계 성립 불가면 즉시. 아니면 3단계, 2단계 주의 신호면 통과를 주의로</td>
+                  <td>1단계 상한 초과면 즉시. 아니면 3단계, 2단계 주의 신호면 통과를 주의로</td>
                 </tr>
               )}
               <tr>
@@ -417,7 +422,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
               중앙값 대비 외지인 증가. 산출식은 코드 한 곳(lib/surge.ts)이고 619건 또래도 같은 식으로 재계산했습니다.
             </li>
             <li>
-              1단계 상한비 ≥{THRESHOLDS.cap.impossible.toFixed(2)} 성립 불가 · ≥{THRESHOLDS.cap.over.toFixed(2)} 과대. 2단계 증분비 ≥
+              1단계 상한비 ≥{THRESHOLDS.cap.impossible.toFixed(2)} 상한 초과(실인원 기준. 연인원이면 손익분기 회전율을 병기) · ≥{THRESHOLDS.cap.over.toFixed(2)} 과대. 2단계 증분비 ≥
               {THRESHOLDS.increment.peakDay.toFixed(1)}(일 최다)·{THRESHOLDS.increment.period.toFixed(1)}(기간) 주의 신호. 3단계 r &lt;
               {THRESHOLDS.multiple.under.toFixed(2)} 과소 · ≤{THRESHOLDS.multiple.pass.toFixed(2)} 통과 · ≤{THRESHOLDS.multiple.caution.toFixed(2)} 주의 · 그 위 과대.
               전부 정한 값이며 군포 2025 한 건으로 맞췄습니다.
