@@ -519,8 +519,9 @@ export default function SimMap({
     loadFc
       .then((data: FC) => {
         setFc(data);
-        // 도면의 몫을 초기값으로. 담당자 말(2026-09-08)로 수리산역 쪽이 대부분이라
-        // 그 출입구가 있으면 0.6 로 올리고 나머지를 비례로 줄인다 — 가정이고 화면에서 고친다
+        // 도면의 몫을 초기값으로. 수리산역 쪽이 대부분이라고 가정해(접촉 기록 없음,
+        // 역세권 배치에서 온 추정) 그 출입구가 있으면 0.6 로 올리고 나머지를 비례로 줄인다.
+        // 가정이고 화면에서 고친다
         const gs: GateShare = {};
         const gts = data.features.filter((f) => f.properties?.kind === "gate");
         for (const g of gts) gs[String(g.properties?.id)] = Number(g.properties?.share ?? 0);
@@ -1062,7 +1063,7 @@ export default function SimMap({
             );
           })}
         </div>
-        <p className="sim-small">담당자 말로는 대부분 수리산역에서 내려 들어온다. 그 출입구를 0.6 으로 두었다. 실측이 아니라 가정이다.</p>
+        <p className="sim-small">대부분 수리산역에서 내려 들어온다고 가정해 그 출입구를 0.6 으로 두었다. 실측도 담당자 확인도 아닌 가정이며 여기서 고친다.</p>
         <label className="sim-row"><span>1인 방문 부스 수</span>
           <input type="number" value={visits} min={1} max={10} onChange={(e) => setVisits(Number(e.target.value))} />
         </label>
