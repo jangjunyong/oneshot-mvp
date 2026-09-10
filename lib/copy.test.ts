@@ -75,3 +75,32 @@ test("M2-4 도면 화면의 '담당자 말' 은 접촉 기록(docs/interviews.md
     assert.deepEqual(hits, [], "접촉 기록이 없는데 '담당자 말' 을 출처로 세웠다");
   }
 });
+
+// ── M4 로고·나침반 통일 (verdict §4 M4) ─────────────────────────────────────
+const ALL_SCREENS = { ...SCREENS, "/evidence": "app/evidence/page.tsx" };
+
+test("M4-1 여섯 화면의 .logo 문자열이 하나다", () => {
+  const logos = new Set<string>();
+  for (const [route, file] of Object.entries(ALL_SCREENS)) {
+    const m = read(file).match(/className="logo">([^<]+)</);
+    assert.ok(m, `${route} 에 .logo 가 없다`);
+    logos.add(m[1].trim());
+  }
+  assert.equal(logos.size, 1, [...logos].join(" | "));
+});
+
+test("M4-2 나침반 순서는 /check → /evidence → /venue → /(보조)", () => {
+  for (const file of ["app/page.tsx", "app/check/page.tsx", "app/evidence/page.tsx", "app/venue/page.tsx"]) {
+    const nav = read(file).match(/<nav>([\s\S]*?)<\/nav>/);
+    assert.ok(nav, `${file} 에 nav 가 없다`);
+    const links = [...nav[1].matchAll(/<Link href=\{?[`"]([^`"$?]+)[^>]*>([\s\S]*?)<\/Link>/g)].map((m) => [m[1], m[2].replace(/\s+/g, " ").trim()]);
+    assert.deepEqual(links.map((l) => l[0]), ["/check", "/evidence", "/venue", "/"], `${file}: ${JSON.stringify(links)}`);
+    assert.ok(links[3][1].includes("보조"), `${file}: '/' 항목에 '보조' 가 없다`);
+  }
+});
+
+test("M4-3 옛 진단서 상단에 검증 보고서 링크와 '보조 근거 진단서' 문구", () => {
+  const src = read("app/report/page.tsx");
+  assert.ok(src.includes('href="/report/check'), "/report/check 링크가 없다");
+  assert.ok(src.includes("보조 근거 진단서"), "'보조 근거 진단서' 문구가 없다");
+});

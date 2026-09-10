@@ -125,7 +125,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   return (
     <div className="report report-check">
       <p className="no-print report-hint">
-        브라우저 인쇄(Ctrl+P)에서 <strong>대상을 PDF로 저장</strong>하면 A4 두 장으로 나옵니다.{" "}
+        <span className="logo">기획안 팩트체크</span> 브라우저 인쇄(Ctrl+P)에서 <strong>대상을 PDF로 저장</strong>하면 A4 두 장으로 나옵니다.{" "}
         <Link href={`/check${qs}`}>판정으로 돌아가기</Link>
       </p>
 

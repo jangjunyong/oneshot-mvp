@@ -170,11 +170,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <div className="sheet">
       <header className="topbar">
-        <span className="logo">축제 위험 경보</span>
+        <span className="logo">기획안 팩트체크</span>
         <nav>
-          <Link href="/" aria-current="page">진단</Link>
           <Link href="/check">기획안 판정</Link>
+          <Link href="/evidence">실측 근거</Link>
           <Link href="/venue">행사장 도면</Link>
+          <Link href="/" aria-current="page">진단(보조)</Link>
         </nav>
       </header>
 

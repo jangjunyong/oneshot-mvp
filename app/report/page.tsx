@@ -142,7 +142,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
   return (
     <div className="report">
       <p className="no-print report-hint">
-        브라우저 인쇄(Ctrl+P)에서 <strong>대상을 PDF로 저장</strong>하면 A4 한
+        <span className="logo">기획안 팩트체크</span> 이 문서는 619건 닮은 축제로 낸 <strong>보조 근거 진단서</strong>입니다. 결재에 붙이는 주
+        산출물은 <Link href="/report/check">기획안 검증 보고서</Link>입니다. 브라우저 인쇄(Ctrl+P)에서 대상을 PDF로 저장하면 A4 한
         장으로 나옵니다. <Link href={`/?entry=${entry.id}#twin`}>진단으로 돌아가기</Link>
       </p>
 

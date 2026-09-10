@@ -671,6 +671,7 @@ ul.scan-findings strong { background: var(--severe); }
   background: var(--raised);
   font-size: var(--text-sm);
 }
+.report-hint .logo { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 0.6rem; }
 
 @page {
   size: A4;
