@@ -117,3 +117,18 @@ test("지역 인구(pop, 만 명)는 URL 로 받고 되돌려 준다. 0 이하�
   assert.ok(bad.errors.some((e) => e.includes("지역 인구")));
   assert.equal(parseCheckQuery({ sido: "전남", sigungu: "함평군" }).query.populationManMyeong, null);
 });
+
+// 2026-09-11 회귀 — 619건에 군포시·화천군 축제가 없어, 인구 폴백을 지우자 견본 2건의 또래 구간이 사라졌다.
+// 견본 인구는 619건이 아니라 출처가 붙은 고정값이어야 한다
+test("N0 견본 2건은 지역 인구와 그 출처를 함께 갖는다 (619건에 없는 시군구)", async () => {
+  const { populationOf } = await import("@/lib/festivals");
+  for (const d of Object.values(DEMOS)) {
+    assert.equal(populationOf(d.query.sido, d.query.sigungu), null, `${d.key} 가 619건에 생겼다면 고정값을 지워라`);
+    assert.ok(d.query.populationManMyeong !== null && d.query.populationManMyeong > 0, `${d.key} 인구 없음`);
+    assert.match(d.populationSource, /기준/, `${d.key} 인구 출처에 기준 시점이 없다`);
+    assert.doesNotMatch(d.populationSource, /\d명/, `${d.key} 출처 문장에 명 수가 있다 — 명 수는 <Num> 셀로만 나간다`);
+    assert.match(d.populationSource, /조회 20\d\d-\d\d-\d\d/, `${d.key} 인구 출처에 조회일이 없다`);
+  }
+  assert.equal(DEMOS.gunpo.query.populationManMyeong, 24.9);
+  assert.equal(DEMOS.hwacheon.query.populationManMyeong, 2.3);
+});

@@ -180,7 +180,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
         <div className="dim">
           <span>SECTION A — 기획안</span>
         </div>
-        <CheckForm q={q} />
+        <CheckForm q={q} populationSource={견본?.populationSource ?? null} />
 
         {판정가능 && (
           <>
@@ -493,7 +493,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   );
 }
 
-function CheckForm({ q }: { q: CheckQuery }) {
+function CheckForm({ q, populationSource }: { q: CheckQuery; populationSource: string | null }) {
   const d = (s: string) => (s ? ymdDashed(s) : "");
   return (
     <form action="/check" method="get" className="check-form">
@@ -536,7 +536,9 @@ function CheckForm({ q }: { q: CheckQuery }) {
       <p>
         <label htmlFor="pop">지역 인구</label>
         <input id="pop" name="pop" inputMode="numeric" defaultValue={q.populationManMyeong === null ? "" : String(q.populationManMyeong)} placeholder="예) 13.4" />
-        <span className="note">만 명 · 행안부 주민등록인구. 619건 자료에 있는 시군구는 비워도 된다</span>
+        <span className="note">
+          만 명 · 행안부 주민등록인구. 619건 자료에 있는 시군구는 비워도 된다{populationSource && <> · 견본 인구 출처: {populationSource}</>}
+        </span>
       </p>
       <p>
         <label htmlFor="start">기획 기간</label>

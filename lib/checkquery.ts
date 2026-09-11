@@ -47,7 +47,8 @@ export const GUNPO_2027: CheckQuery = {
   basis: "period",
   counting: "personDays",
   budgetManWon: 100000,
-  populationManMyeong: null,
+  // 619건에 군포시 축제가 없어 인구를 못 찾는다 — 2026-09-11 까지는 같은 시도 폴백(양평군 12.7만)이 몰래 받쳤다. 출처는 DEMOS.populationSource
+  populationManMyeong: 24.9,
   start: "20270417",
   end: "20270425",
   history: [
@@ -70,7 +71,8 @@ export const HWACHEON_2027: CheckQuery = {
   basis: "period",
   counting: "personDays",
   budgetManWon: null,
-  populationManMyeong: null,
+  // 619건에 화천군 축제가 없다. 출처는 DEMOS.populationSource
+  populationManMyeong: 2.3,
   start: "20270109",
   end: "20270131",
   history: [
@@ -93,6 +95,8 @@ export interface Demo {
   why: string;
   /** 문체부 문화관광축제(글로벌·예비·지정) 여부 */
   designated: boolean;
+  /** query.populationManMyeong 의 출처 한 줄 (기관·기준월·조회일). 견본 인구는 619건이 아니라 여기서 온다 */
+  populationSource: string;
 }
 
 export const DEMOS: Record<DemoKey, Demo> = {
@@ -104,6 +108,7 @@ export const DEMOS: Record<DemoKey, Demo> = {
     claimSource: "경인일보 2026-04-17 「'목표 60만' 군포철쭉축제」(기사가 단위를 적지 않아 기간 총계·연인원으로 읽음)",
     why: "공사 KT 실측이 세 해(2024·2025·2026) 모두 있고, 발표 최다일 217,502(2025)가 시 전체 체류의 83%라는 정의 불일치를 처음 드러낸 사례",
     designated: false,
+    populationSource: "군포시청 주민등록인구 24.9만(2026-07 기준, gunpo.go.kr) · 조회 2026-09-11",
   },
   hwacheon: {
     key: "hwacheon",
@@ -113,6 +118,7 @@ export const DEMOS: Record<DemoKey, Demo> = {
     claimSource: "경향신문 2025-02-02 「23일간 186만명 다녀갔다」(재단 집계 발표치, 단위 미기재 → 기간 총계·연인원으로 읽음)",
     why: "문체부 글로벌축제(지정축제)이고, 인구 2.3만 군에 23일간 186만이 온다는 발표치가 KT 실인원 상한과 어떻게 맞서는지 보여 주는 사례",
     designated: true,
+    populationSource: "화천군청 년도별 주민등록인구 2.3만(2024년 기준, ihc.go.kr) · 조회 2026-09-11",
   },
 };
 

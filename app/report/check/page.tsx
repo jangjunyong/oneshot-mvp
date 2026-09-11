@@ -143,7 +143,8 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           <h1>기획안 검증 보고서</h1>
           {isDemo && demo && (
             <p className="report-demo">
-              <strong>견본</strong> · {DEMOS[demo].banner} 결재에 쓸 문서가 아닙니다. 예상 방문객 출처: {DEMOS[demo].claimSource}.
+              <strong>견본</strong> · {DEMOS[demo].banner} 결재에 쓸 문서가 아닙니다. 예상 방문객 출처: {DEMOS[demo].claimSource}. 지역 인구
+              출처: {DEMOS[demo].populationSource}.
             </p>
           )}
           <p className="num">
