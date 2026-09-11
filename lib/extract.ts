@@ -70,6 +70,17 @@ const accessChoices = Object.entries(ACCESSIBILITY_LABEL)
   .map(([code, name]) => `${code}=${name}`)
   .join(" · ");
 
+/**
+ * 지역 규칙. 2026-09-11 실호출에서 본문에 "강원도 정선군 탄탄대로 사업(정선군)"·"고한읍"이 있는
+ * 기획서의 시도·시군구가 비어 나왔다 — 프롬프트에 지역을 어디서 어떻게 찾으라는 말이 없었다.
+ * 테스트가 이 문자열이 프롬프트에 들어 있는지 잰다.
+ */
+export const REGION_RULE = `- sido·sigungu 는 축제가 열리는 행정구역이다. "개최장소"·"장소"·"주소" 뿐 아니라 사업명·괄호·머리말·기관명·
+  연계 사업 문장 어디에 있든 시·도와 시·군·구가 보이면 옮긴다(예: "강원도 정선군 ○○사업" → 강원, 정선군).
+  읍·면·동·리만 적혀 있으면 그것이 속한 시·군·구를 sigungu 에 적고(예: 고한읍 → 정선군, 대천해수욕장 → 보령시),
+  evidence 에는 읍·면·동이 적힌 원문 문장을 그대로 옮긴다. sigungu 는 "정선군"·"보령시"처럼 시·군·구 접미사까지 적는다.
+  시·군·구를 정할 근거 문장이 문서에 전혀 없을 때만 null.`;
+
 const SYSTEM = `너는 한국 지자체의 축제 기획서에서 정해진 항목만 옮겨 적는다.
 
 규칙:
@@ -82,21 +93,25 @@ const SYSTEM = `너는 한국 지자체의 축제 기획서에서 정해진 항�
   연도·월·일이 문서에 다 있어야 한다. 일(日)이 없으면 null (월만 있으면 null).
 - parkingSpaces 는 주차 면수, boothCount 는 부스·판매대 수, budgetManWon 은 총예산(만 원). 문서가 천원 단위면 10 으로 나누고
   백만원이면 100 을 곱해 만 원으로 환산한다. evidence 에는 단위가 적힌 원문을 그대로 옮긴다.
+${REGION_RULE}
 
 themeCode 는 다음 중 하나: ${themeChoices}
 accessibility 는 교통 접근성이다. 다음 중 하나: ${accessChoices}
   판단 기준 — 고속철도역·고속도로IC·지하철역까지의 거리, 대중교통 편수,
   주차 규모가 문서에 적혀 있으면 그것을 근거로 고른다. 아무 언급이 없으면 null.`;
 
+/** 테스트가 규칙이 실제 프롬프트에 들어 있는지 재는 용도. 호출 경로는 SYSTEM 을 쓴다 */
+export const EXTRACT_SYSTEM = SYSTEM;
+
 // strict:true 라서 nullable 은 type 배열로 적어야 한다. 빼면 모델이 항목을
 // 지어내서라도 채운다 — 그게 제일 나쁜 결과다.
 const SCHEMA = {
   type: "object",
   properties: {
-    sido: { type: ["string", "null"], description: "광역시도. 예: 경북, 전남" },
+    sido: { type: ["string", "null"], description: "축제가 열리는 광역시도. 예: 경북, 전남, 강원" },
     sigungu: {
       type: ["string", "null"],
-      description: "시군구. 예: 김천시, 담양군",
+      description: "축제가 열리는 시·군·구, 접미사까지. 예: 김천시, 담양군, 정선군. 읍·면·동만 있으면 그 상위 시·군",
     },
     month: { type: ["integer", "null"], description: "개최 월 1~12" },
     themeCode: { type: ["integer", "null"], description: "테마 코드 1~8" },
@@ -167,6 +182,9 @@ interface ModelOutput {
   budgetManWon?: number | null;
   evidence: Partial<Record<ExtractedKey | FactKey, string>>;
 }
+
+/** 김천시 주민등록인구 133,791명 (행안부 jumin.mois.go.kr, 2025-12 기준) → 만 명 */
+export const SAMPLE_POPULATION_MANMYEONG = 13.4;
 
 /**
  * 키가 없을 때 쓰는 고정 초안. 김천김밥축제 1회 조건이다 (PRD 성공 판정).
@@ -297,7 +315,10 @@ function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
     normalized.sido && normalized.sigungu
       ? populationOf(normalized.sido, normalized.sigungu)
       : null;
-  if (population === null) missing.push("지역 인구");
+  // 샘플(김천시)은 619건에 축제가 없어 인구가 안 나온다. 2026-09-11 까지는 populationOf 가 경북의
+  // 다른 시 인구를 몰래 돌려줘 이 경로가 "되는 것처럼" 보였다. 샘플만 고정값을 쓴다 — 출처는 아래 상수
+  const populationOrSample = population ?? (source === "sample" ? SAMPLE_POPULATION_MANMYEONG : null);
+  if (populationOrSample === null) missing.push("지역 인구");
 
   // 5축과 팩트체크 항목을 갈라 담는다 — 5축 화면(/)은 facts 를 모르고, /check 는 5축을 안 쓴다
   const facts = sanitizeFacts(normalized);
@@ -314,7 +335,7 @@ function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
     accessibility: normalized.accessibility,
     evidence,
     facts,
-    populationManMyeong: population,
+    populationManMyeong: populationOrSample,
     missing,
     source,
   };

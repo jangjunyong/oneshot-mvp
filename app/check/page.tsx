@@ -6,7 +6,7 @@
 // 모델 호출 0회.
 
 import Link from "next/link";
-import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
+import { loadDaily, manifest, resolveRegion, sigunguNamesOf } from "@/lib/kto/daily";
 import { historyOf } from "@/lib/history";
 import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
@@ -69,17 +69,22 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const params = await searchParams;
-  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
   const 견본 = demo ? DEMOS[demo] : null;
   const 다른견본 = demo === "gunpo" ? DEMOS.hwacheon : demo === "hwacheon" ? DEMOS.gunpo : null;
+  // 사람이 친 표기("충청남도 보령")를 KT 표기("충남 보령시")로 — 이 뒤로는 인구·좌표·경쟁 조회가 전부 이 이름을 쓴다
+  const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
+  const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
   const qs = checkQueryString(q, isDemo);
 
-  const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
+  const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
-  const pop = q.sido && q.sigungu ? populationOf(q.sido, q.sigungu) : null;
+  // 619건에 없는 시군구(299곳 중 121곳)는 담당자가 적은 인구로 또래를 고른다. 없으면 또래 없음 — 이웃 시도로 대신하지 않는다
+  const pop619 = q.sido && q.sigungu ? populationOf(q.sido, q.sigungu) : null;
+  const pop = pop619 ?? q.populationManMyeong;
   const peer = pop !== null ? peerBandFor(pop) : null;
 
   const 판정가능 = errors.length === 0 && code !== null;
@@ -160,8 +165,15 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
         ))}
         {errors.length === 0 && code === null && q.sigungu && (
           <p className="alert" data-level="심각" role="alert">
-            &ldquo;{q.sido} {q.sigungu}&rdquo; 에 맞는 KT 시군구 코드를 찾지 못했다. 시도는 짧은 이름(경기·강원…), 시군구는
-            행정 이름 그대로(군포시·청주시 상당구) 적어 달라.
+            &ldquo;{q.sido} {q.sigungu}&rdquo; 에 맞는 KT 시군구를 찾지 못했다. 시·군·구 이름을 확인해 달라.
+            {sigunguNamesOf(q.sido).length > 0 ? (
+              <>
+                {" "}
+                {q.sido} 의 시군구: {sigunguNamesOf(q.sido).join(" · ")}
+              </>
+            ) : (
+              " 시도 이름(경기·강원·충남… 또는 경기도·강원특별자치도·충청남도)부터 확인해 달라."
+            )}
           </p>
         )}
 
@@ -417,6 +429,12 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         </p>
                       </>
                     )}
+                    {!range.peerMean && pop === null && (
+                      <p className="alert" data-level="주의">
+                        {q.sido} {q.sigungu} 의 인구가 619건 자료에 없어 또래 구간을 못 낸다. 위 폼의 지역 인구(만 명)를 적으면 같은 인구 구간의
+                        또래 구간이 선다.
+                      </p>
+                    )}
                     <p className="note">
                       배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다.
                       {시군구배수 && ` 작년 기간에 반경 ${NEARBY_RADIUS_KM}km 다른 축제가 있어 이 배수는 개최 주 시군구 배수다.`}
@@ -514,6 +532,11 @@ function CheckForm({ q }: { q: CheckQuery }) {
         <label htmlFor="budget">총예산</label>
         <input id="budget" name="budget" inputMode="numeric" defaultValue={q.budgetManWon === null ? "" : String(q.budgetManWon)} placeholder="기획안의 총예산" />
         <span className="note">만 원 · 적으면 1인당 예산을 대조한다</span>
+      </p>
+      <p>
+        <label htmlFor="pop">지역 인구</label>
+        <input id="pop" name="pop" inputMode="numeric" defaultValue={q.populationManMyeong === null ? "" : String(q.populationManMyeong)} placeholder="예) 13.4" />
+        <span className="note">만 명 · 행안부 주민등록인구. 619건 자료에 있는 시군구는 비워도 된다</span>
       </p>
       <p>
         <label htmlFor="start">기획 기간</label>

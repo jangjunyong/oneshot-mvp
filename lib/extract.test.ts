@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { budgetManWonFromEvidence, evidenceHasDay, extractPlan, extractFailureMessage, hasModelKey, sanitizeFacts, shortSido } from "@/lib/extract";
+import { budgetManWonFromEvidence, evidenceHasDay, extractPlan, extractFailureMessage, hasModelKey, sanitizeFacts, SAMPLE_POPULATION_MANMYEONG, shortSido } from "@/lib/extract";
 import { checkUrlFromExtraction } from "@/lib/checkquery";
 import { populationOf } from "@/lib/festivals";
 import { findSimilar } from "@/lib/match";
@@ -58,12 +58,14 @@ test("뽑힌 값이 THEME_NAME · ACCESSIBILITY_LABEL 안에 있다", async () =
   );
 });
 
-test("인구는 모델이 아니라 619건 데이터에서 온다", async () => {
+test("인구는 모델이 아니라 619건 데이터에서 온다 (샘플 김천시는 619건에 없어 출처 있는 고정값)", async () => {
   const 초안 = await extractPlan(기획서);
+  // 2026-09-11 까지는 populationOf 가 같은 시도의 다른 시 인구를 몰래 돌려줘 이 검사가 우연히 통과했다
+  assert.equal(populationOf("경북", "김천시"), null, "김천시가 619건에 생겼다면 샘플 고정값을 지워라");
   assert.equal(
     초안.populationManMyeong,
-    populationOf(초안.sido!, 초안.sigungu!),
-    "인구는 데이터 조회값과 같아야 한다 — 모델이 지어내면 안 된다",
+    populationOf(초안.sido!, 초안.sigungu!) ?? SAMPLE_POPULATION_MANMYEONG,
+    "인구는 데이터 조회값이거나(없으면) 출처 있는 샘플 고정값이어야 한다 — 모델이 지어내면 안 된다",
   );
 });
 
@@ -261,4 +263,14 @@ test("예산은 근거의 단위로 다시 센다 — 90,000 천원은 9,000만 
     evidence: { budgetManWon: "사 업 비 천원 일금구천만원정: 90,000 ( )" },
   });
   assert.equal(f.budgetManWon, 9000);
+});
+
+// 2026-09-11 실호출 — 본문에 "강원도 정선군 ○○사업"·"고한읍"이 있는데 시도·시군구가 비어 나왔다.
+// 프롬프트에 지역을 어디서 찾고 읍·면이면 어떻게 하라는 말이 없었다. 규칙이 프롬프트에 들어 있는지 잰다.
+test("추출 프롬프트에 지역 규칙이 있다 — 문서 어디든·읍면동은 상위 시군·접미사까지", async () => {
+  const { REGION_RULE, EXTRACT_SYSTEM } = await import("@/lib/extract");
+  assert.ok(EXTRACT_SYSTEM.includes(REGION_RULE), "REGION_RULE 이 시스템 프롬프트에 없다");
+  for (const must of ["사업명", "읍·면·동", "정선군", "접미사", "null"]) {
+    assert.ok(REGION_RULE.includes(must), `지역 규칙에 "${must}" 가 없다`);
+  }
 });

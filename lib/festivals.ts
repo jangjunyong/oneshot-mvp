@@ -49,15 +49,25 @@ export function yearOf(f: Festival): string {
 }
 
 /**
- * 시군구의 인구(만 명). 같은 시군구를 먼저 찾고 없으면 같은 시도의 첫 건을 쓴다.
+ * 시군구의 인구(만 명). 같은 시군구가 619건에 있을 때만 돌려준다.
  *
  * 인구는 모델에게 묻지 않는다 — 기획서에 안 적혀 있고, 물으면 지어낸다.
  * 619건이 이미 실측 인구를 들고 있으므로 여기서 꺼내 쓴다.
- * 둘 다 없으면 null 을 돌려 담당자가 직접 채우게 한다.
+ * 없으면 null 을 돌려 담당자가 직접 채우게 한다. **같은 시도의 다른 곳으로 대신하지 않는다** —
+ * 2026-09-11 까지 그렇게 했고, "강원 고한읍"에 강릉 인구 20.7만(정선군 3.3만의 6.3배)이
+ * 조용히 붙어 또래 구간과 첫 회 판정이 통째로 틀렸다.
+ * "보령"처럼 접미사가 빠진 표기는 시·군·구 중 하나만 맞을 때 그것으로 본다.
  */
 export function populationOf(sido: string, sigungu: string): number | null {
-  const hit =
-    FESTIVALS.find((f) => f.sido === sido && f.sigungu === sigungu) ??
-    FESTIVALS.find((f) => f.sido === sido);
-  return hit ? hit.populationManMyeong : null;
+  const s = sigungu.trim();
+  const inSido = FESTIVALS.filter((f) => f.sido === sido);
+  const exact = inSido.find((f) => f.sigungu === s);
+  if (exact) return exact.populationManMyeong;
+  if (s.length > 0 && !/[시군구]$/.test(s)) {
+    const hits = ["시", "군", "구"]
+      .map((suf) => inSido.find((f) => f.sigungu === s + suf))
+      .filter((f): f is Festival => !!f);
+    if (hits.length === 1) return hits[0].populationManMyeong;
+  }
+  return null;
 }

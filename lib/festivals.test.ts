@@ -112,3 +112,19 @@ test("좌표 불량은 알려진 4건뿐이다 — 늘어나면 재는 쪽이 �
     );
   }
 });
+
+// 2026-09-11 — populationOf 가 같은 시도의 아무 축제 인구로 대신하던 것을 없앴다.
+// "강원 고한읍" 에 강릉 20.7만이 붙어 또래 구간·첫 회 판정이 통째로 틀렸다.
+test("populationOf 는 같은 시군구가 없으면 null — 같은 시도의 다른 곳으로 대신하지 않는다", async () => {
+  const { populationOf } = await import("@/lib/festivals");
+  assert.equal(populationOf("강원", "고한읍"), null);
+  assert.equal(populationOf("강원", "없는군"), null);
+  assert.equal(populationOf("강원", "정선군"), 3.3);
+});
+
+test("populationOf 는 접미사가 빠진 표기(보령·군포)를 하나만 맞을 때 받는다", async () => {
+  const { populationOf } = await import("@/lib/festivals");
+  assert.equal(populationOf("충남", "보령"), populationOf("충남", "보령시"));
+  assert.equal(populationOf("경기", "군포"), populationOf("경기", "군포시"));
+  assert.notEqual(populationOf("충남", "보령"), null);
+});

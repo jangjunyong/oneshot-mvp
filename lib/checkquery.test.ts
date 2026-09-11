@@ -106,3 +106,14 @@ test("M7-2 견본 이력은 연도마다 출처가 있고 날짜가 KT 자료 �
 test("M7-3 하나는 문체부 지정축제(글로벌축제)다", () => {
   assert.ok(Object.values(DEMOS).some((d) => d.designated), "지정축제 견본이 없다");
 });
+
+// 2026-09-11 — 619건은 KT 시군구 299곳 중 178곳만 덮는다. 나머지는 담당자가 인구를 적어야 또래가 선다
+test("지역 인구(pop, 만 명)는 URL 로 받고 되돌려 준다. 0 이하는 오류", () => {
+  const p = parseCheckQuery({ sido: "전남", sigungu: "함평군", n: "300000", basis: "period", counting: "personDays", pop: "3.0" });
+  assert.deepEqual(p.errors, []);
+  assert.equal(p.query.populationManMyeong, 3);
+  assert.match(checkQueryString(p.query, false), /pop=3/);
+  const bad = parseCheckQuery({ sido: "전남", sigungu: "함평군", pop: "0" });
+  assert.ok(bad.errors.some((e) => e.includes("지역 인구")));
+  assert.equal(parseCheckQuery({ sido: "전남", sigungu: "함평군" }).query.populationManMyeong, null);
+});

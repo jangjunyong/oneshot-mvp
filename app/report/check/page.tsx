@@ -6,7 +6,7 @@
 // 옛 진단서(app/report/page.tsx)는 그대로 둔다 — 그쪽은 619건 옛 정의 진단이다.
 
 import Link from "next/link";
-import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
+import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
@@ -68,9 +68,11 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckReportPage({ searchParams }: PageProps<"/report/check">) {
   const params = await searchParams;
-  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
+  const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
   const qs = checkQueryString(q, isDemo);
-  const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
+  const code = region?.code ?? null;
 
   if (errors.length > 0 || code === null) {
     return (
@@ -80,7 +82,11 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           {errors.map((e) => (
             <p key={e}>{e}</p>
           ))}
-          {code === null && errors.length === 0 && <p>시군구 코드를 찾지 못했습니다.</p>}
+          {code === null && errors.length === 0 && (
+            <p>
+              &ldquo;{q.sido} {q.sigungu}&rdquo; 에 맞는 KT 시군구를 찾지 못했습니다.
+            </p>
+          )}
           <p>
             <Link href={`/check${qs}`}>기획안 판정으로 돌아가기</Link>
           </p>
@@ -93,7 +99,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
-  const pop = populationOf(q.sido, q.sigungu);
+  const pop = populationOf(q.sido, q.sigungu) ?? q.populationManMyeong;
   const peer = pop !== null ? peerBandFor(pop) : null;
   const visitors = q.n !== null ? checkVisitors({ n: q.n, basis: q.basis, counting: q.counting }, hist.years, peer) : null;
   const schedule = q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;

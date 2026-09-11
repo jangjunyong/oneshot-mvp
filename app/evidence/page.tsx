@@ -5,7 +5,7 @@
 // 자바스크립트 0. 곡선은 서버가 SVG 로 그린다.
 
 import Link from "next/link";
-import { loadDaily, manifest, sigunguCode } from "@/lib/kto/daily";
+import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { computeSurge, type DailyRow } from "@/lib/surge";
@@ -92,9 +92,11 @@ function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly Da
 
 export default async function EvidencePage({ searchParams }: PageProps<"/evidence">) {
   const params = await searchParams;
-  const { query: q, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
+  const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
   const qs = checkQueryString(q, isDemo);
-  const code = q.sido && q.sigungu ? sigunguCode(q.sido, q.sigungu) : null;
+  const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
@@ -176,7 +178,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
         ))}
         {!code && errors.length === 0 && (
           <p className="alert" data-level="심각">
-            시군구 코드를 찾지 못했다. <Link href={`/check${qs}`}>기획안 판정</Link>에서 시도·시군구를 고쳐 달라.
+            &ldquo;{q.sido} {q.sigungu}&rdquo; 에 맞는 KT 시군구를 찾지 못했다. <Link href={`/check${qs}`}>기획안 판정</Link>에서 시도·시군구를 고쳐 달라.
           </p>
         )}
         {code && years.length === 0 && (

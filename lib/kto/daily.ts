@@ -11,6 +11,7 @@ import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
 import type { DailyRow } from "@/lib/surge";
+import { shortSido } from "@/lib/tourapi";
 
 const KTO = path.join(process.cwd(), "data", "kto");
 
@@ -66,22 +67,42 @@ export function loadDaily(code: string): DailyRow[] {
 }
 
 /**
- * 시도 짧은 이름 + 시군구 이름 → KT 코드. 619건(festivals.json)과 기획안 입력이 쓴다.
+ * 시도 + 시군구 이름 → KT 시군구 한 건. 619건(festivals.json)과 기획안 입력이 쓴다.
  *
+ * 사람이 치는 표기를 받는다 — "충청남도"도 "충남"도, "보령"도 "보령시"도 같은 곳이다
+ * (2026-09-11 실사용: 심사위원이 "충청남도·보령"을 치면 판정이 아예 안 나왔다. 변환표는
+ * `lib/tourapi.ts` 에 이미 있었는데 이 경로에서 안 불렀다).
  * KT 는 "수원시" 와 "수원시 장안구" 를 둘 다 준다. 자치구까지 적힌 입력은 그 구로,
  * 시만 적힌 입력은 시 전체로 보낸다. 못 찾으면 null — 짐작해서 이웃을 주지 않는다.
  */
-export function sigunguCode(sido: string, sigungu: string): string | null {
+export function resolveRegion(sido: string, sigungu: string): SigunguInfo | null {
   const list = sigunguList();
+  const sd = (shortSido(sido) ?? sido).trim();
   const s = sigungu.replace(/\s+/g, " ").trim();
-  const inSido = list.filter((x) => x.sido === sido);
-  const exact = inSido.find((x) => x.name === s);
-  if (exact) return exact.code;
-  // "청주시 상당구" 로 들어온 것을 KT 가 "청주시상당구" 로 갖고 있는 경우와 그 반대
+  const inSido = list.filter((x) => x.sido === sd);
+  if (inSido.length === 0) return null;
   const squash = (t: string) => t.replace(/\s+/g, "");
-  const sq = inSido.find((x) => squash(x.name) === squash(s));
-  if (sq) return sq.code;
+  const find = (t: string) => inSido.find((x) => x.name === t) ?? inSido.find((x) => squash(x.name) === squash(t));
+  const exact = find(s);
+  if (exact) return exact;
+  // "보령" → "보령시", "정선" → "정선군". 접미사가 하나만 맞아야 한다 — 둘 이상이면 짐작이다
+  if (s.length > 0 && !/[시군구]$/.test(s)) {
+    const hits = ["시", "군", "구"].map((suf) => find(s + suf)).filter((x): x is SigunguInfo => !!x);
+    if (hits.length === 1) return hits[0];
+  }
   // 세종 처럼 시군구가 곧 시도인 경우
-  if (inSido.length === 1) return inSido[0].code;
+  if (inSido.length === 1) return inSido[0];
   return null;
+}
+
+export function sigunguCode(sido: string, sigungu: string): string | null {
+  return resolveRegion(sido, sigungu)?.code ?? null;
+}
+
+/** 같은 시도의 KT 시군구 이름 전부 — 못 찾았을 때 담당자에게 보여 줄 후보 */
+export function sigunguNamesOf(sido: string): string[] {
+  const sd = (shortSido(sido) ?? sido).trim();
+  return sigunguList()
+    .filter((x) => x.sido === sd)
+    .map((x) => x.name);
 }

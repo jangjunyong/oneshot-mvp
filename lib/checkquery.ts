@@ -17,6 +17,11 @@ export interface CheckQuery {
   counting: Counting | null;
   /** 기획안 총예산(만 원). 비었으면 null. lib/extract.ts 의 budgetManWon 과 같은 단위 */
   budgetManWon: number | null;
+  /**
+   * 지역 인구(만 명, 행안부 주민등록). 담당자 입력. 비었으면 null 이고 화면은 619건에서 찾는다.
+   * 619건은 KT 시군구 299곳 중 178곳만 덮는다(2026-09-11 집계) — 나머지 121곳은 이 칸이 없으면 또래 구간이 안 선다
+   */
+  populationManMyeong: number | null;
   /** 기획 기간 YYYYMMDD. 비었으면 "" */
   start: string;
   end: string;
@@ -42,6 +47,7 @@ export const GUNPO_2027: CheckQuery = {
   basis: "period",
   counting: "personDays",
   budgetManWon: 100000,
+  populationManMyeong: null,
   start: "20270417",
   end: "20270425",
   history: [
@@ -64,6 +70,7 @@ export const HWACHEON_2027: CheckQuery = {
   basis: "period",
   counting: "personDays",
   budgetManWon: null,
+  populationManMyeong: null,
   start: "20270109",
   end: "20270131",
   history: [
@@ -137,6 +144,10 @@ export function parseCheckQuery(params: Params): ParsedCheck {
   const budgetRaw = str(params, "budget").replace(/,/g, "");
   const budgetManWon = budgetRaw === "" ? null : Number(budgetRaw);
   if (budgetManWon !== null && !(budgetManWon > 0 && Number.isFinite(budgetManWon))) errors.push("예산은 0보다 큰 숫자(만 원)여야 합니다");
+  const popRaw = str(params, "pop").replace(/,/g, "");
+  const populationManMyeong = popRaw === "" ? null : Number(popRaw);
+  if (populationManMyeong !== null && !(populationManMyeong > 0 && Number.isFinite(populationManMyeong)))
+    errors.push("지역 인구는 0보다 큰 숫자(만 명)여야 합니다");
 
   const basisRaw = str(params, "basis");
   const basis: Basis | null = basisRaw === "period" || basisRaw === "peakDay" ? basisRaw : null;
@@ -177,7 +188,7 @@ export function parseCheckQuery(params: Params): ParsedCheck {
   if (!sido || !sigungu) errors.push("시도와 시군구를 적어 주세요");
 
   return {
-    query: { name: str(params, "name"), sido, sigungu, n, basis, counting, budgetManWon, start, end, history },
+    query: { name: str(params, "name"), sido, sigungu, n, basis, counting, budgetManWon, populationManMyeong, start, end, history },
     isDemo: false,
     demo: null,
     errors,
@@ -196,6 +207,7 @@ export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
   if (q.basis) p.set("basis", q.basis);
   if (q.counting) p.set("counting", q.counting);
   if (q.budgetManWon !== null) p.set("budget", String(q.budgetManWon));
+  if (q.populationManMyeong !== null) p.set("pop", String(q.populationManMyeong));
   if (q.start) p.set("start", dash(q.start));
   if (q.end) p.set("end", dash(q.end));
   q.history.forEach((h, i) => {
@@ -220,6 +232,7 @@ export function checkUrlFromExtraction(e: Extraction, name = ""): string {
     basis: f?.visitorBasis ?? null,
     counting: f?.visitorCounting ?? null,
     budgetManWon: f?.budgetManWon ?? null,
+    populationManMyeong: e.populationManMyeong ?? null,
     start: f?.startDate ? ymdCompact(f.startDate) : "",
     end: f?.endDate ? ymdCompact(f.endDate) : "",
     history: [],
