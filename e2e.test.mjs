@@ -527,3 +527,18 @@ test("619건에 없는 시군구(함평군)를 넣어도 또래 구간이 서고
   assert.match(h, /행정안전부 주민등록인구 2026-08 기준/, "인구 출처가 없다");
   assert.doesNotMatch(출처셀걷기(h), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
 });
+
+
+// 2026-09-12 M4a — 기획안 양식 한 장(/form)과 첫 화면의 양식 링크·PDF 입력 (사용자 지시 3)
+test("첫 화면에 PDF 입력·양식 링크·견본 2건이 있고, /form 은 자바스크립트 없이 한 장으로 선다", async () => {
+  const 홈 = (await (await fetch(BASE + "/")).text()).replace(/<!--\s*-->/g, "");
+  assert.match(홈, /type="file"[^>]*accept="application\/pdf"/, "PDF 입력이 없다");
+  assert.match(홈, /href="\/form"/, "양식 링크가 없다");
+  assert.match(홈, /href="\/check\?demo=hwacheon"/, "화천 견본 링크가 없다");
+  const res = await fetch(BASE + "/form");
+  assert.equal(res.status, 200);
+  const 양식 = await res.text();
+  assert.match(양식, /팩트체크 입력 양식/);
+  for (const must of ["예상 방문객", "지난 회차", "총예산", "개최 지역"]) assert.ok(양식.includes(must), `양식에 "${must}" 가 없다`);
+  assert.doesNotMatch(출처셀걷기(양식), /\d[\d,]*\s*명/, "양식에 출처 없는 명 수가 있다");
+});

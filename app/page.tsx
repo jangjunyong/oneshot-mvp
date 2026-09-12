@@ -180,7 +180,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           축제 기획안을 올리면, 그 축제가 실제로 겪은 방문 배수로 예상 방문객을 판정합니다.
         </p>
         <p className="note">
-          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027</Link> · <Link href="/check?demo=hwacheon">화천산천어축제 2027</Link>
+          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027</Link> · <Link href="/check?demo=hwacheon">화천산천어축제 2027</Link> · 채워서 올릴{" "}
+          <Link href="/form">기획안 양식</Link>(<a href="/기획안_양식.pdf">PDF</a>)
         </p>
 
 

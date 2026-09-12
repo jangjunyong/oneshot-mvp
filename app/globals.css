@@ -1006,3 +1006,12 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 @media print {
   .map-origin .pin-body { fill: var(--ink); }
 }
+
+/* ── 기획안 입력 양식(/form) — 인쇄해서 손으로 채우는 한 장 ───────────────────── */
+.form-table th[scope="row"] { width: 9rem; text-align: left; font-weight: 600; }
+.form-blank { display: inline-block; min-width: 14rem; height: 1.4em; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
+.form-wide .form-blank { min-width: 100%; }
+.form-table td .note { display: block; margin-top: 0.15rem; }
+@media print {
+  .report-form .form-blank { border-bottom-color: #000; }
+}
