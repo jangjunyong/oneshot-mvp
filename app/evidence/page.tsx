@@ -148,7 +148,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
       </header>
 
       <main>
-        <h1 className="display">
+        <h1>
           이 축제가
           <br />
           실제로 겪은 것

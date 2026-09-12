@@ -972,7 +972,7 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .alert[data-label="상한 초과"], .chip[data-label="상한 초과"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .alert[data-label="과대"] { border-left: 8px solid var(--ink); background: var(--raised); color: var(--ink); }
 .chip[data-label="과대"] { border: 2px solid var(--ink); color: var(--ink); background: var(--surface); font-weight: 500; }
-.alert[data-label="주의"] { border-left: 5px dotted var(--ink); background: var(--surface); color: var(--ink); }
+.alert[data-label="주의"] { border-left: 4px dotted var(--ink); background: var(--surface); color: var(--ink); }
 .chip[data-label="주의"] { border: 2px dotted var(--ink); color: var(--ink); background: var(--surface); }
 .alert[data-label="과소"] { border-left: 5px dashed var(--ink); background: var(--surface); color: var(--ink); }
 .chip[data-label="과소"] { border: 2px dashed var(--ink); color: var(--ink); background: var(--surface); }
@@ -1042,3 +1042,15 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .data-strip-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s3); font-size: var(--text-sm); }
 .data-strip-list li { padding-top: var(--s2); border-top: 1px solid var(--line); line-height: 1.6; word-break: keep-all; }
 .data-strip-list b { font-weight: 500; font-size: var(--text-base); }
+
+/* ── C2 (2026-09-12): 표·폼·카드 마감 — 헤어라인만, 라벨은 본문 서체 회색 ────────────── */
+.check-table th, .check-table td { padding: 0.55rem 0.6rem; }
+.check-table thead th { font-size: var(--text-xs); color: var(--concrete); border-bottom: 1px solid var(--line-strong); }
+.check-table tbody th { color: var(--ink); }
+.check-form label { font-size: var(--text-sm); }
+.check-form input, .check-form select { border-color: var(--line-strong); }
+.range-card, .pin-card, .twin-card { border-color: var(--line); }
+.range-card { border-left: 0; border-right: 0; border-bottom: 0; padding-left: 0; padding-right: 0; }
+.range-line strong { font-size: var(--text-xl); }
+.check-side h2, .data-usage h2, .sim-card h2, .twins h2 { font-size: var(--text-lg); }
+h2.section { font-size: var(--text-xl); }

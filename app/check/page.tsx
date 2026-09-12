@@ -175,7 +175,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
       </header>
 
       <main>
-        <h1 className="display">
+        <h1>
           기획안의 숫자를
           <br />
           실측으로 판정합니다
