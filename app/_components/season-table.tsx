@@ -104,7 +104,7 @@ export function SeasonTable({ scan }: { scan: SeasonScan }) {
         읽을 때 조심할 것이 있습니다. 이 표가 재는 것은 시기의 효과가 아니라
         매칭이 시기에 얼마나 흔들리는가입니다. 닮음을 재는 다섯 축에서 개최
         시기가 차지하는 비중은 10%뿐이라, 달을 바꿔도 같은 지역 축제 몇 곳이
-        순위만 바꿔 다시 섭니다. 물은 달에 실제로 열린 쌍둥이는{" "}
+        순위만 바꿔 다시 섭니다. 물어본 달에 실제로 열린 쌍둥이는{" "}
         <strong>{Math.round((scan.monthMatchRate ?? 0) * 100)}%</strong>(
         <span className="season-twinmonths">✓</span> 표시)뿐이고 나머지는 다른 달
         축제입니다. 그러니 &ldquo;그 달로 옮기면 이렇게 된다&rdquo;로 읽으면 안

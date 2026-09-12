@@ -328,7 +328,8 @@ test("기획서를 붙여넣으면 뽑은 항목이 채워진 확인 화면으�
   // 예상 방문객은 문서에서 옮겨 적은 값이라 출처 셀(data-origin="input")로 나간다
   const 다리 = 확인.replace(/<!--\s*-->/g, "").replace(/&amp;/g, "&");
   assert.match(다리, /실측으로 판정하기/, "다리 절이 없다");
-  const href = 다리.match(/href="(\/check\?[^"]+)"/)?.[1];
+  // 홈 상단에 견본 링크(/check?demo=…)가 생겨 첫 /check 링크가 다리가 아니다 — 시군구가 실린 링크를 고른다 (2026-09-12)
+  const href = 다리.match(/href="(\/check\?[^"]*sigungu=[^"]+)"/)?.[1];
   assert.ok(href, "/check 링크가 없다");
   const p = new URLSearchParams(href.split("?")[1]);
   assert.equal(p.get("sigungu"), "김천시");

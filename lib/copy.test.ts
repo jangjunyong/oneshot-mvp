@@ -207,3 +207,17 @@ test("M0-개명 나침반과 화면 제목이 '시뮬레이션'이고 '행사장
   }
   assert.ok(read("app/venue/page.tsx").includes("<h1>시뮬레이션</h1>"));
 });
+
+
+// 2026-09-12 사용자 지시 1·5 — 첫 화면 문구 다이어트. 남는 것: h1 + 한 문장 + 견본 링크 + 입력. 근거 블록은 접힘
+test("M1 홈 첫 문단은 한 문장(60자 이하)이고 판정을 말하며, 3단 카드·적중률 문단·이력 안내 문구가 없다", () => {
+  const p = read("app/page.tsx");
+  const lede = firstParagraph(p);
+  assert.ok(lede.length <= 60, `첫 문단이 길다(${lede.length}자): ${lede}`);
+  assert.ok(lede.includes("판정"), "첫 문단에 '판정' 이 없다");
+  for (const gone of ['<ol className="flow">', 'className="trust', "이 주소를 연 모든 사람이", "저장된 진단이 없어 예시 기획안"]) {
+    assert.ok(!p.includes(gone), `삭제 대상이 남았다: ${gone}`);
+  }
+  assert.ok(p.includes('<details className="selfcheck aux-detail">'), "감당 범위 이하가 접혀 있지 않다");
+  assert.ok(!read("app/_components/season-table.tsx").includes("물은 달"));
+});

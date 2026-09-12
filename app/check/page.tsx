@@ -566,7 +566,7 @@ function CheckForm({ q, populationSource }: { q: CheckQuery; populationSource: s
       })}
       <p className="note">
         지난 회차 날짜는 담당자가 안다. KT 자료는 시군구 유동인구라 축제가 언제였는지 모른다. 가장 최근 해가
-        &ldquo;작년&rdquo;이 되어 1·2단계의 분모가 된다.
+        &ldquo;작년&rdquo;이 되어 1·2단계의 분모가 된다. 모르면 비워 두세요 — 이력 없이 또래 기준 참고값만 냅니다.
       </p>
       <p>
         <button type="submit">판정</button>

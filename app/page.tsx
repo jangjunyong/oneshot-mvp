@@ -9,7 +9,7 @@ import {
   type Draft,
 } from "@/lib/store";
 import { planInputOf, type Entry } from "@/lib/types";
-import { DEMO_ENTRY, DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
+import { DEMO_ENTRY, DEMO_LABEL } from "@/lib/demo";
 import { hasModelKey } from "@/lib/extract";
 import { checkUrlFromExtraction } from "@/lib/checkquery";
 import {
@@ -177,44 +177,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           판정합니다
         </h1>
         <p className="lede">
-          기획서를 넣으면 예상 방문객과 기간을 옮겨 적고, <strong>이 축제가 실제로 겪은 배수</strong>와 같은 자로
-          잽니다. 몇 명이 아니라 몇 배를, 점이 아니라 구간으로. 닮은 과거 축제 619건의 경보 등급은 보조 근거입니다.
-          방문객 수는 예측하지 않습니다.
+          축제 기획안을 올리면, 그 축제가 실제로 겪은 방문 배수로 예상 방문객을 판정합니다.
+        </p>
+        <p className="note">
+          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027</Link> · <Link href="/check?demo=hwacheon">화천산천어축제 2027</Link>
         </p>
 
-        {/* 처음 온 사람은 "무엇을 넣으면 무엇이 나오는가"를 3초 안에 알아야
-            한다. 그게 없으면 아래 입력칸이 그냥 빈 폼으로 보인다.
-            PRD 의 쐐기 도식을 그대로 화면에 올린다 */}
-        <ol className="flow">
-          <li>
-            <b>기획안을 넣으면</b>
-            <span>예상 방문객과 단위, 개최 기간, 지역을 문서에서 그대로 옮겨 적습니다. 근거 문장이 없는 값은 비웁니다</span>
-          </li>
-          <li>
-            <b>이 축제의 실측으로 판정합니다</b>
-            <span>
-              공사 KT 일별 방문자로 지난 회차의 배수를 재고, 기획안이 그 안에 있는지 셋으로 검사합니다. 통과·주의·과대·과소·상한 초과
-              중 하나와 <strong>내년 배수 구간</strong>이 나옵니다
-            </span>
-          </li>
-          <li>
-            <b>종이로 나갑니다</b>
-            <span>
-              판정표·구간·보완·출처를 A4 두 장에 담습니다. 이력이 없는 첫 회 축제는 닮은 축제 619건의 등급이 대신 섭니다
-            </span>
-          </li>
-        </ol>
 
-        {/* 근거의 무게가 작은 글씨(A-01)에 묻혀 있었다. 쓰기 전에 보여야 한다 */}
-        <p className="trust num">
-          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027 판정</Link>. 아래 수치는 보조 근거(닮은 축제 등급)의
-          적중률이고 기획안 판정의 적중률이 아닙니다. 보조 근거인 닮은 축제 배수는 KT
-          이동통신으로 잰 619건입니다(한국관광 데이터랩). 이 619건을 하나씩 빼고 다시 맞혀 보니 위험한 축제를 무작위의{" "}
-          <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로 집어냈습니다.
-          정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
-          {pct(LOO_PUBLISHED.recall)}. 절반 가까이는 놓칩니다. 경보이지 보증이
-          아닙니다. 가중치와 임계값도 이 619건으로 골랐기 때문에 따로 떼어 둔 시험 표본이 없고, 그만큼 후하게 나온 값입니다.
-        </p>
 
         <div className="dim">
           <span>{확인단계 ? "SECTION B — 항목 확인" : "SECTION A — 기획안 입력"}</span>
@@ -238,9 +207,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <>
           <h2>기획서 붙여넣기</h2>
           <p className="note">
-            지자체마다 양식이 달라도 됩니다. 기획안·계획서를 그대로 붙여넣으면 예상 방문객·개최 기간과
-            지역·시기·테마·접근성을 뽑아 <strong>확인 화면</strong>에 채워 드립니다. 뽑은 값은 고칠 수 있고,
-            문서에 없는 값은 비워 둡니다.
+            지자체 양식 그대로 됩니다. 예상 방문객·기간·지역·예산을 문서에서 옮겨 적고, 없는 값은 비웁니다.
           </p>
           <form action={추출}>
             <p>
@@ -264,12 +231,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               />
             </p>
             <p className="note">
-              PDF 를 올리면 글자를 뽑아 같은 방식으로 읽습니다 (10MB 까지 ·
-              스캔본 제외) · 텍스트는 최대 {MAX_PLAN_TEXT.toLocaleString()}자 ·
-              하루 {DAILY_EXTRACT_LIMIT}건까지
-              {hasModelKey()
-                ? " · 문서에서 숫자를 옮겨 적는 데만 모델을 씁니다. 판정에는 쓰지 않습니다"
-                : " · 키가 없어 고정 샘플로 채웁니다"}
+              PDF 10MB 까지 · 스캔본 제외 · 하루 {DAILY_EXTRACT_LIMIT}건
+              {hasModelKey() ? " · 숫자를 옮겨 적는 데만 모델을 씁니다. 판정에는 쓰지 않습니다" : " · 키가 없어 고정 샘플로 채웁니다"}
             </p>
             <p>
               <button type="submit">기획서 읽어오기</button>{" "}
@@ -449,10 +412,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </div>
 
       <h2>진단 이력 {조회실패 ? "" : `(${entries.length}건)`}</h2>
-      <p className="note">
-        여기 이력은 보조 근거(닮은 축제 등급)의 저장분이고, 로그인이 없어 이 주소를 연 모든 사람이 같은 목록을 봅니다.
-        기획안 판정은 저장하지 않습니다. 주소가 곧 판정이라 링크를 남기면 됩니다.
-      </p>
       {조회실패 && (
         <p role="alert">
           <strong>진단 이력을 불러오지 못했습니다.</strong> 저장은 그대로 남아
@@ -460,10 +419,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </p>
       )}
       {!조회실패 && entries.length === 0 && (
-        <p>
-          아직 진단한 기획안이 없습니다. 위에 기획서를 붙여넣으면 닮은 과거
-          축제와 경보 등급이 여기에 쌓입니다. 그때까지는 아래에{" "}
-          <strong>{DEMO_LABEL}</strong> 한 건을 펴 둡니다.
+        <p className="note">
+          아직 진단한 기획안이 없습니다. 아래는 <strong>{DEMO_LABEL}</strong>입니다.
         </p>
       )}
       {/* 상한을 숨기면 "저장했는데 사라졌다"가 된다. 화면이 먼저 말한다 */}
@@ -538,16 +495,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               </div>
 
               <div className="twin-detail">
-                {/* 지어낸 데이터로 보이면 안 된다. 무엇이 예시이고 그 값이
-                    어디서 왔는지를 결과보다 먼저 적는다 (불문율 4번) */}
-                {고름.e.id === DEMO_ENTRY_ID && (
-                  <p className="alert" data-level="근거없음">
-                    {DEMO_LABEL}입니다. 저장된 진단이 없어 예시 기획안 하나를
-                    대신 펴 뒀습니다. 강원 속초시에서 6월에 음식·미식 축제를 새로
-                    연다고 가정한 것입니다. 지역·인구·접근성은 619건에 등록된
-                    속초시 값이고, <strong>아래 배수는 전부 실측</strong>입니다.
-                  </p>
-                )}
+                {/* 예시 표시는 위 "아직 진단한 기획안이 없습니다 … 시연용 예시입니다" 한 줄이 맡는다 (2026-09-12 지시 5) */}
                 <p className="num">
                   {고름.e.sido} {고름.e.sigungu} · {고름.e.month}월 ·{" "}
                   {THEME_NAME[Number(고름.e.theme)] ?? 고름.e.theme} · 인구{" "}
@@ -588,6 +536,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     );
                   })()}
 
+                {/* 사용자 지시 5(2026-09-11): 한 번에 보이는 글이 너무 많다 — 결론(등급·배수) 아래 근거는 접어 둔다 */}
+                <details className="selfcheck aux-detail">
+                  <summary>근거 더 보기 — 감당 범위 · 왜 닮았나 · 경쟁 축제 · 달을 바꾸면 · 자기검증 · 출처</summary>
                 {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
                     잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는
                     평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
@@ -815,7 +766,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     키·네트워크와 무관한 정적 값이라 게이트 밖에 둔다 */}
                 {!고름.result.invalid && (
                   <details className="selfcheck">
-                    <summary>이 방식은 얼마나 맞는가 — 619건 자기검증</summary>
+                    <summary>이 방식은 얼마나 맞는가 — 보조 근거(619건) 자기검증</summary>
                     <p className="num">
                       619건을 하나씩 빼고 그 축제를 다시 맞혀 봤습니다. 위험한
                       축제를 무작위의{" "}
@@ -840,6 +791,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 )}
 
                 <p className="note">출처: {DATA_SOURCE}</p>
+                </details>
                 <p>
                   {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
                   <Link href={`/venue?entry=${고름.e.id}`}>

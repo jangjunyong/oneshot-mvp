@@ -349,7 +349,7 @@ export function checkVisitors(
     // 첫 회: 베이스라인이 없으니 요구 배수는 못 재고, 담당자가 낸 값을 배수로 환산할 근거가 없다.
     historyMult = basis === "peakDay" ? peer.peakP95 : peer.meanP95;
     confidence = "low";
-    base.caveats.push(`첫 회 축제라 자기 이력이 없다. ${peer.label} 상위 5% 배수만 참고한다.`);
+    base.caveats.push(`지난 회차 기간이 입력되지 않아 자기 이력이 없다(첫 회이거나 날짜를 모르는 경우). ${peer.label} 상위 5% 배수만 참고한다.`);
   }
   if (requiredMult !== null && historyMult !== null && historyMult > 0) {
     r = requiredMult / historyMult;
