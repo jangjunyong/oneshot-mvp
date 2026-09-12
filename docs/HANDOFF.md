@@ -13,11 +13,14 @@
 | M0 | 데이터 활용 블록(`app/_components/data-usage.tsx`, 공사 3종 × 쓰인 셀), 축제 검색 삭제, "시뮬레이션" 개명, 워커 error pending 해제, 판정 카드의 런타임 문장 제거, 한도 소진 시 견본 링크, `copy.test` M6-3 전수 | 4a19a71 |
 | M1 | 첫 화면 한 문장 + 견본 링크만, 3단 카드·적중률·이력 안내 삭제, 보조 근거 블록 `<details>` 접힘, "첫 회 축제라" → "기간 미입력", 물은 달 | 5e369d5 |
 | M3a-1 | 붙여넣기/PDF → `/check?<값>&draft=id` 직행(확인 화면은 링크로 잔존). 견본은 판정 키 0개일 때만(`CHECK_KEYS`). `#verdict` 앵커 + e2e 결정론 검사. `draft-note.tsx` | 802947c |
-| M5a-1 | 행안부 주민등록 인구(data.go.kr 15097972, 2026-08, 행정동 CSV 커밋) → `scripts/region-build.mjs` → `data/region/population.json` (269/272, 미매칭 = 옛 인천 3구). `lib/region.ts`. 인구 우선순위 담당자 입력 → 행안부 → null, 화면에 출처 | 다음 커밋 |
+| M5a-1 | 행안부 주민등록 인구(data.go.kr 15097972, 2026-08, 행정동 CSV 커밋) → `scripts/region-build.mjs` → `data/region/population.json` (269/272, 미매칭 = 옛 인천 3구). `lib/region.ts`. 인구 우선순위 담당자 입력 → 행안부 → null, 화면에 출처 | bc3ab75 |
+| M2a-1 | 흑백 토큰(--severe/--caution 무채색, 유채색은 --accent 셋), 판정 7종 형태 어휘 `data-label`(반전·실선·점선·파선·해칭 + 라벨 병기), 지도 파란 물방울 핀, radius 0, 헤드라인 축소, Archivo 제거. `lib/design.test.ts` 4건. **실물 대조·인쇄 미리보기는 사용자 육안 대기** | 8d5a5b4 |
+| M4a | `/form` 인쇄용 기획안 양식(스키마 1:1) + `public/기획안_양식.pdf`(헤드리스 크롬) + 첫 화면 링크 | 8dc9b90 |
+| M7a | `SIM_CARD_SETTINGS`(시드 1·점=1명·유입 3000→6000·15분) 한 상수 → `scripts/sim-precompute.mjs` → `data/sim/gunpo_base.json`(peak 3.00, 위험 0초). `/check` 결과에 "시뮬레이션 요약" 카드(밀도는 출처 셀). 상한 초과면 exit 1·카드 미출력. sim.js 데모본 동일 유닛 | 다음 커밋 |
 
 **발견**: 2026-07 행정구역 개편으로 전남·광주는 "전남광주통합특별시"(행안부 코드 12xxx)가 됐고 KT 도 같은 달부터 12xxx 로 준다. 인천 중구·동구·서구는 사라져(제물포·영종·검단 등 신설) 옛 코드 3곳은 인구 null.
 
-남은 마디(계획 §3): M2a-1 디자인 토큰+파란 핀(착수 전 사용자 스크린샷 2~3장) · M4a PDF 양식 · M7a 시뮬 정적 카드 → **캡처 판정 3장 + pptx 골격** → 8일 밴드 M3a-2·M5a-2·M6·M16.
+**5일 밴드 완료(M0·M1·M2a-1·M3a-1·M4a·M5a-1·M7a).** 다음: **캡처 판정 3장 + pptx 골격(사용자 육안 확인 뒤)** → 8일 밴드 M3a-2(블록 재배열·슬롯 3)·M5a-2(619 populationOf 폐기)·M6(게이트+대체 출력+또래 라벨 분리)·M16(추출 스키마 확대+원칙 5 표식). 사용자 확인 필요: 흑백 디자인 실물, 인쇄 미리보기 2장, 붙여넣기 입력 유지 여부.
 
 ---
 

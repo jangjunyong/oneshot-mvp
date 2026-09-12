@@ -52,6 +52,20 @@ export function simCardFrom(
 export const DENSITY_CAP = 7.22;
 
 /**
+ * 정적 카드·자동 실행·불변식 테스트가 같이 보는 한 설정 (2026-09-12 M7a).
+ * 세 곳이 다른 값을 보면 "카드 숫자와 화면 숫자가 다르다"가 된다. 카드에 이 값을 그대로 인쇄한다.
+ * 유입 배열은 출처 없는 가정이다(시간대별 명/시). 점 하나 = 1명만 쓴다(k>1 은 밀도가 부푼다).
+ */
+export const SIM_CARD_SETTINGS = {
+  seed: 1,
+  personsPerAgent: 1,
+  inflowPerHour: [3000, 6000] as number[],
+  visitsPerPerson: 3,
+  dwellSecMean: 300,
+  minutes: 15,
+} as const;
+
+/**
  * 진단서 한 줄. 점 하나가 k>1 명이면 줄·서비스 자리 기하가 k 를 안 따라가 밀도가 부풀 수 있어(HANDOFF),
  * 상한을 넘은 값은 배치 판단에 쓰지 않고 k=1 로 다시 돌리라고 적는다.
  */

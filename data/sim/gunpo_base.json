@@ -1,0 +1,37 @@
+{
+ "venue": "군포철쭉축제 2026 실도면 (public/venue/gunpo.geojson)",
+ "engine": "lib/sim/sim.js (CFSM, T=0.7, 시드 고정)",
+ "settings": {
+  "seed": 1,
+  "personsPerAgent": 1,
+  "inflowPerHour": [
+   3000,
+   6000
+  ],
+  "visitsPerPerson": 3,
+  "dwellSecMean": 300,
+  "minutes": 15
+ },
+ "builtAt": "2026-09-12",
+ "elapsedMs": 9766,
+ "card": {
+  "at": "2026-09-12T03:38:06.317Z",
+  "simSec": 900,
+  "inflowPerHour": "3000,6000",
+  "scale": 1,
+  "k": 1,
+  "peak": {
+   "density": 3,
+   "where": "체험 29 근처 1m"
+  },
+  "hotspots": [
+   {
+    "where": "체험 29 근처 1m",
+    "peak": 3,
+    "sec": 0.2
+   }
+  ],
+  "secAbove5": 0,
+  "limitWhere": null
+ }
+}

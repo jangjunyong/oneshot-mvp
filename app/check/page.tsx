@@ -30,6 +30,7 @@ import { ymdDashed } from "@/lib/history";
 import { Num } from "@/app/_components/num";
 import { DataUsage } from "@/app/_components/data-usage";
 import { DraftNote } from "@/app/_components/draft-note";
+import { SimCardBlock } from "@/app/_components/sim-card";
 import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
 import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
@@ -421,6 +422,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     </div>
                   </>
                 )}
+                <SimCardBlock isGunpo={code === "41410"} />
+
                 <h2>내년 배수 구간</h2>
                 {range && (
                   <div className="range-card" data-years={range.years.length}>

@@ -37,3 +37,27 @@ test("한 줄 — 위험 지속 / 주의 지속 / 없음 / 상한 초과", () =>
   assert.match(simCardHeadline({ ...base, k: 3, peak: { density: 9, where: "x" } }), /점 하나를 3명으로 두면 밀도가 부풀 수 있으니/);
   for (const t of [simCardHeadline(base), simCardHeadline({ ...base, hotspots: [] })]) assert.doesNotMatch(t, /\d[\d,]*\s*명(?!\/)/);
 });
+
+// ── 2026-09-12 M7a — 정적 카드(data/sim/gunpo_base.json)와 설정 상수 ─────────────────────────
+import { existsSync, readFileSync } from "node:fs";
+import { DENSITY_CAP, SIM_CARD_SETTINGS } from "@/lib/simcard";
+
+const base = JSON.parse(readFileSync("data/sim/gunpo_base.json", "utf8"));
+
+test("정적 카드는 SIM_CARD_SETTINGS 그대로 돌린 것이고 점 하나 = 1명이다", () => {
+  assert.deepEqual(base.settings, SIM_CARD_SETTINGS, "카드의 설정이 상수와 다르다 — scripts/sim-precompute.mjs 를 다시 돌려라");
+  assert.equal(base.card.k, 1);
+  assert.equal(base.card.simSec, SIM_CARD_SETTINGS.minutes * 60);
+});
+
+test("정적 카드의 최대 밀도는 물리 상한(7.22명/㎡) 아래다 — 넘으면 배치가 아니라 코드 버그", () => {
+  assert.ok(base.card.peak.density <= DENSITY_CAP, `peak ${base.card.peak.density}`);
+  for (const h of base.card.hotspots) assert.ok(h.peak <= DENSITY_CAP, `hotspot ${h.where} ${h.peak}`);
+  assert.ok(typeof base.card.peak.where === "string" && base.card.peak.where.length > 0);
+});
+
+test("서비스의 엔진(lib/sim/sim.js)은 검증 하네스(시뮬_데모/sim.js)와 바이트 동일하다 — 갈리면 Weidmann 검증이 무의미", () => {
+  const demo = "../시뮬_데모/sim.js";
+  if (!existsSync(demo)) return; // 볼트 밖에서 돌릴 때는 건너뛴다
+  assert.equal(readFileSync("lib/sim/sim.js", "utf8"), readFileSync(demo, "utf8"), "두 sim.js 가 다르다");
+});
