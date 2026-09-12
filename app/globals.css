@@ -1008,3 +1008,17 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .data-usage h2, .sim-card h2 { font-size: var(--text-lg); margin: var(--s3) 0 var(--s1); }
 /* 폼 안내 문장이 한 줄로 늘어나 시트 밖으로 나가지 않게 */
 .form-note-block { display: block; white-space: normal; max-width: 40rem; margin-top: 0.2rem; }
+
+/* ── 닮은 과거 축제 블록 (/check, 2026-09-12 M3a-2) ──────────────────────────── */
+.twins .twin-layout { border-bottom: 0; margin-bottom: 0; }
+/* 테마·접근성 고르기 — GET 폼이 아니라 링크 줄. 고른 것은 밑줄·검정, 나머지는 회색 */
+.twin-choose { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; align-items: baseline; margin: 0 0 var(--s1); max-width: none; font-size: var(--text-sm); }
+.twin-choose-label { color: var(--concrete); flex: 0 0 auto; min-width: 4.5rem; }
+.twin-choose a { color: var(--concrete); text-decoration: none; border-bottom: 1px solid transparent; }
+.twin-choose a:hover { color: var(--ink); }
+.twin-choose a[data-on] { color: var(--ink); border-bottom-color: var(--ink); }
+/* 판정이 서면 입력 폼은 접힌다 */
+.check-form-fold { margin: 0 0 var(--s4); }
+.check-form-fold > summary { cursor: pointer; color: var(--concrete); font-size: var(--text-sm); }
+.check-form-fold > summary:hover { color: var(--ink); }
+.check-form-fold[open] > summary { margin-bottom: var(--s2); }

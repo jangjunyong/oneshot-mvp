@@ -100,13 +100,15 @@ test("M4-1 여섯 화면의 .logo 문자열이 하나다", () => {
   assert.equal(logos.size, 1, [...logos].join(" | "));
 });
 
-test("M4-2 나침반 순서는 /check → /evidence → /venue → /(보조)", () => {
+// 2026-09-12 M3a-2 (사용자 지시 7): 나침반은 셋 — 기획안 넣기 / 판정 / 시뮬레이션. 실측 근거는 판정 안 링크로만, "보조" 탭은 없다
+test("M4-2 나침반은 기획안 넣기(/) → 판정(/check) → 시뮬레이션(/venue) 셋이고 '보조'·'실측 근거' 탭이 없다", () => {
   for (const file of ["app/page.tsx", "app/check/page.tsx", "app/evidence/page.tsx", "app/venue/page.tsx"]) {
     const nav = read(file).match(/<nav>([\s\S]*?)<\/nav>/);
     assert.ok(nav, `${file} 에 nav 가 없다`);
     const links = [...nav[1].matchAll(/<Link href=\{?[`"]([^`"$?]+)[^>]*>([\s\S]*?)<\/Link>/g)].map((m) => [m[1], m[2].replace(/\s+/g, " ").trim()]);
-    assert.deepEqual(links.map((l) => l[0]), ["/check", "/evidence", "/venue", "/"], `${file}: ${JSON.stringify(links)}`);
-    assert.ok(links[3][1].includes("보조"), `${file}: '/' 항목에 '보조' 가 없다`);
+    assert.deepEqual(links.map((l) => l[0]), ["/", "/check", "/venue"], `${file}: ${JSON.stringify(links)}`);
+    assert.deepEqual(links.map((l) => l[1]), ["기획안 넣기", "판정", "시뮬레이션"], `${file}: ${JSON.stringify(links)}`);
+    assert.ok(!/보조|실측 근거/.test(nav[1]), `${file}: 나침반에 옛 탭이 남았다`);
   }
 });
 
@@ -141,7 +143,8 @@ test("V1-3 모노 서체 사슬에 한글 글리프 서체가 있고 세리프 �
 
 test("V1-4 보고서 2장 각주는 두 API 를 구분해 적고, 619 적중률 문단은 보조 근거임을 먼저 말한다", () => {
   assert.ok(read("app/report/check/page.tsx").includes("TourAPI · {KT_API}"), "TourAPI 와 DataLab 이 붙어 있다");
-  const p = read("app/page.tsx");
+  // 2026-09-12 M3a-2: 619 적중률 문단은 /check 의 닮은 축제 블록(app/_components/twins-block.tsx)으로 옮겼다
+  const p = read("app/_components/twins-block.tsx");
   const i = p.indexOf("LOO_PUBLISHED.lift");
   assert.ok(i > 0 && p.slice(Math.max(0, i - 400), i).includes("보조 근거"), "619 적중률 앞에 '보조 근거' 가 없다");
 });
@@ -218,6 +221,20 @@ test("M1 홈 첫 문단은 한 문장(60자 이하)이고 판정을 말하며, 3
   for (const gone of ['<ol className="flow">', 'className="trust', "이 주소를 연 모든 사람이", "저장된 진단이 없어 예시 기획안"]) {
     assert.ok(!p.includes(gone), `삭제 대상이 남았다: ${gone}`);
   }
-  assert.ok(p.includes('<details className="selfcheck aux-detail">'), "감당 범위 이하가 접혀 있지 않다");
+  // 2026-09-12 M3a-2: 감당 범위 이하는 /check 의 닮은 축제 블록 안에서 접힌다
+  assert.ok(read("app/_components/twins-block.tsx").includes('<details className="selfcheck aux-detail">'), "감당 범위 이하가 접혀 있지 않다");
   assert.ok(!read("app/_components/season-table.tsx").includes("물은 달"));
+});
+
+// 2026-09-12 M3a-2 — 닮은 축제 블록은 판정 결정론 경계 밖에서 URL 주석 키로만 선다
+test("M3a-2 닮은 축제 블록: theme·acc·pin 은 CHECK_KEYS 밖, #verdict 끝 표식 뒤, 폼은 hidden 으로 실어 보낸다", () => {
+  const cq = read("lib/checkquery.ts");
+  const keys = cq.match(/export const CHECK_KEYS = \[([^\]]+)\]/)![1];
+  for (const k of ["theme", "acc", "pin"]) assert.ok(!keys.includes(`"${k}"`), `${k} 가 CHECK_KEYS 에 들어갔다 — 견본 폴백 회귀`);
+  const check = read("app/check/page.tsx");
+  const end = check.indexOf('<span id="verdict-end"');
+  const twins = check.indexOf("<TwinsBlock");
+  assert.ok(end > 0 && twins > end, "TwinsBlock 이 #verdict 끝 표식 뒤에 없다");
+  assert.ok(check.includes('name="theme"') && check.includes('name="acc"'), "폼에 theme·acc hidden 이 없다");
+  assert.ok(check.includes('<details className="check-form-fold">'), "판정이 서도 입력 폼이 접히지 않는다");
 });

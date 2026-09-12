@@ -38,18 +38,24 @@ interface Drawn { id: string; x: number; y: number; w: number; h: number }
 export default function TwinMap3D({
   pins,
   origin,
-  entryId,
+  pinHrefBase,
+  pinHrefSuffix,
   selectedPin,
   vworldKey,
+  initialOpen = false,
 }: {
   pins: Pin3D[];
   origin: { lat: number; lng: number } | null;
-  entryId: string;
+  /** 기둥을 눌렀을 때 갈 주소 = base + 축제 id + suffix. 함수는 서버→클라이언트 경계를 못 넘어 문자열 둘로 받는다 */
+  pinHrefBase: string;
+  pinHrefSuffix: string;
   selectedPin: string | null;
   vworldKey: string | null;
+  /** 껍데기(twin-map-3d-shell)가 클릭 뒤에 마운트하면 true — 버튼을 두 번 누르게 하지 않는다 */
+  initialOpen?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const mapEl = useRef<HTMLDivElement>(null);
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<MLMap | null>(null);
@@ -177,7 +183,7 @@ export default function TwinMap3D({
           ref={mapEl}
           className="twin-3d-map"
           onMouseMove={(e) => { hoverRef.current = hitAt(e); if (mapEl.current) mapEl.current.style.cursor = hoverRef.current ? "pointer" : ""; }}
-          onClick={(e) => { const id = hitAt(e); if (id) router.push(`/?entry=${entryId}&pin=${id}#twin`); }}
+          onClick={(e) => { const id = hitAt(e); if (id) router.push(`${pinHrefBase}${id}${pinHrefSuffix}`); }}
         >
           <canvas ref={canvasEl} className="twin-3d-overlay" />
           <p className="twin-3d-note">기둥 높이 = 그 축제가 실제로 겪은 평소 대비 배수. 기둥을 누르면 근거로 간다. 끌어서 돌리고 기울일 수 있다.</p>

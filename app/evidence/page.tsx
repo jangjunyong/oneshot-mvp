@@ -141,12 +141,9 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
       <header className="topbar">
         <span className="logo">기획안 팩트체크</span>
         <nav>
-          <Link href={`/check${qs}`}>기획안 판정</Link>
-          <Link href="/evidence" aria-current="page">
-            실측 근거
-          </Link>
+          <Link href="/">기획안 넣기</Link>
+          <Link href={`/check${qs}`}>판정</Link>
           <Link href="/venue">시뮬레이션</Link>
-          <Link href="/">진단(보조)</Link>
         </nav>
       </header>
 

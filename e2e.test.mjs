@@ -321,7 +321,8 @@ test("기획서를 붙여넣으면 뽑은 항목이 채워진 확인 화면으�
   assert.doesNotMatch(출처셀걷기(판정페이지), /\d[\d,]*\s*명/, "판정 화면 출처 셀 밖에 명 수가 있다");
   // 결정론 — draft 를 빼도 판정 블록(#verdict)의 HTML 은 같다
   const 없이 = (await (await fetch(BASE + loc.replace(/^https?:\/\/[^/]+/, "").replace(/&draft=\d+/, ""))).text()).replace(/<!--\s*-->/g, "");
-  const 블록 = (h) => h.match(/<div id="verdict"[\s\S]*?<\/div>\s*<\/main>/)?.[0] ?? h.match(/<div id="verdict"[\s\S]{0,20000}/)?.[0] ?? "";
+  // 끝 표식(#verdict-end)까지만 — 그 뒤 닮은 축제 블록은 주석 키 유래라 비교 밖 (2026-09-12)
+  const 블록 = (h) => h.match(/<div id="verdict"[\s\S]*?<span id="verdict-end"/)?.[0] ?? "";
   assert.ok(블록(판정페이지).length > 500, "판정 블록을 못 찾았다");
   assert.equal(블록(판정페이지), 블록(없이), "draft 주석이 판정 블록을 바꿨다");
 
@@ -521,6 +522,42 @@ test("견본 2건 — 화천산천어축제(글로벌축제)는 상한 초과 + 
   assert.match(보고서, /손익분기 회전율/, "보고서에 회전율이 없다");
 });
 
+
+// 2026-09-12 M3a-2 — 닮은 축제(보조 근거)가 /check 안에 선다. 지도·카드는 열려 있고 핀은 판정 URL 을 보존한 링크다
+test("판정 화면 안의 닮은 축제 — 견본에 지도·카드 3장이 열려 있고, 핀 링크가 theme·acc 를 보존하며, 폼 제출도 보존한다", async () => {
+  const 군포 = (await (await fetch(BASE + "/check")).text()).replace(/<!--\s*-->/g, "");
+  assert.match(군포, /id="twins"/, "닮은 축제 블록이 없다");
+  assert.equal((군포.match(/class="map"/g) || []).length, 1, "지도가 한 장이 아니다");
+  assert.ok((군포.match(/class="twin-card"/g) || []).length >= 3, "닮은 축제 카드가 셋 미만");
+  assert.match(군포, /경보|위험 근거 못 찾음|비교 대상 없음/, "보조 등급이 없다");
+  // 지도·카드는 details 밖, 감당 범위 이하는 details 안
+  const 블록 = 군포.slice(군포.indexOf('id="twins"'));
+  assert.ok(블록.indexOf('class="map"') < 블록.indexOf('class="selfcheck aux-detail"'), "지도가 접힘 안에 들어갔다");
+  assert.ok(블록.indexOf("감당 범위") > 블록.indexOf('class="selfcheck aux-detail"'), "감당 범위가 접히지 않았다");
+  // 판정이 서면 입력 폼은 접힌다
+  assert.match(군포, /class="check-form-fold"/, "입력 폼이 접히지 않았다");
+  // 핀 링크 — 견본 가정(theme·acc)을 싣고 #twins 로
+  const 핀 = 군포.match(/href="(\/check\?[^"]*pin=[^"#]+#twins)"/)?.[1]?.replace(/&amp;/g, "&");
+  assert.ok(핀, "핀 링크가 없다");
+  assert.match(핀, /theme=\d/, "핀 링크가 테마를 잃었다");
+  assert.match(핀, /acc=\d/, "핀 링크가 접근성을 잃었다");
+  const 펴짐 = (await (await fetch(BASE + 핀)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(펴짐, /class="pin-card"/, "핀을 눌러도 근거 카드가 없다");
+  assert.match(펴짐, /핀 선택 해제/);
+  assert.match(펴짐, /견본/, "핀을 눌렀더니 견본이 아니게 됐다");
+  // 담당자 입력에서도: theme·acc 를 URL 로 주면 블록이 서고, 폼에 hidden 으로 실려 판정 버튼에 안 사라진다
+  const 기본 = "sido=경기&sigungu=군포시&h1s=2026-04-18&h1e=2026-04-26&n=110184&basis=peakDay&counting=unique&start=2027-04-17&end=2027-04-25";
+  const 입력 = (await (await fetch(`${BASE}/check?${기본}&theme=2&acc=4`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(입력, /name="theme"[^>]*value="2"|value="2"[^>]*name="theme"/, "theme hidden 이 없다");
+  assert.match(입력, /name="acc"[^>]*value="4"|value="4"[^>]*name="acc"/, "acc hidden 이 없다");
+  assert.ok((입력.match(/class="twin-card"/g) || []).length >= 1, "담당자 입력에 닮은 축제가 안 선다");
+  assert.doesNotMatch(입력, /견본입니다/, "담당자 입력인데 견본이라 한다");
+  // 테마·접근성이 없으면 고르기 링크만 서고 블록은 억지로 안 선다
+  const 없음 = (await (await fetch(`${BASE}/check?${기본}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(없음, /테마와 접근성을 고르면/, "고르기 안내가 없다");
+  assert.doesNotMatch(없음, /class="twin-card"/, "테마 없이 닮은 축제를 냈다");
+  assert.doesNotMatch(출처셀걷기(입력), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+});
 
 // 2026-09-12 M5a-1 — 619건에 없는 시군구도 행안부 표로 또래가 선다 (함평군: 619건 0건, 2026-07 개편으로 행안부 코드 12820)
 test("619건에 없는 시군구(함평군)를 넣어도 또래 구간이 서고, 인구 출처가 행안부로 찍힌다", async () => {

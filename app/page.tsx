@@ -157,10 +157,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <header className="topbar">
         <span className="logo">기획안 팩트체크</span>
         <nav>
-          <Link href="/check">기획안 판정</Link>
-          <Link href="/evidence">실측 근거</Link>
+          <Link href="/" aria-current="page">기획안 넣기</Link>
+          <Link href="/check">판정</Link>
           <Link href="/venue">시뮬레이션</Link>
-          <Link href="/" aria-current="page">진단(보조)</Link>
         </nav>
       </header>
 
@@ -444,7 +443,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <TwinMap
                   matched={고름.result.matched}
                   origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
-                  entryId={고름.e.id}
+                  pinHref={(id) => `/?entry=${고름.e.id}&pin=${id}#twin`}
                   selectedPin={핀?.festival.id ?? null}
                   scope={고름.result.searchedScope}
                 />
@@ -456,13 +455,14 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       num: i + 1, year: m.year, surge: m.festival.actualVisitSurge,
                     }))}
                     origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
-                    entryId={고름.e.id}
+                    pinHrefBase={`/?entry=${고름.e.id}&pin=`}
+                    pinHrefSuffix="#twin"
                     selectedPin={핀?.festival.id ?? null}
                     vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
                   />
                 )}
                 <TwinCards
-                  entryId={고름.e.id}
+                  pinHref={(id) => `/?entry=${고름.e.id}&pin=${id}#twin`}
                   matched={고름.result.matched}
                   baseline={기준}
                   selectedPin={핀?.festival.id ?? null}

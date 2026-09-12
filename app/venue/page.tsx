@@ -138,10 +138,9 @@ export default async function VenuePage({
       <header className="topbar">
         <span className="logo">기획안 팩트체크</span>
         <nav>
-          <Link href="/check">기획안 판정</Link>
-          <Link href="/evidence">실측 근거</Link>
+          <Link href="/">기획안 넣기</Link>
+          <Link href="/check">판정</Link>
           <Link href="/venue" aria-current="page">시뮬레이션</Link>
-          <Link href="/">진단(보조)</Link>
         </nav>
       </header>
 

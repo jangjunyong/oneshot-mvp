@@ -8,7 +8,18 @@
 import Link from "next/link";
 import { dailyRange, loadDaily, manifest, resolveRegion, sigunguNamesOf } from "@/lib/kto/daily";
 import { historyOf, SKIP_REASON } from "@/lib/history";
-import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
+import {
+  appendQuery,
+  checkQueryString,
+  DEMO_BUDGET_SOURCE,
+  DEMOS,
+  HISTORY_SLOTS,
+  parseCheckQuery,
+  parseTwinParams,
+  type CheckQuery,
+  type TwinParams,
+} from "@/lib/checkquery";
+import { TwinsBlock } from "@/app/_components/twins-block";
 import { checkBudget } from "@/lib/budget";
 import {
   checkSchedule,
@@ -87,6 +98,9 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   }
   const 견본 = demo ? DEMOS[demo] : null;
   const 다른견본 = demo === "gunpo" ? DEMOS.hwacheon : demo === "hwacheon" ? DEMOS.gunpo : null;
+  // 닮은 축제 블록의 주석 키(theme·acc·pin) — 판정 결정론 경계 밖. 견본은 DEMOS 의 가정값을 기본으로 쓴다
+  const twin0 = parseTwinParams(params);
+  const twin: TwinParams = { ...twin0, theme: twin0.theme ?? 견본?.themeCode ?? null, acc: twin0.acc ?? 견본?.accessibility ?? null };
   // 사람이 친 표기("충청남도 보령")를 KT 표기("충남 보령시")로 — 이 뒤로는 인구·좌표·경쟁 조회가 전부 이 이름을 쓴다
   const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
   const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
@@ -138,17 +152,25 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
     return m ? <Num m={m} /> : <span className="note">—</span>;
   };
 
+  // 닮은 축제 블록 입력. 619건은 시 단위뿐이라 자치구("수원시 장안구")는 상위 시로 — 인구도 그 시의 행안부 값으로.
+  // 판정 쪽 인구(popMois)는 구 그대로다: KT 일별 자료의 분모는 구가 맞다
+  const twinSigungu = q.sigungu.includes(" ") ? q.sigungu.split(" ")[0] : q.sigungu;
+  const parentRegion = twinSigungu !== q.sigungu ? resolveRegion(q.sido, twinSigungu) : region;
+  const twinPop = twinSigungu !== q.sigungu && parentRegion ? (populationOfCode(parentRegion.code) ?? pop) : pop;
+  const twinMonth = q.start ? Number(q.start.slice(4, 6)) : null;
+  const twinQs = (patch: Partial<TwinParams> = {}) => appendQuery(qs, { theme: twin.theme, acc: twin.acc, pin: twin.pin, ...patch });
+  const twinHref = (patch: Partial<TwinParams>) => `/check${twinQs(patch)}#twins`;
+
   return (
     <div className="sheet check-sheet">
       <header className="topbar">
         <span className="logo">기획안 팩트체크</span>
         <nav>
+          <Link href="/">기획안 넣기</Link>
           <Link href="/check" aria-current="page">
-            기획안 판정
+            판정
           </Link>
-          <Link href={`/evidence${qs}`}>실측 근거</Link>
           <Link href="/venue">시뮬레이션</Link>
-          <Link href="/">진단(보조)</Link>
         </nav>
       </header>
 
@@ -195,7 +217,15 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
         {draft && <DraftNote draft={draft} id={draftId!} />}
 
-        <CheckForm q={q} populationSource={popSource} />
+        {/* 판정이 서면 14칸 폼은 접는다 — 심사위원이 첫 화면에서 보는 것은 판정이지 입력칸이 아니다 (2026-09-12) */}
+        {판정가능 ? (
+          <details className="check-form-fold">
+            <summary>입력 고치기 — 축제·지역·예상 방문객·기간·지난 회차</summary>
+            <CheckForm q={q} populationSource={popSource} twin={twin} />
+          </details>
+        ) : (
+          <CheckForm q={q} populationSource={popSource} twin={twin} />
+        )}
 
         {판정가능 && (
           <>
@@ -509,6 +539,24 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                 </p>
               </aside>
             </div>
+            {/* 판정 블록의 끝 표식 — e2e 결정론 검사가 여기까지를 비교한다. 아래는 주석 키(theme·acc·pin) 유래 */}
+            <span id="verdict-end" hidden />
+
+            <TwinsBlock
+              sido={q.sido}
+              sigungu={twinSigungu}
+              month={twinMonth}
+              populationManMyeong={twinPop}
+              theme={twin.theme}
+              acc={twin.acc}
+              pin={twin.pin}
+              chooseHref={(patch) => twinHref({ ...patch, pin: null })}
+              pinHref={(id) => twinHref({ pin: id || null })}
+              pinHrefBase={`/check${twinQs({ pin: null }) ? twinQs({ pin: null }) + "&" : "?"}pin=`}
+              pinHrefSuffix="#twins"
+              isDemo={isDemo}
+              vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+            />
           </>
         )}
       </main>
@@ -516,10 +564,13 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   );
 }
 
-function CheckForm({ q, populationSource }: { q: CheckQuery; populationSource: string | null }) {
+function CheckForm({ q, populationSource, twin }: { q: CheckQuery; populationSource: string | null; twin: TwinParams }) {
   const d = (s: string) => (s ? ymdDashed(s) : "");
   return (
     <form action="/check" method="get" className="check-form">
+      {/* GET 폼은 쿼리를 통째로 갈아 끼운다 — 닮은 축제의 테마·접근성이 판정 버튼 한 번에 사라지지 않게 실어 보낸다 */}
+      {twin.theme !== null && <input type="hidden" name="theme" value={twin.theme} />}
+      {twin.acc !== null && <input type="hidden" name="acc" value={twin.acc} />}
       <p>
         <label htmlFor="name">축제 이름</label>
         <input id="name" name="name" defaultValue={q.name} placeholder="예) 군포철쭉축제" />

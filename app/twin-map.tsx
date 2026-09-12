@@ -107,13 +107,14 @@ const 고른것 = (g: { ids: string[] }, selectedPin: string | null) =>
 export function TwinMap({
   matched,
   origin,
-  entryId,
+  pinHref,
   selectedPin,
   scope,
 }: {
   matched: MatchedFestival[];
   origin: { lat: number; lng: number } | null;
-  entryId: string;
+  /** 핀을 눌렀을 때 갈 주소. 화면마다 다르다(/ 는 entry, /check 는 판정 URL) — 여기서 조립하지 않는다 */
+  pinHref: (festivalId: string) => string;
   selectedPin: string | null;
   scope: string;
 }) {
@@ -185,7 +186,7 @@ export function TwinMap({
               y={g.y}
               stem={g.stem}
               label={g.nums.join("·")}
-              href={`/?entry=${entryId}&pin=${g.ids[0]}#twin`}
+              href={pinHref(g.ids[0])}
               selected={고른것(g, selectedPin) === 1}
             />
           ))}

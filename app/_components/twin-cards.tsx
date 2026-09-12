@@ -19,14 +19,15 @@ import type { MatchedFestival } from "@/lib/types";
  * 무엇에 대고 잰 값인지는 닮음과 다른 질문이라 칸을 따로 둘 값어치가 있다.
  */
 export function TwinCards({
-  entryId,
+  pinHref,
   matched,
   baseline,
   selectedPin,
   scope,
   capacityShown,
 }: {
-  entryId: string;
+  /** 카드를 눌렀을 때 갈 주소 — 지도 핀과 같은 함수를 받아야 둘이 같은 곳으로 간다 */
+  pinHref: (festivalId: string) => string;
   matched: MatchedFestival[];
   baseline: { id: string; name: string; year: string; surge: number } | null;
   selectedPin: string | null;
@@ -48,7 +49,7 @@ export function TwinCards({
             className="twin-card"
             data-role={기준인가 ? "base" : undefined}
             data-current={m.festival.id === selectedPin ? "1" : undefined}
-            href={`/?entry=${entryId}&pin=${m.festival.id}#twin`}
+            href={pinHref(m.festival.id)}
           >
             <p className="twin-card-label">
               <strong>{i + 1}</strong> 닮은 축제

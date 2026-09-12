@@ -97,6 +97,9 @@ export interface Demo {
   designated: boolean;
   /** query.populationManMyeong 의 출처 한 줄 (기관·기준월·조회일). 견본 인구는 619건이 아니라 여기서 온다 */
   populationSource: string;
+  /** 닮은 축제(보조 근거) 5축 중 문서에서만 오는 둘 — 견본은 여기 박는다. 판정에는 안 쓴다 (2026-09-12 M3a-2) */
+  themeCode: number;
+  accessibility: number;
 }
 
 export const DEMOS: Record<DemoKey, Demo> = {
@@ -109,6 +112,9 @@ export const DEMOS: Record<DemoKey, Demo> = {
     why: "공사 KT 실측이 세 해(2024·2025·2026) 모두 있고, 발표 최다일 217,502(2025)가 시 전체 체류의 83%라는 정의 불일치를 처음 드러낸 사례",
     designated: false,
     populationSource: "군포시청 주민등록인구 24.9만(2026-07 기준, gunpo.go.kr) · 조회 2026-09-11",
+    // 철쭉(자연·꽃) · 수리산역 도보권(접근성 좋음) — 견본 가정값
+    themeCode: 2,
+    accessibility: 4,
   },
   hwacheon: {
     key: "hwacheon",
@@ -119,8 +125,44 @@ export const DEMOS: Record<DemoKey, Demo> = {
     why: "문체부 글로벌축제(지정축제)이고, 인구 2.3만 군에 23일간 186만이 온다는 발표치가 KT 실인원 상한과 어떻게 맞서는지 보여 주는 사례",
     designated: true,
     populationSource: "화천군청 년도별 주민등록인구 2.3만(2024년 기준, ihc.go.kr) · 조회 2026-09-11",
+    // 겨울 얼음낚시(빛·계절) · 철도 없음, 셔틀 의존(접근성 나쁨) — 견본 가정값
+    themeCode: 8,
+    accessibility: 2,
   },
 };
+
+/**
+ * 닮은 축제 블록이 읽는 주석 키 — 판정 결정론 경계(CHECK_KEYS) 밖이다.
+ * `theme`·`acc` 는 619건 5축 중 문서에서만 오는 둘, `pin` 은 지도에서 고른 핀.
+ * CHECK_KEYS 에 넣지 않는 이유: 넣으면 `/check?theme=2` 가 견본이 아니라 빈 입력이 되어 2026-09-11 회귀를 되풀이한다.
+ */
+export interface TwinParams {
+  theme: number | null;
+  acc: number | null;
+  pin: string | null;
+}
+
+export function parseTwinParams(params: Params): TwinParams {
+  const int = (k: string, lo: number, hi: number) => {
+    const v = Number(str(params, k));
+    return Number.isInteger(v) && v >= lo && v <= hi ? v : null;
+  };
+  return { theme: int("theme", 1, 8), acc: int("acc", 1, 5), pin: str(params, "pin") || null };
+}
+
+/**
+ * 쿼리 문자열에 주석 키를 덧붙인다. `checkQueryString` 이 낸 "?…" 또는 "" 또는 "?demo=…" 를 그대로 받는다.
+ * GET 폼은 쿼리를 통째로 갈아 끼우므로 링크는 이 함수로만 만든다 (견본 폴백 회귀 방지).
+ */
+export function appendQuery(qs: string, extra: Record<string, string | number | null | undefined>): string {
+  const p = new URLSearchParams(qs.startsWith("?") ? qs.slice(1) : qs);
+  for (const [k, v] of Object.entries(extra)) {
+    if (v === null || v === undefined || v === "") p.delete(k);
+    else p.set(k, String(v));
+  }
+  const s = p.toString();
+  return s ? "?" + s : "";
+}
 
 const DEMO_BY_NAME: Record<string, DemoKey> = { [GUNPO_2027.name]: "gunpo", [HWACHEON_2027.name]: "hwacheon" };
 
