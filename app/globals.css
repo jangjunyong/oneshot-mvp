@@ -1015,3 +1015,15 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 @media print {
   .report-form .form-blank { border-bottom-color: #000; }
 }
+
+/* 데이터 활용 표 — 긴 문장 셀이라 nowrap 을 풀고 고정 폭으로 (2026-09-12: nowrap 때문에 2,344px 로 늘어나 페이지가 옆으로 밀렸다) */
+.data-usage-table { table-layout: fixed; width: 100%; }
+.data-usage-table th, .data-usage-table td { white-space: normal !important; word-break: keep-all; overflow-wrap: anywhere; vertical-align: top; }
+.data-usage-table thead th:nth-child(1) { width: 26%; }
+.data-usage-table thead th:nth-child(2) { width: 24%; }
+.data-usage-table thead th:nth-child(3) { width: 32%; }
+.data-usage-table thead th:nth-child(4) { width: 18%; }
+.data-usage-table code { font-size: 0.85em; word-break: break-all; }
+.data-usage h2, .sim-card h2 { font-size: var(--text-lg); margin: var(--s3) 0 var(--s1); }
+/* 폼 안내 문장이 한 줄로 늘어나 시트 밖으로 나가지 않게 */
+.form-note-block { display: block; white-space: normal; max-width: 40rem; margin-top: 0.2rem; }

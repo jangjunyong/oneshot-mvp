@@ -568,9 +568,8 @@ function CheckForm({ q, populationSource }: { q: CheckQuery; populationSource: s
       <p>
         <label htmlFor="pop">지역 인구</label>
         <input id="pop" name="pop" inputMode="numeric" defaultValue={q.populationManMyeong === null ? "" : String(q.populationManMyeong)} placeholder="예) 13.4" />
-        <span className="note">
-          만 명 · 비우면 행안부 주민등록인구 표를 쓴다{populationSource && <> · 지금 인구 출처: {populationSource}</>}
-        </span>
+        <span className="note">만 명 · 비우면 행안부 주민등록인구 표를 쓴다</span>
+        {populationSource && <span className="note form-note-block">지금 인구 출처: {populationSource}</span>}
       </p>
       <p>
         <label htmlFor="start">기획 기간</label>
