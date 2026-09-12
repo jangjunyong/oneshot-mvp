@@ -1,156 +1,21 @@
-import Link from "next/link";
-import { 짧은시각 } from "@/lib/datetime";
-import { 저장, 지운다, 추출 } from "@/app/actions";
-import {
-  getDraft,
-  HISTORY_LIMIT,
-  list,
-  type Draft,
-} from "@/lib/store";
-import { planInputOf, type Entry } from "@/lib/types";
-import { DEMO_ENTRY, DEMO_LABEL } from "@/lib/demo";
-import { hasModelKey } from "@/lib/extract";
-import { checkUrlFromExtraction } from "@/lib/checkquery";
-import {
-  festivalDetail,
-  hasTourKey,
-  searchFestivalsInPeriod,
-  type FestivalDetail,
-} from "@/lib/tourapi";
-import {
-  competitionHeadline,
-  competitorsNear,
-  dayLabel,
-  monthWindow,
-  NEARBY_RADIUS_KM,
-  type Competitor,
-} from "@/lib/overlap";
-import { coordsOf, findSimilar } from "@/lib/match";
-import { LOO_PUBLISHED, WITHIN_BAND, pct } from "@/lib/eval";
-import { capacityBand, localBaseline, ratioText } from "@/lib/capacity";
-import { scanSeason } from "@/lib/season";
-import { peerContext, peerSurges } from "@/lib/peer";
-import { PeerStrip } from "@/app/peer-strip";
-import { TwinMap } from "@/app/twin-map";
-import { TwinMap3DShell } from "@/app/twin-map-3d-shell";
-import { TwinCards } from "@/app/_components/twin-cards";
-import { SeasonTable } from "@/app/_components/season-table";
-import { Choice, Field } from "@/app/_components/form-fields";
-import { grade, levelLabel } from "@/lib/grade";
-import {
-  ACCESSIBILITY_LABEL,
-  DAILY_EXTRACT_LIMIT,
-  DATA_SOURCE,
-  MAX_PLAN_TEXT,
-  THEME_NAME,
-} from "@/lib/types";
+// 기획안 넣기 — 첫 화면 (2026-09-12 A2, 사용자 지시 1·3·6·7).
+//
+// 여기서 하는 일은 하나다: 기획서를 받아 판정(/check)으로 보낸다. PDF 가 주, 붙여넣기는 접힘.
+// 옛 진단 이력·지도·5축 폼·"직접 입력하기"는 지웠다 — 닮은 축제는 /check 안에서 선다(twins-block).
+// 저장 없음. 모델은 서버 액션(추출)에서 숫자를 옮겨 적는 데만 쓴다.
 
-// 저장한 것이 바로 보여야 하므로 캐시하지 않는다
+import Link from "next/link";
+import { 추출 } from "@/app/actions";
+import { hasModelKey } from "@/lib/extract";
+import { DAILY_EXTRACT_LIMIT, MAX_PLAN_TEXT } from "@/lib/types";
+import { KT_API } from "@/lib/verdict";
+import { FESTIVALS } from "@/lib/festivals";
+
 export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
-  const 입력오류 = params.err;
-  const draftId = typeof params.draft === "string" ? params.draft : null;
-  const 수동입력 = params.manual === "1";
-
-  // 지도에 펼 진단과 그 안에서 고른 핀. 선택은 URL 에만 있다 —
-  // 클라이언트 상태로 두면 619건 좌표가 번들로 딸려 들어가고,
-  // 자바스크립트 없는 e2e 가 이 화면을 더는 검증하지 못한다.
-  const 고른id = typeof params.entry === "string" ? params.entry : null;
-  const 고른핀 = typeof params.pin === "string" ? params.pin : null;
-
-  // 초안을 못 읽어도 입력 화면은 살아 있어야 한다.
-  let draft: Draft | null = null;
-  if (draftId) {
-    try {
-      draft = await getDraft(draftId);
-    } catch {
-      draft = null;
-    }
-  }
-  const 확인단계 = draft !== null || 수동입력;
-
-  // 목록을 못 읽어도 입력 화면은 살아 있어야 한다.
-  let entries: Entry[] = [];
-  let 조회실패 = false;
-  try {
-    entries = await list();
-  } catch {
-    조회실패 = true;
-  }
-
-  // 이력마다 한 번만 잰다. 지도(한 건)와 요약 행이 같은 결과를 봐야
-  // 목록의 등급과 지도의 등급이 갈리지 않는다.
-  const 진단한다 = (e: Entry) => {
-    const result = findSimilar(planInputOf(e));
-    return { e, result, g: grade(result) };
-  };
-  const 이력진단 = entries.map(진단한다);
-
-  // 이력이 0건이면 결과 화면이 통째로 빈다. 서버를 새로 띄운 직후가 늘
-  // 그렇다(메모리 저장소). 그 자리에 시연용 예시를 편다 — 이력 건수에는
-  // 넣지 않는다. 저장된 진단은 여전히 0건이고, 화면이 그렇게 말해야 한다.
-  const 시연중 = !조회실패 && entries.length === 0;
-  const 진단들 = 시연중 ? [진단한다(DEMO_ENTRY)] : 이력진단;
-
-  // 지도는 페이지에 하나뿐이다 — 이력마다 썸네일을 깔면 어느 것도 못 읽는다.
-  // 고른 게 없으면 가장 최근 진단을 편다(list 는 최신순).
-  const 고름 = 진단들.find((d) => d.e.id === 고른id) ?? 진단들[0] ?? null;
-
-  // 감당 범위의 기준이 되는 "같은 시군구·같은 달" 실측.
-  // 지도 아래 카드와 감당 범위 블록이 **같은 것**을 가리켜야 하니 한 번만 고른다.
-  const 기준 =
-    고름 && !고름.result.invalid
-      ? localBaseline(planInputOf(고름.e), 고름.result.matched)
-      : null;
-
-  // 왼쪽 카드의 "감당 범위의 기준" 라벨이 **화면에 없는 블록**을 가리키면
-  // 안 된다. capacityBand 는 근거없음·비교불가에서 null 이라 619건 중 482건이
-  // 그 경우였다. 라벨과 블록이 같은 값을 보게 한 번만 잰다.
-  const 감당범위있음 =
-    고름 !== null &&
-    !고름.result.invalid &&
-    capacityBand(
-      고름.g,
-      고름.result.matched.map((m) => m.festival.actualVisitSurge),
-      기준?.surge ?? null,
-    ) !== null;
-
-  // 핀은 고른 진단의 닮은 축제 중에서만 유효하다. 개수는 0~3 이고
-  // 3 을 가정하지 않는다 — findSimilar 는 억지로 채우지 않는다.
-  const 핀 = 고름?.result.matched.find((m) => m.festival.id === 고른핀) ?? null;
-  const 핀번호 = 핀 && 고름 ? 고름.result.matched.indexOf(핀) + 1 : 0;
-
-  // 고른 핀의 등록 정보 — 619건은 "그 축제가 뭐였는지"를 모른다. 담당자가
-  // 벤치마킹하려면 언제 어디서 누가 열었는지를 봐야 하고 그건 공사에만 있다.
-  // 실패하면 정적 값(이름·연도·배수)만으로 카드가 그대로 선다.
-  let 핀상세: FestivalDetail | null = null;
-  if (핀 && hasTourKey()) {
-    try {
-      핀상세 = await festivalDetail(핀.festival.id);
-    } catch {
-      핀상세 = null;
-    }
-  }
-
-  // 같은 시기 경쟁 — 619건이 못 하는 질문("올해 그 달에 누가 여는가")이라
-  // 공사 OpenAPI 를 실시간으로 부른다. 지도에 편 한 건에 대해서만 부른다.
-  // 죽어도 화면은 살아야 하므로 실패는 목록 없음이 아니라 "못 불러왔다"로 남긴다.
-  const 기획지역 = 고름 ? coordsOf(고름.e.sido, 고름.e.sigungu) : null;
-  let 경쟁: Competitor[] = [];
-  let 경쟁조회실패 = false;
-  const 경쟁창 = 고름 ? monthWindow(Number(고름.e.month), new Date()) : null;
-  if (고름 && 경쟁창 && hasTourKey() && !고름.result.invalid) {
-    try {
-      경쟁 = competitorsNear(
-        기획지역,
-        await searchFestivalsInPeriod(경쟁창.start, 경쟁창.end),
-      );
-    } catch {
-      경쟁조회실패 = true;
-    }
-  }
+  const 입력오류 = typeof params.err === "string" ? params.err : null;
 
   return (
     <div className="sheet">
@@ -165,687 +30,78 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <main>
         <h1 className="display">
-          이 기획안의 숫자,
+          기획안의 숫자,
           <br />
-          작년 실측이
-          <br />
-          판정합니다
+          실측이 판정합니다
         </h1>
-        <p className="lede">
-          축제 기획안을 올리면, 그 축제가 실제로 겪은 방문 배수로 예상 방문객을 판정합니다.
-        </p>
-        <p className="note">
-          견본을 먼저 보려면 <Link href="/check">군포철쭉축제 2027</Link> · <Link href="/check?demo=hwacheon">화천산천어축제 2027</Link> · 채워서 올릴{" "}
-          <Link href="/form">기획안 양식</Link>(<a href="/기획안_양식.pdf">PDF</a>)
-        </p>
+        <p className="lede">축제 기획서를 올리면 예상 방문객을 그 축제가 실제로 겪은 배수로 판정합니다.</p>
 
-
-
-      {/* 무엇이 안 됐는지. 입력이 짧거나, 추출이 죽었거나, 저장이 실패했거나 */}
-      {입력오류 && (
-        <p className="alert" data-level="심각" role="alert">
-          {입력오류}
-          {/* 한도가 찼거나 추출이 죽어도 빈손으로 보내지 않는다 — 견본 판정은 모델 없이 선다 */}
-          {params.manual && (
-            <>
-              {" "}
-              그동안은 <Link href="/check">견본 판정(군포·화천)</Link>을 먼저 보거나 <Link href="/check">판정 화면</Link>에 숫자를 직접 적을 수 있습니다.
-            </>
-          )}
-        </p>
-      )}
-
-      {!확인단계 ? (
-        <>
-          <h2>기획서 붙여넣기</h2>
-          <p className="note">
-            지자체 양식 그대로 됩니다. 예상 방문객·기간·지역·예산을 문서에서 옮겨 적고, 없는 값은 비웁니다.
+        {/* 짧음·한도·추출 실패 — 빈손으로 두지 않는다. 판정 화면 폼에 직접 적을 수 있다 */}
+        {입력오류 && (
+          <p className="alert" data-level="심각" role="alert">
+            {입력오류}{" "}
+            <Link href="/check?sido=&sigungu=">판정 화면에 직접 적기 →</Link>
           </p>
-          <form action={추출}>
-            <p>
-              {/* required 는 뺐다 — PDF 만 올리고 제출하는 경로가 있다.
-                  빈 제출은 서버 액션이 한국어 사유와 함께 되돌려보낸다 */}
-              <textarea
-                id="planText"
-                name="planText"
-                rows={10}
-                maxLength={MAX_PLAN_TEXT}
-                placeholder={"예) 제1회 김천김밥축제 추진계획\n○ 개최기간: 2024년 10월 중 3일간\n○ 개최장소: 경상북도 김천시 일원\n○ 주요내용: 지역 특산물인 김밥을 주제로 한 음식 축제\n○ 교통: KTX 김천구미역에서 차량 20분, 전용 주차장 400면"}
-              />
-            </p>
-            <p>
-              <label htmlFor="planPdf">또는 PDF 기획서 올리기</label>{" "}
-              <input
-                id="planPdf"
-                name="planPdf"
-                type="file"
-                accept="application/pdf"
-              />
-            </p>
-            <p className="note">
-              PDF 10MB 까지 · 스캔본 제외 · 하루 {DAILY_EXTRACT_LIMIT}건
-              {hasModelKey() ? " · 숫자를 옮겨 적는 데만 모델을 씁니다. 판정에는 쓰지 않습니다" : " · 키가 없어 고정 샘플로 채웁니다"}
-            </p>
-            <p>
-              <button type="submit">기획서 읽어오기</button>{" "}
-              <Link href="/?manual=1">직접 입력하기</Link>
-            </p>
-          </form>
+        )}
 
-        </>
-      ) : (
-        <>
-          <h2>뽑은 항목 확인</h2>
+        <form action={추출} className="intake">
+          {/* PDF 가 주 입력. 지자체 양식이 아니어도 그대로 읽는다 */}
+          <label className="dropzone" htmlFor="planPdf">
+            <span className="dropzone-title">기획서 PDF 올리기</span>
+            <span className="note">지자체 양식 그대로. 10MB 까지, 스캔본 제외</span>
+            <input id="planPdf" name="planPdf" type="file" accept="application/pdf" />
+          </label>
 
-          {draft && draft.source === "sample" && (
-            <p className="alert" data-level="근거없음">
-              모델 키가 없어 <strong>고정 샘플</strong>로 채웠습니다. 실제
-              문서에서 뽑은 값이 아닙니다
-            </p>
-          )}
-
-          {draft && draft.source === "tourapi" && (
-            <p className="note">
-              한국관광공사 TourAPI <strong>등록 정보</strong>에서 채웠습니다.
-              기획서가 아니라 공공 등록 데이터가 출처입니다
-            </p>
-          )}
-
-          {/* 못 찾은 것과 잘못 뽑은 것은 다르다. 무엇이 없는지 짚어 준다 */}
-          {draft && draft.missing.length > 0 && (
-            <p className="alert" data-level="주의">
-              문서에서 찾지 못한 항목이 있습니다: {draft.missing.join(" · ")}.
-              아래에서 직접 채워 주세요
-            </p>
-          )}
-
-          {/* 기획안 팩트체크로 가는 다리. 여기 숫자는 문서에서 옮겨 적은 것이고, 판정은 /check 가
-              공사 실측으로 한다. 근거 없는 항목은 추출기가 이미 null 로 돌려놓았다 */}
-          {draft && (draft.facts || (draft.sido && draft.sigungu)) && (
-            <section className="check-bridge">
-              <h2>주 근거 · 기획안의 숫자를 이 축제의 실측으로 판정하기</h2>
-              <dl className="check-bridge-facts">
-                <dt>예상 방문객</dt>
-                <dd>
-                  {draft.facts?.expectedVisitors != null ? (
-                    <>
-                      <span className="num" data-num="" data-origin="input" data-source-api="기획안" data-source-value={String(draft.facts.expectedVisitors)} data-source-period="" data-source-date="">
-                        {draft.facts.expectedVisitors.toLocaleString("ko-KR")}명
-                      </span>
-                      {draft.facts.visitorBasis ? (draft.facts.visitorBasis === "peakDay" ? " · 일 최다" : " · 기간 총계") : " · 단위 미상"}
-                      {draft.facts.visitorCounting ? (draft.facts.visitorCounting === "unique" ? " · 실인원" : " · 연인원") : ""}
-                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.expectedVisitors}</span>
-                    </>
-                  ) : (
-                    <span className="note">문서에서 못 찾음</span>
-                  )}
-                </dd>
-                <dt>개최 기간</dt>
-                <dd>
-                  {draft.facts?.startDate && draft.facts?.endDate ? (
-                    <>
-                      {draft.facts.startDate} ~ {draft.facts.endDate}
-                      <span className="evidence check-bridge-evidence">{draft.facts.evidence.startDate}</span>
-                    </>
-                  ) : (
-                    <span className="note">문서에서 못 찾음 (연·월·일이 다 있어야 한다)</span>
-                  )}
-                </dd>
-                <dt>주차면 · 부스 · 예산</dt>
-                <dd>
-                  {[
-                    draft.facts?.parkingSpaces != null ? `주차 ${draft.facts.parkingSpaces.toLocaleString("ko-KR")}면` : null,
-                    draft.facts?.boothCount != null ? `부스 ${draft.facts.boothCount.toLocaleString("ko-KR")}개` : null,
-                    draft.facts?.budgetManWon != null ? `예산 ${draft.facts.budgetManWon.toLocaleString("ko-KR")}만 원` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || <span className="note">문서에서 못 찾음</span>}
-                  <span className="note check-bridge-evidence">공사 데이터에 주차·부스·예산 실측이 없어 판정표에는 &ldquo;근거 없음&rdquo;으로 오른다.</span>
-                </dd>
-              </dl>
-              <p>
-                <Link className="button-link" href={checkUrlFromExtraction(draft, "")}>
-                  이 숫자로 판정하러 가기 →
-                </Link>{" "}
-                <span className="note">
-                  {draft.sido && draft.sigungu
-                    ? "지난 회차 날짜는 판정 화면에서 적는다. 단위가 비어 있으면 거기서 고른다."
-                    : "문서에 시도·시군구가 없다. 판정 화면에서 적으면 그 지역의 실측으로 잰다."}
-                </span>
-              </p>
-            </section>
-          )}
-
-          <h3 className="aux-head">보조 근거 · 닮은 과거 축제 619건으로 경보 등급</h3>
-          <p className="note">
-            자기 이력이 없는 첫 회 축제이거나, 판정과 나란히 놓을 또래 맥락이 필요할 때 씁니다. 지역·시기·테마·인구·접근성 다섯
-            축으로 닮은 축제를 찾고, 그 축제들이 실제로 겪은 배수로 등급을 냅니다.
+          <p className="intake-actions">
+            <button type="submit">읽어서 판정하기</button>
+            <Link className="button-link button-secondary" href="/check">
+              견본으로 먼저 보기 → 군포철쭉축제 2027
+            </Link>
           </p>
 
-          <form action={저장}>
-            <Field
-              id="sido"
-              label="시도"
-              defaultValue={draft?.sido ?? ""}
-              evidence={draft?.evidence.sido}
+          <p className="note">
+            다른 견본 <Link href="/check?demo=hwacheon">화천산천어축제 2027</Link> · 빈 양식이 필요하면{" "}
+            <Link href="/form">입력 양식 한 장</Link>(<a href="/기획안_양식.pdf">PDF</a>)
+          </p>
+
+          <details className="intake-paste">
+            <summary>PDF 대신 텍스트로 붙여넣기</summary>
+            <textarea
+              id="planText"
+              name="planText"
+              rows={8}
+              maxLength={MAX_PLAN_TEXT}
+              placeholder={"예) 제1회 김천김밥축제 추진계획\n○ 개최기간: 2024년 10월 중 3일간\n○ 개최장소: 경상북도 김천시 일원\n○ 예상 방문객: 10만 명"}
             />
-            <Field
-              id="sigungu"
-              label="시군구"
-              defaultValue={draft?.sigungu ?? ""}
-              evidence={draft?.evidence.sigungu}
-            />
+          </details>
 
-            <Choice
-              id="month"
-              name="month"
-              label="개최 월"
-              defaultValue={draft?.month ?? ""}
-              options={Array.from(
-                { length: 12 },
-                (_, i) => [i + 1, `${i + 1}월`] as [number, string],
-              )}
-              evidence={draft?.evidence.month}
-            />
-            <Choice
-              id="theme"
-              name="theme"
-              label="테마"
-              defaultValue={draft?.themeCode ?? ""}
-              options={Object.entries(THEME_NAME).map(
-                ([k, v]) => [Number(k), v] as [number, string],
-              )}
-              evidence={draft?.evidence.themeCode}
-            />
-            <Choice
-              id="accessibility"
-              name="accessibility"
-              label="접근성"
-              defaultValue={draft?.accessibility ?? ""}
-              options={Object.entries(ACCESSIBILITY_LABEL).map(
-                ([k, v]) => [Number(k), v] as [number, string],
-              )}
-              evidence={draft?.evidence.accessibility}
-            />
+          <p className="note">
+            하루 {DAILY_EXTRACT_LIMIT}건 ·{" "}
+            {hasModelKey() ? "문서에서 숫자를 옮겨 적는 데만 모델을 씁니다. 판정에는 쓰지 않습니다" : "키가 없어 고정 샘플로 채웁니다"}
+          </p>
+        </form>
 
-            <p>
-              <label htmlFor="population">지역 인구(만 명)</label>{" "}
-              {/* step 을 0.1 로 두면 14 같은 값이 부동소수점 오차로 stepMismatch 가
-                  나서 브라우저가 조용히 제출을 막는다. 실수 입력은 any 가 맞다. */}
-              <input
-                id="population"
-                name="population"
-                defaultValue={draft?.populationManMyeong ?? ""}
-                type="number"
-                min="0.1"
-                step="any"
-                required
-              />
-            </p>
-            {/* 인구만은 모델이 아니라 데이터에서 온다. 출처가 다르니 그렇게 적는다 */}
-            {draft && (
-              <p className="evidence">
-                {draft.populationManMyeong != null
-                  ? `${DATA_SOURCE} 의 같은 시군구 기록에서 가져왔습니다`
-                  : "같은 시군구 기록이 없어 비워 뒀습니다. 직접 넣어 주세요"}
-              </p>
-            )}
-
-            <p>
-              <button type="submit">이 기획안 진단하기</button>{" "}
-              <Link href="/">다른 기획서 넣기</Link>
-            </p>
-          </form>
-        </>
-      )}
-
-      <h2 className="section">진단 이력 {조회실패 ? "" : `(${entries.length}건)`}</h2>
-      {조회실패 && (
-        <p role="alert">
-          <strong>진단 이력을 불러오지 못했습니다.</strong> 저장은 그대로 남아
-          있습니다. <Link href="/">다시 불러오기</Link>
-        </p>
-      )}
-      {!조회실패 && entries.length === 0 && (
-        <p className="note">
-          아직 진단한 기획안이 없습니다. 아래는 <strong>{DEMO_LABEL}</strong>입니다.
-        </p>
-      )}
-      {/* 상한을 숨기면 "저장했는데 사라졌다"가 된다. 화면이 먼저 말한다 */}
-      {!조회실패 && entries.length >= HISTORY_LIMIT && (
-        <p className="note">
-          최근 {HISTORY_LIMIT}건까지만 보입니다. 더 오래된 진단은 화면에
-          나오지 않습니다
-        </p>
-      )}
-      {/* 한 장의 지도 + 그 지도가 말하는 것. 이력 목록은 그 아래 요약만 */}
-      {고름 && (
-        <section id="twin" className="twin-layout">
-          {/* 입력이 잘못된 것과 닮은 축제가 없는 것을 구분한다.
-              둘을 같은 문장으로 답하면 "우리 축제는 전례가 없구나"로 읽힌다. */}
-          {고름.result.invalid ? (
-            <div className="twin-detail">
-              <p className="alert" data-level="심각">
-                입력을 확인해 주세요
-              </p>
-              <ul>
-                {고름.result.invalid.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <>
-              {/* 왼쪽 열 — 지도, 지도가 가리키는 넉 장, 또래 분포.
-                  오른쪽 본문이 훨씬 길어 지도 밑이 비어 있었다 (2026-08-30
-                  사용자 지적). 그 자리에 근거를 옮겨 담는다 */}
-              <div className="twin-left">
-                <TwinMap
-                  matched={고름.result.matched}
-                  origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
-                  pinHref={(id) => `/?entry=${고름.e.id}&pin=${id}#twin`}
-                  selectedPin={핀?.festival.id ?? null}
-                  scope={고름.result.searchedScope}
-                />
-                {/* 3D 는 보조 — 닮은 축제 몇 곳의 좌표·배수만 넘긴다. 619건은 서버에 남는다 */}
-                {고름.result.matched.length > 0 && (
-                  <TwinMap3DShell
-                    pins={고름.result.matched.map((m, i) => ({
-                      id: m.festival.id, name: m.festival.name, lat: m.festival.lat, lng: m.festival.lng,
-                      num: i + 1, year: m.year, surge: m.festival.actualVisitSurge,
-                    }))}
-                    origin={coordsOf(고름.e.sido, 고름.e.sigungu)}
-                    pinHrefBase={`/?entry=${고름.e.id}&pin=`}
-                    pinHrefSuffix="#twin"
-                    selectedPin={핀?.festival.id ?? null}
-                    vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
-                  />
-                )}
-                <TwinCards
-                  pinHref={(id) => `/?entry=${고름.e.id}&pin=${id}#twin`}
-                  matched={고름.result.matched}
-                  baseline={기준}
-                  selectedPin={핀?.festival.id ?? null}
-                  scope={고름.result.searchedScope}
-                  capacityShown={감당범위있음}
-                />
-                {고름.g.medianSurge !== null &&
-                  (() => {
-                    const pop = Number(고름.e.population);
-                    const peer = peerContext(pop, 고름.g.medianSurge!);
-                    return peer ? (
-                      <PeerStrip
-                        peer={peer}
-                        surges={peerSurges(pop)}
-                        surge={고름.g.medianSurge!}
-                      />
-                    ) : null;
-                  })()}
-              </div>
-
-              <div className="twin-detail">
-                {/* 예시 표시는 위 "아직 진단한 기획안이 없습니다 … 시연용 예시입니다" 한 줄이 맡는다 (2026-09-12 지시 5) */}
-                <p className="num">
-                  {고름.e.sido} {고름.e.sigungu} · {고름.e.month}월 ·{" "}
-                  {THEME_NAME[Number(고름.e.theme)] ?? 고름.e.theme} · 인구{" "}
-                  {고름.e.population}만 · 접근성{" "}
-                  {ACCESSIBILITY_LABEL[Number(고름.e.accessibility)] ??
-                    고름.e.accessibility}{" "}
-                  · {짧은시각(고름.e.savedAt)}
-                </p>
-
-                {/* 결론이 먼저 */}
-                <p className="alert" data-level={고름.g.level}>{levelLabel(고름.g.level)}</p>
-                <p className="headline">{고름.g.headline}</p>
-
-                {/* "평소 대비 2.7배"가 무슨 뜻인지 화면 어디에도 없었다.
-                    분모가 무엇인지 모르면 그 숫자는 못 쓴다.
-                    그리고 그 분모 때문에 인구가 적을수록 배수가 커진다
-                    (log(인구) vs 배수 r = -0.486). 숨기지 않고 또래 맥락을 준다 */}
-                {고름.g.medianSurge !== null &&
-                  (() => {
-                    const 또래 = peerContext(
-                      Number(고름.e.population),
-                      고름.g.medianSurge!,
-                    );
-                    return (
-                      <p className="basis num">
-                        여기서 배수란 축제 기간에 그 시군구를 찾은 외지인이
-                        평상시의 몇 배였나입니다. 방문객 총수가 아닙니다.
-                        {또래 && (
-                          <>
-                            {" "}평상시가 기준이라 인구가 적은 곳일수록 배수가
-                            크게 나옵니다. 인구 {또래.label} 지역의 축제{" "}
-                            {또래.n}곳에 넣고 보면 이 기획안은{" "}
-                            <strong>상위 {또래.topPercent}%</strong>입니다.
-                            그 {또래.n}곳의 중앙값은 {또래.median.toFixed(2)}배였습니다.
-                          </>
-                        )}
-                      </p>
-                    );
-                  })()}
-
-                {/* 사용자 지시 5(2026-09-11): 한 번에 보이는 글이 너무 많다 — 결론(등급·배수) 아래 근거는 접어 둔다 */}
-                <details className="selfcheck aux-detail">
-                  <summary>근거 더 보기 — 감당 범위 · 왜 닮았나 · 경쟁 축제 · 달을 바꾸면 · 자기검증 · 출처</summary>
-                {/* 감당 범위 — PRD 가 적어 둔 목적지("왜 물량을 3배로
-                    잡았습니까"). 물량 개수는 내지 않는다: 배수의 분모는
-                    평상시 지역이지 작년 그 축제가 아니라, 곱하면 근거 1과
-                    같은 화면에서 충돌한다 (docs/DECISIONS.md) */}
-                {(() => {
-                  const 범위 = capacityBand(
-                    고름.g,
-                    고름.result.matched.map((m) => m.festival.actualVisitSurge),
-                    기준?.surge ?? null,
-                  );
-                  if (!범위) return null;
-                  return (
-                    <div className="capacity">
-                      <h3>감당 범위</h3>
-                      {범위.baseSurge !== null && 기준 ? (
-                        <>
-                          <p className="capacity-head num">
-                            {기준.year}년 물량이 감당한 수준의{" "}
-                            <strong>최대 {ratioText(범위.hi!)}</strong>까지 보십시오
-                          </p>
-                          <p className="note num">
-                            기준으로 삼은 것은 {기준.name}({기준.year}년)의{" "}
-                            {기준.surge.toFixed(2)}배입니다. 닮은 축제{" "}
-                            {고름.result.matched.length}곳은{" "}
-                            {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배였습니다.
-                          </p>
-                          {/* 하한은 잰 값이 아니다. 기준을 닮은 축제 셋 안에서
-                              고르므로 twinLo <= baseSurge 이고, 하한은 언제나
-                              1.00 이 된다(619건 중 기준이 있는 136건 전수 확인).
-                              1.00 을 구간의 한쪽 끝으로 내놓으면 담당자가 그걸
-                              측정값으로 읽는다 */}
-                          <p className="note num">
-                            하한은 <strong>언제나 1배</strong>입니다. 기준으로 삼는
-                            축제를 닮은 축제 안에서 고르기 때문에 계산상 그렇게
-                            됩니다. 잰 값이 아닙니다. 작년보다 줄이라는 말은 실측이
-                            뒷받침하지 않습니다.
-                          </p>
-                          <p className="note">
-                            같은 시군구에서 같은 달에 열린 축제를 기준으로 잡았습니다.
-                            이 축제가 아니라면 기준이 아닙니다. 품목별 개수는 내지
-                            않습니다. 그해 대장의 수량에 이 배수를 곱하는 것은
-                            담당자가 할 일입니다.
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="capacity-head num">
-                            닮은 축제 3곳은 평소의{" "}
-                            <strong>
-                              {범위.twinLo.toFixed(2)}~{범위.twinHi.toFixed(2)}배
-                            </strong>
-                            였습니다
-                          </p>
-                          <p className="note">
-                            같은 시군구에서 같은 달에 열린 축제가 619건에 없어
-                            작년 대비 몇 배인지는 내지 못했습니다. 없는 것이
-                            아니라 비교 기준을 못 찾은 것입니다.
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* 핀을 눌렀을 때만 그 한 곳을 깊게 편다. 닮은 곳 전부를 얕게
-                    보여 주던 목록은 지도 아래 카드로 옮겼다 — 같은 것을 두 열에
-                    쓰면 오른쪽만 길어지고 왼쪽 아래는 계속 빈다 */}
-                {핀 ? (
-                  <div className="pin-card">
-                    <p className="num">
-                      <strong>{핀번호}</strong> {핀.festival.name}
-                    </p>
-                    <p>
-                      {핀.festival.sido} {핀.festival.sigungu} · {핀.year}년 ·
-                      평소 대비{" "}
-                      <strong>{핀.festival.actualVisitSurge.toFixed(2)}배</strong>
-                    </p>
-                    <ul>
-                      {핀.axes.map((a) => (
-                        <li key={a.axis}>
-                          {a.label}: {a.detail}
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* 배수·좌표는 우리가 쟀고, 여기부터는 공사가 등록해 둔
-                        사실이다. 못 받으면 이 줄들이 통째로 없을 뿐 카드는 선다 */}
-                    {핀상세 && (
-                      <dl className="pin-detail">
-                        {핀상세.startDate && (
-                          <>
-                            <dt>개최</dt>
-                            <dd>
-                              {dayLabel(핀상세.startDate)}
-                              {핀상세.endDate && `~${dayLabel(핀상세.endDate)}`}
-                            </dd>
-                          </>
-                        )}
-                        {핀상세.place && (
-                          <>
-                            <dt>장소</dt>
-                            <dd>{핀상세.place}</dd>
-                          </>
-                        )}
-                        {핀상세.sponsor && (
-                          <>
-                            <dt>주최</dt>
-                            <dd>{핀상세.sponsor}</dd>
-                          </>
-                        )}
-                        {핀상세.fee && (
-                          <>
-                            <dt>요금</dt>
-                            <dd>{핀상세.fee}</dd>
-                          </>
-                        )}
-                        {핀상세.homepage && (
-                          <>
-                            <dt>홈페이지</dt>
-                            <dd>
-                              <a
-                                href={핀상세.homepage}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {핀상세.homepage.replace(/^https?:\/\//, "")}
-                              </a>
-                            </dd>
-                          </>
-                        )}
-                      </dl>
-                    )}
-
-                    <p>
-                      <Link href={`/?entry=${고름.e.id}#twin`}>핀 선택 해제</Link>
-                    </p>
-                  </div>
-                ) : null}
-
-                {/* 결론(누가 몇 배)은 위에 펼쳐져 있다. 접는 건 "왜"뿐이다 */}
-                {고름.result.matched.length > 0 && (
-                  <details>
-                    <summary>왜 닮았나</summary>
-                    <ul>
-                      {고름.result.matched.map((m) => (
-                        <li key={m.festival.id}>
-                          {m.festival.name}
-                          <ul>
-                            {m.axes.map((a) => (
-                              <li key={a.axis}>
-                                {a.label}: {a.detail}
-                              </li>
-                            ))}
-                          </ul>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-
-                {/* 같은 시기 경쟁 — 화면에서 유일하게 **실시간** 공사 OpenAPI 로
-                    오는 값이다. 619건은 과거만 알고, 올해 그 달에 누가 여는지는
-                    여기서만 온다. 키가 없으면 섹션째 숨긴다(없는 기능은 광고 안 함) */}
-                {hasTourKey() && 경쟁창 && (
-                  <div className="rivals">
-                    <h3>같은 시기 경쟁</h3>
-                    {경쟁조회실패 ? (
-                      <p className="note">
-                        같은 시기 축제를 불러오지 못했습니다. 잠시 후 새로고침해
-                        주세요
-                      </p>
-                    ) : 기획지역 === null ? (
-                      <p className="note">
-                        {고름.e.sido} {고름.e.sigungu} 의 좌표를 찾지 못해 거리를
-                        재지 못했습니다. 없는 것이 아니라 못 잰 것입니다
-                      </p>
-                    ) : (
-                      <>
-                        <p className="rivals-head">
-                          {competitionHeadline(
-                            경쟁창.year,
-                            Number(고름.e.month),
-                            경쟁,
-                          )}
-                        </p>
-                        {경쟁.length > 0 && (
-                          <ol className="legend">
-                            {경쟁.slice(0, 5).map((c) => (
-                              <li key={c.contentId} className="num">
-                                {c.title} · {dayLabel(c.startDate)}~
-                                {dayLabel(c.endDate)} ·{" "}
-                                {c.distanceKm.toFixed(0)}km
-                                {c.surge !== null && (
-                                  <span className="rival-surge">
-                                    평소 {c.surge.toFixed(2)}배
-                                  </span>
-                                )}
-                              </li>
-                            ))}
-                            {경쟁.length > 5 && (
-                              <li className="note">외 {경쟁.length - 5}곳</li>
-                            )}
-                          </ol>
-                        )}
-                        <p className="note">
-                          한국관광공사 OpenAPI 실시간 조회 · 반경{" "}
-                          {NEARBY_RADIUS_KM}km · 축제는 대체로 매년 같은 시기에
-                          열리므로 <strong>가장 최근 {Number(고름.e.month)}월
-                          실적</strong>으로 봅니다(예측이 아닙니다) · 배수는 619건에
-                          실측이 있는 축제에만 붙습니다
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* 시기 민감도. 이름을 조심해서 붙였다 — "N월에 열면"이 아니라
-                    "N월로 물으면 어떤 쌍둥이가 뽑히나"다. 요청월과 쌍둥이
-                    실제 개최월이 19%만 일치하기 때문이다(lib/season.ts 머리말) */}
-                {!고름.result.invalid && <SeasonTable scan={scanSeason(planInputOf(고름.e))} />}
-
-                {/* 결재에서 반드시 받는 질문 — "그게 맞는 건 어떻게 압니까".
-                    619건 leave-one-out 자기검증을 숫자로 낸다. 한계(재현율)도
-                    같이 낸다 — 맞은 것만 세면 그것도 지어낸 것이다.
-                    키·네트워크와 무관한 정적 값이라 게이트 밖에 둔다 */}
-                {!고름.result.invalid && (
-                  <details className="selfcheck">
-                    <summary>이 방식은 얼마나 맞는가 — 보조 근거(619건) 자기검증</summary>
-                    <p className="num">
-                      619건을 하나씩 빼고 그 축제를 다시 맞혀 봤습니다. 위험한
-                      축제를 무작위의{" "}
-                      <strong>{LOO_PUBLISHED.lift.toFixed(2)}배</strong>로
-                      집어냈습니다. 정밀도 {pct(LOO_PUBLISHED.precision)}, 재현율{" "}
-                      {pct(LOO_PUBLISHED.recall)}, 실제 위험군 비율{" "}
-                      {pct(LOO_PUBLISHED.baseRate)}.
-                    </p>
-                    <p className="num">
-                      맞힌 배수와 실제 배수의 차이는 중앙값{" "}
-                      {LOO_PUBLISHED.medianAbsErr.toFixed(2)}배,{" "}
-                      {pct(LOO_PUBLISHED.withinRatio)}가 ±{WITHIN_BAND}배 안에
-                      들었습니다.
-                    </p>
-                    <p className="note">
-                      맞힐 때 그 축제 자신은 뺐습니다. 안 그러면 정답을 보고 답을
-                      쓰는 셈입니다. 재현율이 {pct(LOO_PUBLISHED.recall)}이니
-                      절반 가까이는 놓칩니다. 경보이지 보증이 아닙니다.{" "}
-                      가중치와 임계값도 이 619건으로 골랐기 때문에 따로 떼어 둔 시험 표본이 없고, 그만큼 후하게 나온 값입니다.
-                    </p>
-                  </details>
-                )}
-
-                <p className="note">출처: {DATA_SOURCE}</p>
-                </details>
-                <p>
-                  {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
-                  <Link href={`/venue?entry=${고름.e.id}`}>
-                    이 쏠림에 대비하기 · 시뮬레이션 →
-                  </Link>
-                  {" · "}
-                  {/* 근거는 화면에만 있으면 결재에 못 올라간다 */}
-                  <Link href={`/report?entry=${고름.e.id}`}>진단서 한 장 →</Link>
-                </p>
-              </div>
-            </>
-          )}
-        </section>
-      )}
-
-      {/* 목록은 저장된 이력만이다 — 시연용 예시는 위 지도에만 편다.
-          여기 끼우면 "0건"이라고 말해 놓고 한 줄이 서서 화면이 거짓말한다 */}
-      <ul>
-        {이력진단.map(({ e, result, g }) => {
-          const 대표 = result.matched[0];
-          const 펴진것 = 고름?.e.id === e.id;
-
-          return (
-            <li key={e.id} className="entry" data-current={펴진것 ? "1" : undefined}>
-              <p className="num">
-                {e.sido} {e.sigungu} · {e.month}월 ·{" "}
-                {THEME_NAME[Number(e.theme)] ?? e.theme} · 인구 {e.population}만
-                · 접근성{" "}
-                {ACCESSIBILITY_LABEL[Number(e.accessibility)] ?? e.accessibility}{" "}
-                · {짧은시각(e.savedAt)}
-              </p>
-
-              {/* 요약 행에도 근거 한 조각을 남긴다. 등급만 남기면 담당자는
-                  무엇을 보고 매긴 등급인지 모른 채 목록을 훑게 된다 */}
-              <p className="verdict">
-                <span className="chip" data-level={g.level}>{levelLabel(g.level, true)}</span>{" "}
-                {result.invalid
-                  ? "입력을 확인해 주세요"
-                  : 대표
-                    ? `${대표.festival.name}처럼, 평소 대비 ${대표.festival.actualVisitSurge.toFixed(2)}배`
-                    : `찾아본 범위: ${result.searchedScope}`}
-              </p>
-
-              <p>
-                {펴진것 ? (
-                  <span className="note">지금 지도에 펼친 진단</span>
-                ) : (
-                  <Link href={`/?entry=${e.id}#twin`}>지도에서 보기</Link>
-                )}{" "}
-                · <Link href={`/venue?entry=${e.id}`}>시뮬레이션 →</Link>
-              </p>
-
-              {/* 시연 중 쌓인 시험 데이터를 그 자리에서 치운다. 확인창은 안 띄운다
-                  — 진단은 다시 넣으면 그만이고, 모달은 폰 데모를 끊는다 */}
-              <form action={지운다}>
-                <input type="hidden" name="entryId" value={e.id} />
-                <button type="submit" className="note">
-                  이 진단 지우기
-                </button>
-              </form>
+        {/* 사용자 지시 6 — 관광데이터가 어디에 쓰이는지 세 줄 */}
+        <section className="section data-strip" aria-labelledby="data-strip-h">
+          <h2 id="data-strip-h">판정이 쓰는 한국관광공사 데이터 셋</h2>
+          <ol className="data-strip-list">
+            <li>
+              <b>KT 일별 방문자</b> <span className="note">TourAPI {KT_API}</span>
+              <br />
+              판정의 분모. 축제 기간에 그 시군구를 찾은 외지인이 평소의 몇 배였나.
             </li>
-          );
-        })}
-      </ul>
-
+            <li>
+              <b>축제 검색</b> <span className="note">TourAPI searchFestival2</span>
+              <br />
+              같은 시기 반경 50km 의 다른 축제. 배수가 우리 축제 몫인지 가리는 귀속 경고.
+            </li>
+            <li>
+              <b>축제 {FESTIVALS.length}건 실측</b> <span className="note">한국관광 데이터랩</span>
+              <br />
+              같은 인구 규모의 또래 구간과 닮은 과거 축제 3곳. 첫 회 축제의 보조 근거.
+            </li>
+          </ol>
+        </section>
       </main>
     </div>
   );

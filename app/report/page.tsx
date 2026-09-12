@@ -60,8 +60,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
         <main>
           <h1>진단서를 만들 수 없습니다</h1>
           <p>
-            진단 이력에서 진단을 하나 고른 뒤 다시 눌러 주세요.{" "}
-            <Link href="/">진단으로 돌아가기</Link>
+            견본은 <Link href="/report?entry=demo">여기</Link>. 주 산출물은 <Link href="/report/check">기획안 검증 보고서</Link>입니다.
           </p>
         </main>
       </div>
@@ -145,7 +144,7 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       <p className="no-print report-hint">
         <span className="logo">기획안 팩트체크</span> 이 문서는 619건 닮은 축제로 낸 <strong>보조 근거 진단서</strong>입니다. 결재에 붙이는 주
         산출물은 <Link href="/report/check">기획안 검증 보고서</Link>입니다. 이 진단서는 브라우저 인쇄(Ctrl+P)에서 대상을 PDF로 저장하면 A4 한
-        장으로 나옵니다. <Link href={`/?entry=${entry.id}#twin`}>진단으로 돌아가기</Link>
+        장으로 나옵니다. <Link href="/check#twins">판정 화면의 닮은 축제로 →</Link>
       </p>
 
       <header className="report-head">

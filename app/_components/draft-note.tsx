@@ -18,7 +18,7 @@ const KOREAN_FACT_NAME: Record<(typeof FACT_ORDER)[number], string> = {
   sigungu: "시군구",
 };
 
-export function DraftNote({ draft, id }: { draft: Draft; id: string }) {
+export function DraftNote({ draft }: { draft: Draft }) {
   const quotes = FACT_ORDER.map((k) => [k, draft.evidence[k as keyof typeof draft.evidence]] as const).filter(([, v]) => !!v);
   return (
     <section className="draft-note" aria-labelledby="draft-note-h">
@@ -48,7 +48,7 @@ export function DraftNote({ draft, id }: { draft: Draft; id: string }) {
         </p>
       )}
       <p className="note">
-        닮은 과거 축제(보조 근거)까지 보려면 <Link href={`/?draft=${id}`}>보조 진단 이어서 →</Link>
+        닮은 과거 축제(보조 근거)는 <Link href={`#twins`}>아래 블록 ↓</Link>에서 테마·접근성을 고르면 섭니다
       </p>
     </section>
   );

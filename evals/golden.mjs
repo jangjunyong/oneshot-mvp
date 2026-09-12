@@ -43,15 +43,6 @@ async function 서버가뜰때까지(ms = 90000) {
 }
 
 /** e2e 와 같은 방식 — 첫 서버 액션에 multipart 로 폼을 낸다 */
-async function 폼을낸다(경로, 값) {
-  const html = await (await fetch(BASE + 경로)).text();
-  const id = html.match(/\$ACTION_ID_([0-9a-f]+)/)?.[1];
-  if (!id) throw new Error(`액션 id 를 못 찾았다: ${경로}`);
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(값)) fd.set(k, v);
-  fd.set(`$ACTION_ID_${id}`, "");
-  return fetch(BASE + 경로, { method: "POST", body: fd, redirect: "manual" });
-}
 
 /**
  * 비교에서 빼는 것 — 분해와 무관하게 매번 달라지는 값들.
@@ -86,46 +77,27 @@ function 정규화(html) {
 
 const 화면들 = [
   ["home-빈상태", "/"],
-  ["home-직접입력", "/?manual=1"],
-  ["home-없는초안", "/?draft=999999"],
   ["home-오류", "/?err=" + encodeURIComponent("시험용 오류")],
+  ["check-군포견본", "/check"],
+  ["check-화천견본", "/check?demo=hwacheon"],
+  ["check-담당자입력", "/check?sido=경기&sigungu=군포시&n=110184&basis=peakDay&counting=unique&h1s=2026-04-18&h1e=2026-04-26&start=2027-04-17&end=2027-04-25&theme=2&acc=4"],
+  ["check-없는시군구", "/check?sido=경기&sigungu=없는시"],
+  ["evidence-견본", "/evidence"],
+  ["report-check-견본", "/report/check"],
   ["venue-빈", "/venue"],
   ["venue-없는도면", "/venue?id=999999"],
   ["venue-시연", "/venue?id=demo-venue"],
   ["report-시연", "/report?entry=demo"],
+  ["form", "/form"],
 ];
 
+// 2026-09-12 A2: 옛 첫 화면(?manual=1 저장 폼·이력)은 지웠다 — 폼 제출 경로 없이 GET 화면만 찍는다
 async function 찍는다() {
   const 결과 = {};
   for (const [이름, 경로] of 화면들) {
     const r = await fetch(BASE + 경로);
-    결과[이름] = `HTTP ${r.status}\n` + 정규화(await r.text());
-  }
-
-  // 이력이 있는 상태의 `/` — 결과 본문 JSX 가 여기서만 렌더된다
-  await 폼을낸다("/?manual=1", {
-    sido: "경북",
-    sigungu: "김천시",
-    month: "10",
-    theme: "1",
-    population: "13.4",
-    accessibility: "3",
-  });
-  const 목록 = await (await fetch(BASE + "/")).text();
-  결과["home-이력1건"] = 정규화(목록);
-
-  const entryId = 목록.match(/\/report\?entry=(\d+)/)?.[1];
-  if (entryId) {
-    for (const [이름, 경로] of [
-      ["home-진단선택", `/?entry=${entryId}`],
-      ["report-실제", `/report?entry=${entryId}`],
-      ["venue-진단연결", `/venue?entry=${entryId}`],
-    ]) {
-      const r = await fetch(BASE + 경로);
-      결과[이름] = `HTTP ${r.status}\n` + 정규화(await r.text());
-    }
-  } else {
-    결과["home-진단선택"] = "entryId 를 못 찾았다";
+    결과[이름] = `HTTP ${r.status}
+` + 정규화(await r.text());
   }
   return 결과;
 }

@@ -1022,3 +1022,23 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .check-form-fold > summary { cursor: pointer; color: var(--concrete); font-size: var(--text-sm); }
 .check-form-fold > summary:hover { color: var(--ink); }
 .check-form-fold[open] > summary { margin-bottom: var(--s2); }
+
+/* ── 기획안 넣기 (첫 화면, 2026-09-12 A2) ─────────────────────────────────────── */
+.intake { max-width: 40rem; }
+/* PDF 가 주 입력 — 큰 면 하나. 파일 칸은 안에 그대로(드래그·클릭 모두 브라우저 기본) */
+.dropzone { display: block; padding: var(--s4) var(--s3); border: 1px dashed var(--line-strong); background: var(--paper); cursor: pointer; margin: 0 0 var(--s3); }
+.dropzone:hover { border-color: var(--ink); }
+.dropzone-title { display: block; font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.01em; margin-bottom: 0.2rem; }
+.dropzone .note { display: block; margin-bottom: var(--s2); }
+.dropzone input[type="file"] { display: block; font-size: var(--text-sm); }
+.intake-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: 0 0 var(--s2); }
+.intake-actions button, .intake-actions .button-link { font-size: var(--text-base); padding: 0.7em 1.4em; }
+/* 부 동작 버튼 — 흰 면 + 검정 테두리. 크기는 주 버튼과 같다(견본이 첫 클릭이 되는 심사위원을 위해) */
+.button-link.button-secondary { background: var(--surface); color: var(--ink); border-color: var(--ink); }
+.button-link.button-secondary:hover { background: var(--raised); }
+.intake-paste { margin: var(--s2) 0; }
+.intake-paste > summary { cursor: pointer; color: var(--concrete); font-size: var(--text-sm); }
+.intake-paste[open] > summary { margin-bottom: var(--s1); }
+.data-strip-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--s3); font-size: var(--text-sm); }
+.data-strip-list li { padding-top: var(--s2); border-top: 1px solid var(--line); line-height: 1.6; word-break: keep-all; }
+.data-strip-list b { font-weight: 500; font-size: var(--text-base); }

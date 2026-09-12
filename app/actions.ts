@@ -62,7 +62,6 @@ export async function 추출(formData: FormData) {
   if (hasModelKey() && 오늘호출 >= DAILY_EXTRACT_LIMIT) {
     오류로(
       `오늘 자동 추출 한도(${DAILY_EXTRACT_LIMIT}건)를 다 썼습니다. 항목을 직접 넣어 주세요`,
-      "&manual=1",
     );
   }
 
@@ -81,7 +80,6 @@ export async function 추출(formData: FormData) {
       e instanceof Error && e.message
         ? e.message
         : "자동 추출에 실패했습니다. 항목을 직접 넣어 주세요",
-      "&manual=1",
     );
     return;
   }

@@ -212,7 +212,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
           </p>
         )}
 
-        {draft && <DraftNote draft={draft} id={draftId!} />}
+        {draft && <DraftNote draft={draft} />}
 
         {/* 판정이 서면 14칸 폼은 접는다 — 심사위원이 첫 화면에서 보는 것은 판정이지 입력칸이 아니다 (2026-09-12) */}
         {판정가능 ? (
