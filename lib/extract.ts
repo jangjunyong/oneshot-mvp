@@ -94,6 +94,8 @@ const SYSTEM = `너는 한국 지자체의 축제 기획서에서 정해진 항�
   연도·월·일이 문서에 다 있어야 한다. 일(日)이 없으면 null (월만 있으면 null).
 - parkingSpaces 는 주차 면수, boothCount 는 부스·판매대 수, budgetManWon 은 총예산(만 원). 문서가 천원 단위면 10 으로 나누고
   백만원이면 100 을 곱해 만 원으로 환산한다. evidence 에는 단위가 적힌 원문을 그대로 옮긴다.
+- pastEditions 는 **지난 회차(전년도 이전) 개최 실적**의 연도별 개최 시작일·마지막날 YYYY-MM-DD. "지난 회차"·"개최 실적"·"전년도" 표나 문장에서만
+  옮긴다. 이번 회차 계획 기간은 넣지 않는다. 연·월·일이 다 적힌 회차만, 최근 3개까지, 오래된 해부터. 없으면 빈 배열.
 ${REGION_RULE}
 
 themeCode 는 다음 중 하나: ${themeChoices}
@@ -109,6 +111,7 @@ export const EXTRACT_SYSTEM = SYSTEM;
 const SCHEMA = {
   type: "object",
   properties: {
+    festivalName: { type: ["string", "null"], description: "축제 이름(회차 표기 빼고). 예: 군포철쭉축제. 문서에 없으면 null" },
     sido: { type: ["string", "null"], description: "축제가 열리는 광역시도. 예: 경북, 전남, 강원" },
     sigungu: {
       type: ["string", "null"],
@@ -128,6 +131,21 @@ const SCHEMA = {
     parkingSpaces: { type: ["integer", "null"], description: "주차 면수" },
     boothCount: { type: ["integer", "null"], description: "부스 수" },
     budgetManWon: { type: ["integer", "null"], description: "총예산(만 원)" },
+    pastEditions: {
+      type: "array",
+      description: "지난 회차 개최 기간(이번 계획 아님). 연·월·일이 다 있는 회차만, 최근 3개, 오래된 해부터",
+      items: {
+        type: "object",
+        properties: {
+          year: { type: "string", description: "개최 연도 YYYY" },
+          startDate: { type: "string", description: "그 회차 첫날 YYYY-MM-DD" },
+          endDate: { type: "string", description: "그 회차 마지막날 YYYY-MM-DD" },
+          evidence: { type: "string", description: "원문 문장 그대로" },
+        },
+        required: ["year", "startDate", "endDate", "evidence"],
+        additionalProperties: false,
+      },
+    },
     evidence: {
       type: "object",
       description: "값을 채운 항목만. 원문 문장을 그대로 옮긴다",
@@ -148,6 +166,7 @@ const SCHEMA = {
     },
   },
   required: [
+    "festivalName",
     "sido",
     "sigungu",
     "month",
@@ -161,6 +180,7 @@ const SCHEMA = {
     "parkingSpaces",
     "boothCount",
     "budgetManWon",
+    "pastEditions",
     "evidence",
   ],
   additionalProperties: false,
@@ -168,6 +188,7 @@ const SCHEMA = {
 
 /** 모델이 돌려준 것. populationManMyeong·missing·source 는 여기서 붙인다 */
 interface ModelOutput {
+  festivalName?: string | null;
   sido: string | null;
   sigungu: string | null;
   month: number | null;
@@ -181,6 +202,7 @@ interface ModelOutput {
   parkingSpaces?: number | null;
   boothCount?: number | null;
   budgetManWon?: number | null;
+  pastEditions?: { year: string; startDate: string; endDate: string; evidence: string }[];
   evidence: Partial<Record<ExtractedKey | FactKey, string>>;
 }
 
@@ -281,8 +303,25 @@ export function sanitizeFacts(out: ModelOutput): PlanFacts {
     parkingSpaces: keep("parkingSpaces", out.parkingSpaces, isCount),
     boothCount: keep("boothCount", out.boothCount, isCount),
     budgetManWon: budgetManWonFromEvidence(ev.budgetManWon) ?? keep("budgetManWon", out.budgetManWon, isCount),
+    pastEditions: pastEditionsOf(out),
+    festivalName: typeof out.festivalName === "string" && out.festivalName.trim() ? out.festivalName.trim().slice(0, 40) : null,
     evidence: ev,
   };
+}
+
+/**
+ * 지난 회차 개최 기간 — 연·월·일이 다 있고(evidenceHasDay), 끝이 시작보다 뒤이고, 연도가 startDate 와 맞는 것만.
+ * 이번 계획 기간(startDate)과 같은 해는 뺀다 — 모델이 계획 기간을 실적으로 옮겨 적는 실수를 막는다. 최근 3개, 오래된 해부터
+ */
+function pastEditionsOf(out: ModelOutput): PlanFacts["pastEditions"] {
+  const planYear = out.startDate && isYmd(out.startDate) ? out.startDate.slice(0, 4) : null;
+  const seen = new Set<string>();
+  const rows = (out.pastEditions ?? [])
+    .filter((p) => p && isYmd(p.startDate) && isYmd(p.endDate) && p.endDate >= p.startDate && evidenceHasDay(p.evidence))
+    .map((p) => ({ year: p.startDate.slice(0, 4), start: p.startDate, end: p.endDate, evidence: p.evidence.trim() }))
+    .filter((p) => p.year !== planYear && !seen.has(p.year) && seen.add(p.year))
+    .sort((a, b) => a.year.localeCompare(b.year));
+  return rows.slice(-3);
 }
 
 /** 시도 표기 정규화. 정의는 lib/tourapi.ts 에 하나뿐이고 여기서 다시 내보낸다 */

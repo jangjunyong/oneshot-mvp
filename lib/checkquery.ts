@@ -276,7 +276,7 @@ export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
 export function checkUrlFromExtraction(e: Extraction, name = ""): string {
   const f = e.facts;
   const q: CheckQuery = {
-    name,
+    name: name || f?.festivalName || "",
     sido: e.sido ?? "",
     sigungu: e.sigungu ?? "",
     n: f?.expectedVisitors ?? null,
@@ -286,7 +286,8 @@ export function checkUrlFromExtraction(e: Extraction, name = ""): string {
     populationManMyeong: e.populationManMyeong ?? null,
     start: f?.startDate ? ymdCompact(f.startDate) : "",
     end: f?.endDate ? ymdCompact(f.endDate) : "",
-    history: [],
+    // 지난 회차가 문서에 있으면 그대로 이력 칸으로 (2026-09-12 밤). 없으면 담당자가 /check 에서 적는다
+    history: (f?.pastEditions ?? []).slice(-HISTORY_SLOTS).map((p) => ({ year: p.year, start: ymdCompact(p.start), end: ymdCompact(p.end) })),
   };
   // 테마·접근성은 판정에 안 쓰지만 닮은 축제 블록이 읽는다 — 주석 키로 실어 보낸다 (2026-09-12 E)
   return "/check" + appendQuery(checkQueryString(q, false), { theme: e.themeCode, acc: e.accessibility });

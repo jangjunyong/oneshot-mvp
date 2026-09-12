@@ -28,13 +28,21 @@ export function DraftNote({ draft }: { draft: Draft }) {
           모델 키가 없어 <strong>고정 샘플</strong>(김천김밥축제)로 채웠습니다. 실제 문서에서 뽑은 값이 아닙니다.
         </p>
       )}
-      {quotes.length > 0 ? (
+      {quotes.length > 0 || (draft.facts?.pastEditions?.length ?? 0) > 0 ? (
         <ul className="evidence-list">
           {quotes.map(([k, v]) => (
             <li key={k}>
               <b>{KOREAN_FACT_NAME[k] ?? k}</b>{" "}
               <q className="evidence" data-num="" data-origin="input" data-source-api="기획안 원문" data-source-value="" data-source-period="" data-source-date="">
                 {v}
+              </q>
+            </li>
+          ))}
+          {(draft.facts?.pastEditions ?? []).map((p) => (
+            <li key={p.year}>
+              <b>지난 회차 {p.year}</b>{" "}
+              <q className="evidence" data-num="" data-origin="input" data-source-api="기획안 원문" data-source-value="" data-source-period="" data-source-date="">
+                {p.evidence}
               </q>
             </li>
           ))}

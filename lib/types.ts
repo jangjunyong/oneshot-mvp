@@ -213,6 +213,10 @@ export interface PlanFacts {
   parkingSpaces: number | null;
   boothCount: number | null;
   budgetManWon: number | null;
+  /** 지난 회차 개최 기간(YYYY-MM-DD, 오래된 해부터 최대 3). 옛 초안(2026-09-12 이전)에는 없다 → 빈 배열로 읽는다 */
+  pastEditions?: { year: string; start: string; end: string; evidence: string }[];
+  /** 축제 이름(문서 표기). 판정 화면 제목에만 쓴다 */
+  festivalName?: string | null;
   /** 값을 채운 항목의 원문 문장. 근거 없는 값은 assemble 이 null 로 되돌린다 */
   evidence: Partial<Record<FactKey, string>>;
 }
