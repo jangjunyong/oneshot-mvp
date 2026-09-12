@@ -5,7 +5,7 @@
 // 자바스크립트 0. 곡선은 서버가 SVG 로 그린다.
 
 import Link from "next/link";
-import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
+import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { computeSurge, type DailyRow } from "@/lib/surge";
@@ -98,7 +98,6 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
   const qs = checkQueryString(q, isDemo);
   const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
-  const dataRange = code ? dailyRange(code) : null;
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
@@ -152,10 +151,6 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
       </header>
 
       <main>
-        <span className="grid-ref">
-          <b>A-03</b> · 실측 근거 · {KT_API} · 전국 적재 {DATE(man.from ?? "")}~{DATE(man.to ?? "")}
-          {dataRange && ` · 이 시군구 자료 ${DATE(dataRange.from)}~${DATE(dataRange.to)} (${dataRange.days.toLocaleString("ko-KR")}일)`}
-        </span>
         <h1 className="display">
           이 축제가
           <br />
@@ -190,16 +185,11 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
 
         {years.length > 0 && (
           <>
-            <div className="dim">
-              <span>SECTION A — 일별 곡선 (외지인)</span>
-            </div>
             {years.map((y) => (
               <Curve key={y.year} y={y} rows={rows} yMax={yMax} fetchedAt={fetchedAt} />
             ))}
 
-            <div className="dim">
-              <span>SECTION B — 배수와 순증</span>
-            </div>
+            <h2 className="section">배수와 순증</h2>
             <table className="report-table check-table">
               <thead>
                 <tr>
@@ -256,9 +246,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
               </p>
             )}
 
-            <div className="dim">
-              <span>SECTION C — 일별 표 (최근 회차)</span>
-            </div>
+            <h2 className="section">일별 표 (최근 회차)</h2>
             <DailyTable y={years[0]} rows={rows} />
           </>
         )}

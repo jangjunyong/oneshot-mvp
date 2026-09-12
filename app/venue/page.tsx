@@ -146,9 +146,6 @@ export default async function VenuePage({
       </header>
 
       <main>
-        <span className="grid-ref">
-          <b>B-01</b> · 경보를 받은 뒤 · 쏠림에 대비하는 배치
-        </span>
         <h1>시뮬레이션</h1>
         <p className="lede">
           OSM 실도면(위성으로 대조 가능) 위에서 보행자 시뮬레이션을 돌려, 진단에서 나온
@@ -201,27 +198,6 @@ export default async function VenuePage({
       />
       </details>
       </main>
-
-      <footer className="titleblock">
-        <div>
-          <dt>Sheet</dt>
-          <dd>행사장 배치 도면</dd>
-        </div>
-        <div>
-          <dt>Scale</dt>
-          <dd className="num">
-            {venue.mPerPx ? `1px = ${venue.mPerPx.toFixed(3)}m` : "미지정"}
-          </dd>
-        </div>
-        <div>
-          <dt>Entry</dt>
-          <dd className="num">{entryId ? `#${entryId}` : "진단 미연결"}</dd>
-        </div>
-        <div>
-          <dt>Items</dt>
-          <dd className="num">{venue.items.length || (venue.geo?.features.length ?? 0)}개 배치</dd>
-        </div>
-      </footer>
     </div>
   );
 }

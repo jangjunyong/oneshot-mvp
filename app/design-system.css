@@ -60,6 +60,9 @@
   --s1: 0.5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2rem;
   --s6: 3rem;    --s8: 4rem;  --s12: 6rem;
 
+  /* 화면 전용 절 간격. --s* 모듈은 인쇄(A4 2장)가 물고 있어 건드리지 않는다 (2026-09-12) */
+  --gap-section: clamp(3.5rem, 8vw, 7rem);
+
   --radius: 0;
   --ring: 0 0 0 1px rgba(0, 0, 0, 0.08);
 
@@ -111,24 +114,27 @@ body {
   padding: var(--s8) clamp(var(--s3), 5vw, var(--s12));
 }
 
-/* ---------- 타이포그래피 ---------- */
-h1, h2, h3 { margin: 0 0 var(--s3); line-height: 1.15; text-wrap: balance; }
+/* ---------- 타이포그래피 ----------
+   2026-09-12 개정: 굵기는 400/500 둘뿐이다. 위계는 크기와 여백으로 세운다.
+   대문자·양수 자간·모노 라벨은 쓰지 않는다 (장식 0). */
+h1, h2, h3 { margin: 0 0 var(--s3); line-height: 1.15; text-wrap: balance; word-break: keep-all; }
 
 .display {
   font-family: var(--font-display);
-  font-size: var(--text-display);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  margin-bottom: var(--s3);
 }
 
-h1 { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.02em; }
-h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
-h3 { font-size: var(--text-lg); font-weight: 700; }
+h1 { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 500; letter-spacing: -0.03em; }
+h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 500; letter-spacing: -0.02em; }
+h3 { font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.01em; }
 
 .serif-head {
-  font-family: var(--font-serif);
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: var(--text-xl);
   line-height: 1.35;
   letter-spacing: 0;
@@ -136,64 +142,21 @@ h3 { font-size: var(--text-lg); font-weight: 700; }
 
 .lede {
   font-size: var(--text-lg);
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--concrete);
-  max-width: 34em;
+  max-width: 30em;
   margin: 0 0 var(--s4);
 }
 
-p { margin: 0 0 var(--s2); max-width: 65ch; }
+/* 한 음절("다.")이 홀로 다음 줄로 내려가지 않게 — 어절 단위로만 줄을 바꾼다 */
+p { margin: 0 0 var(--s2); max-width: 65ch; word-break: keep-all; text-wrap: pretty; }
 .muted { color: var(--concrete); }
 
 a { color: var(--ink); text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 a:hover { text-decoration-color: var(--ink); }
 
-/* 도면 좌표 아이브로 — 실제 순번·구역일 때만 */
-.grid-ref {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--concrete);
-  display: block;
-  margin-bottom: var(--s2);
-}
-.grid-ref b { color: var(--ink); font-weight: 500; }
-
-/* ---------- 치수선 (시그니처) ---------- */
-.dim {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 13px;
-  margin: var(--s6) 0;
-}
-.dim::before {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 6px;
-  border-top: 1px solid var(--line);
-}
-.dim::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 13px;
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-}
-.dim span {
-  position: relative;
-  background: var(--surface);
-  padding: 0 var(--s2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
-  color: var(--concrete);
-  z-index: 1;
-}
+/* 절 사이 — 라벨(SECTION A —)·치수선·눈썹은 2026-09-12 에 걷었다. 절은 여백과 헤어라인으로만 갈린다 */
+.section { margin-top: var(--gap-section); padding-top: var(--s3); border-top: 1px solid var(--line); }
 
 /* ---------- 버튼 ----------
    활성/주 동작 = 검정 면. 부 동작 = 흰 면 + 괘선. 호버 = 면 밝기 변화.
@@ -203,7 +166,6 @@ a:hover { text-decoration-color: var(--ink); }
   font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: 500;
-  letter-spacing: 0.01em;
   padding: 0.55em 1.1em;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -262,56 +224,31 @@ th, td {
   border-bottom: 1px solid var(--line);
 }
 th {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--concrete);
-  border-bottom: 1px solid var(--ink);
-}
-
-/* ---------- 표제란 (푸터) ---------- */
-.titleblock {
-  margin-top: auto;
-  border-top: 1px solid var(--ink);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  padding: 0 !important;
-}
-.titleblock > div {
-  padding: var(--s2) var(--s3);
-  border-right: 1px solid var(--line);
-}
-.titleblock > div:last-child { border-right: 0; }
-.titleblock dt {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--concrete);
-  margin: 0 0 2px;
-}
-.titleblock dd {
-  margin: 0;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 400;
+  color: var(--concrete);
+  border-bottom: 1px solid var(--line-strong);
 }
 
-/* ---------- 상단 바 ---------- */
+/* ---------- 상단 바 ----------
+   워드마크(텍스트) + 링크 셋 + 헤어라인. 시트 위에 붙어 따라온다. 표제란(푸터)은 걷었다 */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: var(--s3);
-  padding: var(--s3) clamp(var(--s3), 5vw, var(--s12)) !important;
+  padding: var(--s2) clamp(var(--s3), 5vw, var(--s12)) !important;
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .topbar .logo {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 500;
+  font-size: var(--text-base);
+  letter-spacing: -0.01em;
   text-decoration: none;
   color: var(--ink);
 }
@@ -320,12 +257,15 @@ th {
   font-size: var(--text-sm);
   text-decoration: none;
   color: var(--concrete);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
 }
 .topbar nav a:hover { color: var(--ink); }
-/* 활성 탭은 색이 아니라 굵기+밑줄로 — 흑백에서도 갈린다 */
+/* 활성 탭은 색이 아니라 밑줄로 — 흑백에서도 갈린다 */
 .topbar nav a[aria-current] {
   color: var(--ink);
-  font-weight: 700;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 2px;
+  border-bottom-color: var(--ink);
 }
+
+/* 시트 본문 — 상단바 아래 첫 절은 넉넉히 띄운다 */
+.sheet > main { padding-top: var(--gap-section); padding-bottom: var(--gap-section); }

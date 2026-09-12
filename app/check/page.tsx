@@ -153,9 +153,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
       </header>
 
       <main>
-        <span className="grid-ref">
-          <b>A-02</b> · 기획안 팩트체크 · 공사 KT 일별 방문자 {man.days.toLocaleString("ko-KR")}일분
-        </span>
         <h1 className="display">
           기획안의 숫자를
           <br />
@@ -198,16 +195,10 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
         {draft && <DraftNote draft={draft} id={draftId!} />}
 
-        <div className="dim">
-          <span>SECTION A — 기획안</span>
-        </div>
         <CheckForm q={q} populationSource={popSource} />
 
         {판정가능 && (
           <>
-            <div className="dim">
-              <span>SECTION B — 판정</span>
-            </div>
             {/* 판정 블록의 경계 — e2e 가 `draft` 유무로 이 안의 HTML 이 같은지 잰다(결정론). 초안 유래 표시는 전부 이 밖에 */}
             <div id="verdict" className="check-layout">
               <section className="check-main">
