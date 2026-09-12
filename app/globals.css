@@ -362,7 +362,7 @@ ul.scan-findings strong { background: var(--severe); }
 /* 핀. 색은 여기서만 정한다 — 도면 시스템 토큰 밖으로 새지 않게 */
 .pin { cursor: pointer; }
 .pin line { stroke: var(--ink); }
-.pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
+.pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; } /* 옛 원형 머리 — 지금은 pin.png 그림 */
 .pin text { fill: var(--surface); }
 .pin-foot { fill: var(--ink); opacity: 0.18; }
 .pin[data-selected] line { stroke: var(--accent); }
@@ -1055,6 +1055,7 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .check-side h2, .data-usage h2, .sim-card h2, .twins h2 { font-size: var(--text-lg); }
 h2.section { font-size: var(--text-xl); }
 
-/* 지도 좌하단 로고 자리 — 파일이 있을 때만 그려진다 (app/twin-map.tsx) */
-.map-logo { opacity: 0.9; }
-@media print { .map-logo { opacity: 1; } }
+/* 핀 번호 — 핀 그림(public/pin.png)의 흰 원 위에 찍힌다 */
+.pin .pin-num { fill: var(--ink); }
+.pin[data-selected] .pin-num { font-weight: 500; }
+@media print { .map-origin .pin-body { fill: none; } }

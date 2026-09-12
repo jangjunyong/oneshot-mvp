@@ -80,16 +80,12 @@ async function 폼을낸다(경로, 값) {
 /** 붙여넣기 화면(/)의 추출 액션 */
 const 붙여넣는다 = (planText) => 폼을낸다("/", { planText });
 
-test("첫 화면 — PDF 입력·견본 버튼·양식 링크·데이터 세 줄이 있고 옛 진단 이력·직접 입력은 없다", async () => {
+test("첫 화면 — PDF 입력과 붙여넣기만 있고, 견본 버튼·데이터 설명·한도 문구·옛 진단 이력은 없다", async () => {
   const 홈 = (await (await fetch(BASE + "/")).text()).replace(/<!--\s*-->/g, "");
   assert.match(홈, /type="file"[^>]*accept="application\/pdf"/, "PDF 입력이 없다");
-  assert.match(홈, /href="\/check"/, "견본 버튼이 없다");
-  assert.match(홈, /href="\/check\?demo=hwacheon"/, "화천 견본 링크가 없다");
-  assert.match(홈, /href="\/form"/, "양식 링크가 없다");
   assert.match(홈, /name="planText"/, "붙여넣기 칸이 없다");
-  assert.match(홈, /locgoRegnVisitrDDList/, "데이터 세 줄에 KT API 이름이 없다");
-  for (const gone of ["진단 이력", "직접 입력하기", "manual=1", "시연용 예시", "등록된 축제에서 찾기", 'class="map"']) {
-    assert.ok(!홈.includes(gone), `옛 첫 화면 조각이 남았다: ${gone}`);
+  for (const gone of ["진단 이력", "직접 입력하기", "manual=1", "시연용 예시", "등록된 축제에서 찾기", 'class="map"', "견본으로 먼저 보기", "데이터 셋", "하루 45건", "스캔본 제외", "demo=hwacheon", 'href="/form"']) {
+    assert.ok(!홈.includes(gone), `첫 화면에 없어야 할 조각이 있다: ${gone}`);
   }
   const 본문 = 홈.replace(/<[^>]+>/g, " ");
   assert.doesNotMatch(본문, /\d[\d,]*\s*명/, "첫 화면에 명 수가 있다");
@@ -338,11 +334,7 @@ test("619건에 없는 시군구(함평군)를 넣어도 또래 구간이 서고
 
 
 // 2026-09-12 M4a — 기획안 양식 한 장(/form)과 첫 화면의 양식 링크·PDF 입력 (사용자 지시 3)
-test("첫 화면에 PDF 입력·양식 링크·견본 2건이 있고, /form 은 자바스크립트 없이 한 장으로 선다", async () => {
-  const 홈 = (await (await fetch(BASE + "/")).text()).replace(/<!--\s*-->/g, "");
-  assert.match(홈, /type="file"[^>]*accept="application\/pdf"/, "PDF 입력이 없다");
-  assert.match(홈, /href="\/form"/, "양식 링크가 없다");
-  assert.match(홈, /href="\/check\?demo=hwacheon"/, "화천 견본 링크가 없다");
+test("/form 은 자바스크립트 없이 한 장으로 선다 (M4a)", async () => {
   const res = await fetch(BASE + "/form");
   assert.equal(res.status, 200);
   const 양식 = await res.text();
@@ -365,7 +357,7 @@ function 열린글자수(html) {
   return h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().length;
 }
 // 실측(2026-09-12): / 522 · /check 3,499 · /venue 105 — 상한은 그 1.1배 안팎
-const 글자상한 = { "/": 600, "/check": 3600, "/venue": 450 };
+const 글자상한 = { "/": 250, "/check": 3600, "/venue": 450 };
 test("열린 글자 수 — 첫 화면·판정(군포 견본)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
   const 잰값 = {};
   for (const path of Object.keys(글자상한)) 잰값[path] = 열린글자수(await (await fetch(BASE + path)).text());

@@ -11,8 +11,6 @@
 // 화면의 모든 점이 실측이다.
 
 import Link from "next/link";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import { COAST_RINGS, COAST_SOURCE } from "@/lib/coastline";
 import { FESTIVALS } from "@/lib/festivals";
 import {
@@ -49,10 +47,6 @@ const 해안선 = COAST_RINGS.map(
       .join("") + "Z",
 ).join("");
 
-/** 지도 좌하단 로고 자리 (사용자 지시 4, 2026-09-12). public/logo.svg 또는 logo.png 가 있을 때만 그린다 —
- *  없는 파일을 가리키는 깨진 그림을 내지 않는다. 서버 컴포넌트라 모듈 로드 때 한 번만 본다 */
-const 로고 = ["logo.svg", "logo.png"].map((f) => `/${f}`).find((f) => existsSync(path.join(process.cwd(), "public", f))) ?? null;
-
 /** 홀로 떨어져 있어 모양만으로는 못 알아보는 섬. 이름을 달아 준다.
  *  좌표는 해안선과 같은 Natural Earth 링의 중심이다 */
 const 섬이름 = [
@@ -77,27 +71,29 @@ function Pin({
   href: string;
   selected: boolean;
 }) {
-  const r = selected ? PIN_HEAD_R + 2 : PIN_HEAD_R;
+  // 사용자가 준 핀 그림(public/pin.png, 2026-09-12). 그림의 끝(꼭짓점)이 (x, y - stem) 에 오게 놓고,
+  // 번호는 그림의 흰 원 자리(폭 50%·높이 37%)에 찍는다. 기둥은 이웃과 겹쳐 머리를 올렸을 때만 보인다
+  const w = PIN_IMG_W * (selected ? 1.25 : 1);
+  const h = w;
+  const tipY = y - stem;
   return (
     <Link href={href} aria-label={`닮은 축제 ${label} 자세히 보기`}>
       <g className="pin" data-selected={selected ? "1" : undefined}>
-        {/* 바닥 그림자 — 핀이 땅에 꽂혀 있다는 유일한 단서 */}
-        <ellipse className="pin-foot" cx={x} cy={y} rx={r * 0.75} ry={r * 0.3} />
-        <line x1={x} y1={y} x2={x} y2={y - stem} strokeWidth={selected ? 3 : 2} />
-        <circle cx={x} cy={y - stem} r={r} />
-        <text
-          x={x}
-          y={y - stem + 4}
-          textAnchor="middle"
-          fontSize={selected ? 12 : 11}
-          fontWeight="700"
-        >
+        <line x1={x} y1={y} x2={x} y2={tipY} strokeWidth={1.2} />
+        <image href={PIN_IMG} x={x - w / 2} y={tipY - h * PIN_TIP} width={w} height={h} />
+        <text className="pin-num" x={x} y={tipY - h * PIN_TIP + h * PIN_EYE + 4} textAnchor="middle" fontSize={selected ? 12 : 11} fontWeight="500">
           {label}
         </text>
       </g>
     </Link>
   );
 }
+
+/** 핀 그림 규격 — 512×512 원본에서 꼭짓점은 높이의 86%, 흰 원 중심은 37% 자리 */
+const PIN_IMG = "/pin.png";
+const PIN_IMG_W = PIN_HEAD_R * 4.2;
+const PIN_TIP = 0.86;
+const PIN_EYE = 0.37;
 
 /** 이 핀이 지금 고른 것인가 (1/0) — 그리는 순서를 정하는 데도 쓴다 */
 const 고른것 = (g: { ids: string[] }, selectedPin: string | null) =>
@@ -166,21 +162,10 @@ export function TwinMap({
 
         <path className="map-dots" d={배경점들} strokeWidth="2.6" strokeLinecap="round" />
 
-        {/* 로고 — 점 위, 핀 아래. 좌하단(서해 남쪽 빈 바다)에 viewBox 기준 폭 96 */}
-        {로고 && <image className="map-logo" href={로고} x={14} y={MAP_H - 62} width={96} height={48} preserveAspectRatio="xMinYMax meet" />}
-
-        {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
+        {/* 입력 지역 — '이 기획안'. 같은 핀 그림을 조금 크게, 번호 없이 (사용자 지시 4, 2026-09-12 핀 그림 교체) */}
         {o && (
-          /* 사용자 지시 4(2026-09-11): 파란 그라데이션 위치 핀. 화면의 유일한 유채색이고 "이 기획안이 여기 있다"만 뜻한다 */
           <g className="map-origin" transform={`translate(${o.x} ${o.y})`} aria-label="이 기획안의 지역">
-            <defs>
-              <linearGradient id="pin-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="var(--accent-light)" />
-                <stop offset="1" stopColor="var(--accent-deep)" />
-              </linearGradient>
-            </defs>
-            <path className="pin-body" d="M0 0 C-5.5 -7.5 -10 -12 -10 -18 A10 10 0 1 1 10 -18 C10 -12 5.5 -7.5 0 0 Z" />
-            <circle className="pin-eye" cx="0" cy="-18" r="4" />
+            <image className="pin-body" href={PIN_IMG} x={-PIN_IMG_W * 0.7} y={-PIN_IMG_W * 1.4 * PIN_TIP} width={PIN_IMG_W * 1.4} height={PIN_IMG_W * 1.4} />
           </g>
         )}
 
@@ -204,7 +189,7 @@ export function TwinMap({
       <figcaption className="note">
         {matched.length === 0
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
-          : `점 = 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 파란 핀 = 이 기획안` +
+          : `점 = 축제 ${찍히는축제.length}곳 · 번호 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 큰 핀 = 이 기획안` +
             (못올린수 > 0 ? ` · 좌표가 없어 못 올린 ${못올린수}곳은 카드에만` : "")}
         <br />
         해안선: {COAST_SOURCE}
