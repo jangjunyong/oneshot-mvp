@@ -1054,3 +1054,7 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .range-line strong { font-size: var(--text-xl); }
 .check-side h2, .data-usage h2, .sim-card h2, .twins h2 { font-size: var(--text-lg); }
 h2.section { font-size: var(--text-xl); }
+
+/* 지도 좌하단 로고 자리 — 파일이 있을 때만 그려진다 (app/twin-map.tsx) */
+.map-logo { opacity: 0.9; }
+@media print { .map-logo { opacity: 1; } }

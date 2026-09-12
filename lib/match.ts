@@ -12,6 +12,7 @@ import { FESTIVALS, SEARCHED_SCOPE, monthOf, yearOf } from "@/lib/festivals";
 // 재는 자와 그리는 자가 갈리면 화면의 거리와 지도의 핀이 서로를 반박한다.
 // (mapproj 는 아무것도 import 하지 않으므로 순환은 생기지 않는다)
 import { hasPlace } from "@/lib/mapproj";
+import { centroidOf } from "@/lib/centroid";
 
 export type AxisWeight = Record<AxisSimilarity["axis"], number>;
 
@@ -86,10 +87,12 @@ export function coordsOf(
   sigungu: string,
 ): { lat: number; lng: number } | null {
   const 쓸만한 = (f: Festival) => hasPlace(f.lat, f.lng);
-  const hit =
-    FESTIVALS.find((f) => f.sido === sido && f.sigungu === sigungu && 쓸만한(f)) ??
-    FESTIVALS.find((f) => f.sido === sido && 쓸만한(f));
-  return hit ? { lat: hit.lat, lng: hit.lng } : null;
+  // 1) 619건에 그 시군구 축제가 있으면 그 좌표(178곳). LOO 임계·게시 적중률이 이 경로로 잰 값이라 그대로 둔다
+  const hit = FESTIVALS.find((f) => f.sido === sido && f.sigungu === sigungu && 쓸만한(f));
+  if (hit) return { lat: hit.lat, lng: hit.lng };
+  // 2) 없는 121곳은 시군구 대표점 표(브이월드). 2026-09-12 까지는 같은 시도의 아무 축제(군포 → 양평)를 돌려줬다 —
+  //    그 위에서 반경 50km 경쟁을 찾고 파란 핀을 찍었다. 표에도 없으면 null. 이웃을 짐작하지 않는다
+  return centroidOf(sido, sigungu);
 }
 
 const themeLabel = (code: number) => THEME_NAME[code] ?? `코드 ${code}`;

@@ -11,6 +11,8 @@
 // 화면의 모든 점이 실측이다.
 
 import Link from "next/link";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { COAST_RINGS, COAST_SOURCE } from "@/lib/coastline";
 import { FESTIVALS } from "@/lib/festivals";
 import {
@@ -46,6 +48,10 @@ const 해안선 = COAST_RINGS.map(
       })
       .join("") + "Z",
 ).join("");
+
+/** 지도 좌하단 로고 자리 (사용자 지시 4, 2026-09-12). public/logo.svg 또는 logo.png 가 있을 때만 그린다 —
+ *  없는 파일을 가리키는 깨진 그림을 내지 않는다. 서버 컴포넌트라 모듈 로드 때 한 번만 본다 */
+const 로고 = ["logo.svg", "logo.png"].map((f) => `/${f}`).find((f) => existsSync(path.join(process.cwd(), "public", f))) ?? null;
 
 /** 홀로 떨어져 있어 모양만으로는 못 알아보는 섬. 이름을 달아 준다.
  *  좌표는 해안선과 같은 Natural Earth 링의 중심이다 */
@@ -159,6 +165,9 @@ export function TwinMap({
         })}
 
         <path className="map-dots" d={배경점들} strokeWidth="2.6" strokeLinecap="round" />
+
+        {/* 로고 — 점 위, 핀 아래. 좌하단(서해 남쪽 빈 바다)에 viewBox 기준 폭 96 */}
+        {로고 && <image className="map-logo" href={로고} x={14} y={MAP_H - 62} width={96} height={48} preserveAspectRatio="xMinYMax meet" />}
 
         {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
         {o && (

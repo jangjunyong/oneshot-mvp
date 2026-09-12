@@ -25,11 +25,13 @@ test("김천 조건에서 닮은 축제 3개가 나온다", () => {
   const r = findSimilar(김천);
   assert.equal(r.matched.length, 3);
 
+  // 2026-09-12 D: 김천시는 619건에 없어 원점이 "경북의 첫 축제"였다. 대표점 표가 들어와 원점이 김천이 되자
+  // 홍천(강원)이 빠지고 강경(논산, 김천에서 더 가깝다)이 들어왔다 — 지역 축이 제대로 잰 결과다
   const 이름 = r.matched.map((m) => m.festival.name);
   assert.deepEqual(이름.toSorted(), [
+    "강경젓갈축제",
     "예산사과축제",
     "예산장터 삼국축제",
-    "홍천 사과축제",
   ]);
 });
 
