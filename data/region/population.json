@@ -1,0 +1,1910 @@
+{
+ "source": "행정안전부 주민등록 인구통계 — 지역별(행정동) 성별 연령별 주민등록 인구수 (data.go.kr 15097972)",
+ "file": "mois_202608.csv",
+ "baseMonth": "2026-08-31",
+ "builtAt": "2026-09-12",
+ "joinKey": "행정기관코드 앞 5자리 = KT signguCode. 일반구가 있는 시는 앞 4자리 합산",
+ "matched": 269,
+ "unmatched": [
+  {
+   "code": "28110",
+   "sido": "인천",
+   "name": "중구"
+  },
+  {
+   "code": "28140",
+   "sido": "인천",
+   "name": "동구"
+  },
+  {
+   "code": "28260",
+   "sido": "인천",
+   "name": "서구"
+  }
+ ],
+ "rows": [
+  {
+   "code": "11110",
+   "sido": "서울",
+   "name": "종로구",
+   "population": 135935,
+   "moisName": "서울특별시 종로구"
+  },
+  {
+   "code": "11140",
+   "sido": "서울",
+   "name": "중구",
+   "population": 117305,
+   "moisName": "서울특별시 중구"
+  },
+  {
+   "code": "11170",
+   "sido": "서울",
+   "name": "용산구",
+   "population": 199459,
+   "moisName": "서울특별시 용산구"
+  },
+  {
+   "code": "11200",
+   "sido": "서울",
+   "name": "성동구",
+   "population": 274199,
+   "moisName": "서울특별시 성동구"
+  },
+  {
+   "code": "11215",
+   "sido": "서울",
+   "name": "광진구",
+   "population": 330791,
+   "moisName": "서울특별시 광진구"
+  },
+  {
+   "code": "11230",
+   "sido": "서울",
+   "name": "동대문구",
+   "population": 353448,
+   "moisName": "서울특별시 동대문구"
+  },
+  {
+   "code": "11260",
+   "sido": "서울",
+   "name": "중랑구",
+   "population": 376504,
+   "moisName": "서울특별시 중랑구"
+  },
+  {
+   "code": "11290",
+   "sido": "서울",
+   "name": "성북구",
+   "population": 421106,
+   "moisName": "서울특별시 성북구"
+  },
+  {
+   "code": "11305",
+   "sido": "서울",
+   "name": "강북구",
+   "population": 277509,
+   "moisName": "서울특별시 강북구"
+  },
+  {
+   "code": "11320",
+   "sido": "서울",
+   "name": "도봉구",
+   "population": 297820,
+   "moisName": "서울특별시 도봉구"
+  },
+  {
+   "code": "11350",
+   "sido": "서울",
+   "name": "노원구",
+   "population": 480045,
+   "moisName": "서울특별시 노원구"
+  },
+  {
+   "code": "11380",
+   "sido": "서울",
+   "name": "은평구",
+   "population": 452626,
+   "moisName": "서울특별시 은평구"
+  },
+  {
+   "code": "11410",
+   "sido": "서울",
+   "name": "서대문구",
+   "population": 299492,
+   "moisName": "서울특별시 서대문구"
+  },
+  {
+   "code": "11440",
+   "sido": "서울",
+   "name": "마포구",
+   "population": 356008,
+   "moisName": "서울특별시 마포구"
+  },
+  {
+   "code": "11470",
+   "sido": "서울",
+   "name": "양천구",
+   "population": 420127,
+   "moisName": "서울특별시 양천구"
+  },
+  {
+   "code": "11500",
+   "sido": "서울",
+   "name": "강서구",
+   "population": 547821,
+   "moisName": "서울특별시 강서구"
+  },
+  {
+   "code": "11530",
+   "sido": "서울",
+   "name": "구로구",
+   "population": 382302,
+   "moisName": "서울특별시 구로구"
+  },
+  {
+   "code": "11545",
+   "sido": "서울",
+   "name": "금천구",
+   "population": 222368,
+   "moisName": "서울특별시 금천구"
+  },
+  {
+   "code": "11560",
+   "sido": "서울",
+   "name": "영등포구",
+   "population": 371420,
+   "moisName": "서울특별시 영등포구"
+  },
+  {
+   "code": "11590",
+   "sido": "서울",
+   "name": "동작구",
+   "population": 371324,
+   "moisName": "서울특별시 동작구"
+  },
+  {
+   "code": "11620",
+   "sido": "서울",
+   "name": "관악구",
+   "population": 477297,
+   "moisName": "서울특별시 관악구"
+  },
+  {
+   "code": "11650",
+   "sido": "서울",
+   "name": "서초구",
+   "population": 416928,
+   "moisName": "서울특별시 서초구"
+  },
+  {
+   "code": "11680",
+   "sido": "서울",
+   "name": "강남구",
+   "population": 552357,
+   "moisName": "서울특별시 강남구"
+  },
+  {
+   "code": "11710",
+   "sido": "서울",
+   "name": "송파구",
+   "population": 649212,
+   "moisName": "서울특별시 송파구"
+  },
+  {
+   "code": "11740",
+   "sido": "서울",
+   "name": "강동구",
+   "population": 498222,
+   "moisName": "서울특별시 강동구"
+  },
+  {
+   "code": "26110",
+   "sido": "부산",
+   "name": "중구",
+   "population": 36126,
+   "moisName": "부산광역시 중구"
+  },
+  {
+   "code": "26140",
+   "sido": "부산",
+   "name": "서구",
+   "population": 100964,
+   "moisName": "부산광역시 서구"
+  },
+  {
+   "code": "26170",
+   "sido": "부산",
+   "name": "동구",
+   "population": 83115,
+   "moisName": "부산광역시 동구"
+  },
+  {
+   "code": "26200",
+   "sido": "부산",
+   "name": "영도구",
+   "population": 100170,
+   "moisName": "부산광역시 영도구"
+  },
+  {
+   "code": "26230",
+   "sido": "부산",
+   "name": "부산진구",
+   "population": 364184,
+   "moisName": "부산광역시 부산진구"
+  },
+  {
+   "code": "26260",
+   "sido": "부산",
+   "name": "동래구",
+   "population": 270512,
+   "moisName": "부산광역시 동래구"
+  },
+  {
+   "code": "26290",
+   "sido": "부산",
+   "name": "남구",
+   "population": 254960,
+   "moisName": "부산광역시 남구"
+  },
+  {
+   "code": "26320",
+   "sido": "부산",
+   "name": "북구",
+   "population": 260069,
+   "moisName": "부산광역시 북구"
+  },
+  {
+   "code": "26350",
+   "sido": "부산",
+   "name": "해운대구",
+   "population": 369727,
+   "moisName": "부산광역시 해운대구"
+  },
+  {
+   "code": "26380",
+   "sido": "부산",
+   "name": "사하구",
+   "population": 281184,
+   "moisName": "부산광역시 사하구"
+  },
+  {
+   "code": "26410",
+   "sido": "부산",
+   "name": "금정구",
+   "population": 205341,
+   "moisName": "부산광역시 금정구"
+  },
+  {
+   "code": "26440",
+   "sido": "부산",
+   "name": "강서구",
+   "population": 154782,
+   "moisName": "부산광역시 강서구"
+  },
+  {
+   "code": "26470",
+   "sido": "부산",
+   "name": "연제구",
+   "population": 211603,
+   "moisName": "부산광역시 연제구"
+  },
+  {
+   "code": "26500",
+   "sido": "부산",
+   "name": "수영구",
+   "population": 169336,
+   "moisName": "부산광역시 수영구"
+  },
+  {
+   "code": "26530",
+   "sido": "부산",
+   "name": "사상구",
+   "population": 191912,
+   "moisName": "부산광역시 사상구"
+  },
+  {
+   "code": "26710",
+   "sido": "부산",
+   "name": "기장군",
+   "population": 175482,
+   "moisName": "부산광역시 기장군"
+  },
+  {
+   "code": "27110",
+   "sido": "대구",
+   "name": "중구",
+   "population": 101894,
+   "moisName": "대구광역시 중구"
+  },
+  {
+   "code": "27140",
+   "sido": "대구",
+   "name": "동구",
+   "population": 338699,
+   "moisName": "대구광역시 동구"
+  },
+  {
+   "code": "27170",
+   "sido": "대구",
+   "name": "서구",
+   "population": 163319,
+   "moisName": "대구광역시 서구"
+  },
+  {
+   "code": "27200",
+   "sido": "대구",
+   "name": "남구",
+   "population": 141722,
+   "moisName": "대구광역시 남구"
+  },
+  {
+   "code": "27230",
+   "sido": "대구",
+   "name": "북구",
+   "population": 406214,
+   "moisName": "대구광역시 북구"
+  },
+  {
+   "code": "27260",
+   "sido": "대구",
+   "name": "수성구",
+   "population": 407570,
+   "moisName": "대구광역시 수성구"
+  },
+  {
+   "code": "27290",
+   "sido": "대구",
+   "name": "달서구",
+   "population": 512577,
+   "moisName": "대구광역시 달서구"
+  },
+  {
+   "code": "27710",
+   "sido": "대구",
+   "name": "달성군",
+   "population": 251789,
+   "moisName": "대구광역시 달성군"
+  },
+  {
+   "code": "27720",
+   "sido": "대구",
+   "name": "군위군",
+   "population": 22493,
+   "moisName": "대구광역시 군위군"
+  },
+  {
+   "code": "28125",
+   "sido": "인천",
+   "name": "제물포구",
+   "population": 99217,
+   "moisName": "인천광역시 제물포구"
+  },
+  {
+   "code": "28155",
+   "sido": "인천",
+   "name": "영종구",
+   "population": 138659,
+   "moisName": "인천광역시 영종구"
+  },
+  {
+   "code": "28177",
+   "sido": "인천",
+   "name": "미추홀구",
+   "population": 419123,
+   "moisName": "인천광역시 미추홀구"
+  },
+  {
+   "code": "28185",
+   "sido": "인천",
+   "name": "연수구",
+   "population": 410369,
+   "moisName": "인천광역시 연수구"
+  },
+  {
+   "code": "28200",
+   "sido": "인천",
+   "name": "남동구",
+   "population": 478603,
+   "moisName": "인천광역시 남동구"
+  },
+  {
+   "code": "28237",
+   "sido": "인천",
+   "name": "부평구",
+   "population": 487282,
+   "moisName": "인천광역시 부평구"
+  },
+  {
+   "code": "28245",
+   "sido": "인천",
+   "name": "계양구",
+   "population": 275966,
+   "moisName": "인천광역시 계양구"
+  },
+  {
+   "code": "28275",
+   "sido": "인천",
+   "name": "서해구",
+   "population": 392072,
+   "moisName": "인천광역시 서해구"
+  },
+  {
+   "code": "28290",
+   "sido": "인천",
+   "name": "검단구",
+   "population": 276078,
+   "moisName": "인천광역시 검단구"
+  },
+  {
+   "code": "28710",
+   "sido": "인천",
+   "name": "강화군",
+   "population": 69541,
+   "moisName": "인천광역시 강화군"
+  },
+  {
+   "code": "28720",
+   "sido": "인천",
+   "name": "옹진군",
+   "population": 19275,
+   "moisName": "인천광역시 옹진군"
+  },
+  {
+   "code": "29110",
+   "sido": "광주",
+   "name": "동구",
+   "population": 105328,
+   "moisName": "전남광주통합특별시 동구 (행안부 코드 12210)"
+  },
+  {
+   "code": "29140",
+   "sido": "광주",
+   "name": "서구",
+   "population": 274234,
+   "moisName": "전남광주통합특별시 서구 (행안부 코드 12240)"
+  },
+  {
+   "code": "29155",
+   "sido": "광주",
+   "name": "남구",
+   "population": 205051,
+   "moisName": "전남광주통합특별시 남구 (행안부 코드 12270)"
+  },
+  {
+   "code": "29170",
+   "sido": "광주",
+   "name": "북구",
+   "population": 416582,
+   "moisName": "전남광주통합특별시 북구 (행안부 코드 12300)"
+  },
+  {
+   "code": "29200",
+   "sido": "광주",
+   "name": "광산구",
+   "population": 382763,
+   "moisName": "전남광주통합특별시 광산구 (행안부 코드 12330)"
+  },
+  {
+   "code": "30110",
+   "sido": "대전",
+   "name": "동구",
+   "population": 217981,
+   "moisName": "대전광역시 동구"
+  },
+  {
+   "code": "30140",
+   "sido": "대전",
+   "name": "중구",
+   "population": 223664,
+   "moisName": "대전광역시 중구"
+  },
+  {
+   "code": "30170",
+   "sido": "대전",
+   "name": "서구",
+   "population": 464238,
+   "moisName": "대전광역시 서구"
+  },
+  {
+   "code": "30200",
+   "sido": "대전",
+   "name": "유성구",
+   "population": 373361,
+   "moisName": "대전광역시 유성구"
+  },
+  {
+   "code": "30230",
+   "sido": "대전",
+   "name": "대덕구",
+   "population": 163594,
+   "moisName": "대전광역시 대덕구"
+  },
+  {
+   "code": "31110",
+   "sido": "울산",
+   "name": "중구",
+   "population": 202545,
+   "moisName": "울산광역시 중구"
+  },
+  {
+   "code": "31140",
+   "sido": "울산",
+   "name": "남구",
+   "population": 304655,
+   "moisName": "울산광역시 남구"
+  },
+  {
+   "code": "31170",
+   "sido": "울산",
+   "name": "동구",
+   "population": 147440,
+   "moisName": "울산광역시 동구"
+  },
+  {
+   "code": "31200",
+   "sido": "울산",
+   "name": "북구",
+   "population": 213391,
+   "moisName": "울산광역시 북구"
+  },
+  {
+   "code": "31710",
+   "sido": "울산",
+   "name": "울주군",
+   "population": 218342,
+   "moisName": "울산광역시 울주군"
+  },
+  {
+   "code": "36110",
+   "sido": "세종",
+   "name": "세종특별자치시",
+   "population": 390738,
+   "moisName": "세종특별자치시"
+  },
+  {
+   "code": "41110",
+   "sido": "경기",
+   "name": "수원시",
+   "population": 1185677,
+   "moisName": "(4111* 합산)"
+  },
+  {
+   "code": "41111",
+   "sido": "경기",
+   "name": "수원시 장안구",
+   "population": 269717,
+   "moisName": "경기도 수원시 장안구"
+  },
+  {
+   "code": "41113",
+   "sido": "경기",
+   "name": "수원시 권선구",
+   "population": 360795,
+   "moisName": "경기도 수원시 권선구"
+  },
+  {
+   "code": "41115",
+   "sido": "경기",
+   "name": "수원시 팔달구",
+   "population": 193282,
+   "moisName": "경기도 수원시 팔달구"
+  },
+  {
+   "code": "41117",
+   "sido": "경기",
+   "name": "수원시 영통구",
+   "population": 361883,
+   "moisName": "경기도 수원시 영통구"
+  },
+  {
+   "code": "41130",
+   "sido": "경기",
+   "name": "성남시",
+   "population": 899806,
+   "moisName": "(4113* 합산)"
+  },
+  {
+   "code": "41131",
+   "sido": "경기",
+   "name": "성남시 수정구",
+   "population": 234948,
+   "moisName": "경기도 성남시 수정구"
+  },
+  {
+   "code": "41133",
+   "sido": "경기",
+   "name": "성남시 중원구",
+   "population": 198233,
+   "moisName": "경기도 성남시 중원구"
+  },
+  {
+   "code": "41135",
+   "sido": "경기",
+   "name": "성남시 분당구",
+   "population": 466625,
+   "moisName": "경기도 성남시 분당구"
+  },
+  {
+   "code": "41150",
+   "sido": "경기",
+   "name": "의정부시",
+   "population": 461977,
+   "moisName": "경기도 의정부시"
+  },
+  {
+   "code": "41170",
+   "sido": "경기",
+   "name": "안양시",
+   "population": 562007,
+   "moisName": "(4117* 합산)"
+  },
+  {
+   "code": "41171",
+   "sido": "경기",
+   "name": "안양시 만안구",
+   "population": 234085,
+   "moisName": "경기도 안양시 만안구"
+  },
+  {
+   "code": "41173",
+   "sido": "경기",
+   "name": "안양시 동안구",
+   "population": 327922,
+   "moisName": "경기도 안양시 동안구"
+  },
+  {
+   "code": "41190",
+   "sido": "경기",
+   "name": "부천시",
+   "population": 754159,
+   "moisName": "(4119* 합산)"
+  },
+  {
+   "code": "41192",
+   "sido": "경기",
+   "name": "부천시 원미구",
+   "population": 381864,
+   "moisName": "경기도 부천시 원미구"
+  },
+  {
+   "code": "41194",
+   "sido": "경기",
+   "name": "부천시 소사구",
+   "population": 223777,
+   "moisName": "경기도 부천시 소사구"
+  },
+  {
+   "code": "41196",
+   "sido": "경기",
+   "name": "부천시 오정구",
+   "population": 148518,
+   "moisName": "경기도 부천시 오정구"
+  },
+  {
+   "code": "41210",
+   "sido": "경기",
+   "name": "광명시",
+   "population": 303641,
+   "moisName": "경기도 광명시"
+  },
+  {
+   "code": "41220",
+   "sido": "경기",
+   "name": "평택시",
+   "population": 622663,
+   "moisName": "경기도 평택시"
+  },
+  {
+   "code": "41250",
+   "sido": "경기",
+   "name": "동두천시",
+   "population": 86168,
+   "moisName": "경기도 동두천시"
+  },
+  {
+   "code": "41270",
+   "sido": "경기",
+   "name": "안산시",
+   "population": 608487,
+   "moisName": "(4127* 합산)"
+  },
+  {
+   "code": "41271",
+   "sido": "경기",
+   "name": "안산시 상록구",
+   "population": 320360,
+   "moisName": "경기도 안산시 상록구"
+  },
+  {
+   "code": "41273",
+   "sido": "경기",
+   "name": "안산시 단원구",
+   "population": 288127,
+   "moisName": "경기도 안산시 단원구"
+  },
+  {
+   "code": "41280",
+   "sido": "경기",
+   "name": "고양시",
+   "population": 1056589,
+   "moisName": "(4128* 합산)"
+  },
+  {
+   "code": "41281",
+   "sido": "경기",
+   "name": "고양시 덕양구",
+   "population": 482470,
+   "moisName": "경기도 고양시 덕양구"
+  },
+  {
+   "code": "41285",
+   "sido": "경기",
+   "name": "고양시 일산동구",
+   "population": 298091,
+   "moisName": "경기도 고양시 일산동구"
+  },
+  {
+   "code": "41287",
+   "sido": "경기",
+   "name": "고양시 일산서구",
+   "population": 276028,
+   "moisName": "경기도 고양시 일산서구"
+  },
+  {
+   "code": "41290",
+   "sido": "경기",
+   "name": "과천시",
+   "population": 81107,
+   "moisName": "경기도 과천시"
+  },
+  {
+   "code": "41310",
+   "sido": "경기",
+   "name": "구리시",
+   "population": 188134,
+   "moisName": "경기도 구리시"
+  },
+  {
+   "code": "41360",
+   "sido": "경기",
+   "name": "남양주시",
+   "population": 727158,
+   "moisName": "경기도 남양주시"
+  },
+  {
+   "code": "41370",
+   "sido": "경기",
+   "name": "오산시",
+   "population": 255303,
+   "moisName": "경기도 오산시"
+  },
+  {
+   "code": "41390",
+   "sido": "경기",
+   "name": "시흥시",
+   "population": 515337,
+   "moisName": "경기도 시흥시"
+  },
+  {
+   "code": "41410",
+   "sido": "경기",
+   "name": "군포시",
+   "population": 249066,
+   "moisName": "경기도 군포시"
+  },
+  {
+   "code": "41430",
+   "sido": "경기",
+   "name": "의왕시",
+   "population": 166540,
+   "moisName": "경기도 의왕시"
+  },
+  {
+   "code": "41450",
+   "sido": "경기",
+   "name": "하남시",
+   "population": 327389,
+   "moisName": "경기도 하남시"
+  },
+  {
+   "code": "41460",
+   "sido": "경기",
+   "name": "용인시",
+   "population": 1091437,
+   "moisName": "(4146* 합산)"
+  },
+  {
+   "code": "41461",
+   "sido": "경기",
+   "name": "용인시 처인구",
+   "population": 288583,
+   "moisName": "경기도 용인시 처인구"
+  },
+  {
+   "code": "41463",
+   "sido": "경기",
+   "name": "용인시 기흥구",
+   "population": 434133,
+   "moisName": "경기도 용인시 기흥구"
+  },
+  {
+   "code": "41465",
+   "sido": "경기",
+   "name": "용인시 수지구",
+   "population": 368721,
+   "moisName": "경기도 용인시 수지구"
+  },
+  {
+   "code": "41480",
+   "sido": "경기",
+   "name": "파주시",
+   "population": 535692,
+   "moisName": "경기도 파주시"
+  },
+  {
+   "code": "41500",
+   "sido": "경기",
+   "name": "이천시",
+   "population": 227032,
+   "moisName": "경기도 이천시"
+  },
+  {
+   "code": "41550",
+   "sido": "경기",
+   "name": "안성시",
+   "population": 199484,
+   "moisName": "경기도 안성시"
+  },
+  {
+   "code": "41570",
+   "sido": "경기",
+   "name": "김포시",
+   "population": 483679,
+   "moisName": "경기도 김포시"
+  },
+  {
+   "code": "41590",
+   "sido": "경기",
+   "name": "화성시",
+   "population": 1000464,
+   "moisName": "(4159* 합산)"
+  },
+  {
+   "code": "41591",
+   "sido": "경기",
+   "name": "화성시 만세구",
+   "population": 234222,
+   "moisName": "경기도 화성시 만세구"
+  },
+  {
+   "code": "41593",
+   "sido": "경기",
+   "name": "화성시 효행구",
+   "population": 160959,
+   "moisName": "경기도 화성시 효행구"
+  },
+  {
+   "code": "41595",
+   "sido": "경기",
+   "name": "화성시 병점구",
+   "population": 175182,
+   "moisName": "경기도 화성시 병점구"
+  },
+  {
+   "code": "41597",
+   "sido": "경기",
+   "name": "화성시 동탄구",
+   "population": 430101,
+   "moisName": "경기도 화성시 동탄구"
+  },
+  {
+   "code": "41610",
+   "sido": "경기",
+   "name": "광주시",
+   "population": 401246,
+   "moisName": "경기도 광주시"
+  },
+  {
+   "code": "41630",
+   "sido": "경기",
+   "name": "양주시",
+   "population": 297605,
+   "moisName": "경기도 양주시"
+  },
+  {
+   "code": "41650",
+   "sido": "경기",
+   "name": "포천시",
+   "population": 140397,
+   "moisName": "경기도 포천시"
+  },
+  {
+   "code": "41670",
+   "sido": "경기",
+   "name": "여주시",
+   "population": 113348,
+   "moisName": "경기도 여주시"
+  },
+  {
+   "code": "41800",
+   "sido": "경기",
+   "name": "연천군",
+   "population": 43143,
+   "moisName": "경기도 연천군"
+  },
+  {
+   "code": "41820",
+   "sido": "경기",
+   "name": "가평군",
+   "population": 62046,
+   "moisName": "경기도 가평군"
+  },
+  {
+   "code": "41830",
+   "sido": "경기",
+   "name": "양평군",
+   "population": 127137,
+   "moisName": "경기도 양평군"
+  },
+  {
+   "code": "43110",
+   "sido": "충북",
+   "name": "청주시",
+   "population": 860215,
+   "moisName": "(4311* 합산)"
+  },
+  {
+   "code": "43111",
+   "sido": "충북",
+   "name": "청주시 상당구",
+   "population": 192578,
+   "moisName": "충청북도 청주시 상당구"
+  },
+  {
+   "code": "43112",
+   "sido": "충북",
+   "name": "청주시 서원구",
+   "population": 187612,
+   "moisName": "충청북도 청주시 서원구"
+  },
+  {
+   "code": "43113",
+   "sido": "충북",
+   "name": "청주시 흥덕구",
+   "population": 294300,
+   "moisName": "충청북도 청주시 흥덕구"
+  },
+  {
+   "code": "43114",
+   "sido": "충북",
+   "name": "청주시 청원구",
+   "population": 185725,
+   "moisName": "충청북도 청주시 청원구"
+  },
+  {
+   "code": "43130",
+   "sido": "충북",
+   "name": "충주시",
+   "population": 205691,
+   "moisName": "충청북도 충주시"
+  },
+  {
+   "code": "43150",
+   "sido": "충북",
+   "name": "제천시",
+   "population": 127898,
+   "moisName": "충청북도 제천시"
+  },
+  {
+   "code": "43720",
+   "sido": "충북",
+   "name": "보은군",
+   "population": 31549,
+   "moisName": "충청북도 보은군"
+  },
+  {
+   "code": "43730",
+   "sido": "충북",
+   "name": "옥천군",
+   "population": 50730,
+   "moisName": "충청북도 옥천군"
+  },
+  {
+   "code": "43740",
+   "sido": "충북",
+   "name": "영동군",
+   "population": 43089,
+   "moisName": "충청북도 영동군"
+  },
+  {
+   "code": "43745",
+   "sido": "충북",
+   "name": "증평군",
+   "population": 36777,
+   "moisName": "충청북도 증평군"
+  },
+  {
+   "code": "43750",
+   "sido": "충북",
+   "name": "진천군",
+   "population": 85649,
+   "moisName": "충청북도 진천군"
+  },
+  {
+   "code": "43760",
+   "sido": "충북",
+   "name": "괴산군",
+   "population": 37174,
+   "moisName": "충청북도 괴산군"
+  },
+  {
+   "code": "43770",
+   "sido": "충북",
+   "name": "음성군",
+   "population": 96114,
+   "moisName": "충청북도 음성군"
+  },
+  {
+   "code": "43800",
+   "sido": "충북",
+   "name": "단양군",
+   "population": 26481,
+   "moisName": "충청북도 단양군"
+  },
+  {
+   "code": "44130",
+   "sido": "충남",
+   "name": "천안시",
+   "population": 666584,
+   "moisName": "(4413* 합산)"
+  },
+  {
+   "code": "44131",
+   "sido": "충남",
+   "name": "천안시 동남구",
+   "population": 263872,
+   "moisName": "충청남도 천안시 동남구"
+  },
+  {
+   "code": "44133",
+   "sido": "충남",
+   "name": "천안시 서북구",
+   "population": 402712,
+   "moisName": "충청남도 천안시 서북구"
+  },
+  {
+   "code": "44150",
+   "sido": "충남",
+   "name": "공주시",
+   "population": 99481,
+   "moisName": "충청남도 공주시"
+  },
+  {
+   "code": "44180",
+   "sido": "충남",
+   "name": "보령시",
+   "population": 91035,
+   "moisName": "충청남도 보령시"
+  },
+  {
+   "code": "44200",
+   "sido": "충남",
+   "name": "아산시",
+   "population": 365299,
+   "moisName": "충청남도 아산시"
+  },
+  {
+   "code": "44210",
+   "sido": "충남",
+   "name": "서산시",
+   "population": 170780,
+   "moisName": "충청남도 서산시"
+  },
+  {
+   "code": "44230",
+   "sido": "충남",
+   "name": "논산시",
+   "population": 105655,
+   "moisName": "충청남도 논산시"
+  },
+  {
+   "code": "44250",
+   "sido": "충남",
+   "name": "계룡시",
+   "population": 45937,
+   "moisName": "충청남도 계룡시"
+  },
+  {
+   "code": "44270",
+   "sido": "충남",
+   "name": "당진시",
+   "population": 172423,
+   "moisName": "충청남도 당진시"
+  },
+  {
+   "code": "44710",
+   "sido": "충남",
+   "name": "금산군",
+   "population": 48749,
+   "moisName": "충청남도 금산군"
+  },
+  {
+   "code": "44760",
+   "sido": "충남",
+   "name": "부여군",
+   "population": 57591,
+   "moisName": "충청남도 부여군"
+  },
+  {
+   "code": "44770",
+   "sido": "충남",
+   "name": "서천군",
+   "population": 46589,
+   "moisName": "충청남도 서천군"
+  },
+  {
+   "code": "44790",
+   "sido": "충남",
+   "name": "청양군",
+   "population": 30010,
+   "moisName": "충청남도 청양군"
+  },
+  {
+   "code": "44800",
+   "sido": "충남",
+   "name": "홍성군",
+   "population": 101814,
+   "moisName": "충청남도 홍성군"
+  },
+  {
+   "code": "44810",
+   "sido": "충남",
+   "name": "예산군",
+   "population": 78133,
+   "moisName": "충청남도 예산군"
+  },
+  {
+   "code": "44825",
+   "sido": "충남",
+   "name": "태안군",
+   "population": 58858,
+   "moisName": "충청남도 태안군"
+  },
+  {
+   "code": "46110",
+   "sido": "전남",
+   "name": "목포시",
+   "population": 198981,
+   "moisName": "전남광주통합특별시 목포시 (행안부 코드 12110)"
+  },
+  {
+   "code": "46130",
+   "sido": "전남",
+   "name": "여수시",
+   "population": 259857,
+   "moisName": "전남광주통합특별시 여수시 (행안부 코드 12130)"
+  },
+  {
+   "code": "46150",
+   "sido": "전남",
+   "name": "순천시",
+   "population": 273399,
+   "moisName": "전남광주통합특별시 순천시 (행안부 코드 12150)"
+  },
+  {
+   "code": "46170",
+   "sido": "전남",
+   "name": "나주시",
+   "population": 116667,
+   "moisName": "전남광주통합특별시 나주시 (행안부 코드 12170)"
+  },
+  {
+   "code": "46230",
+   "sido": "전남",
+   "name": "광양시",
+   "population": 156052,
+   "moisName": "전남광주통합특별시 광양시 (행안부 코드 12190)"
+  },
+  {
+   "code": "46710",
+   "sido": "전남",
+   "name": "담양군",
+   "population": 43880,
+   "moisName": "전남광주통합특별시 담양군 (행안부 코드 12710)"
+  },
+  {
+   "code": "46720",
+   "sido": "전남",
+   "name": "곡성군",
+   "population": 27686,
+   "moisName": "전남광주통합특별시 곡성군 (행안부 코드 12720)"
+  },
+  {
+   "code": "46730",
+   "sido": "전남",
+   "name": "구례군",
+   "population": 24627,
+   "moisName": "전남광주통합특별시 구례군 (행안부 코드 12730)"
+  },
+  {
+   "code": "46770",
+   "sido": "전남",
+   "name": "고흥군",
+   "population": 59011,
+   "moisName": "전남광주통합특별시 고흥군 (행안부 코드 12740)"
+  },
+  {
+   "code": "46780",
+   "sido": "전남",
+   "name": "보성군",
+   "population": 38162,
+   "moisName": "전남광주통합특별시 보성군 (행안부 코드 12750)"
+  },
+  {
+   "code": "46790",
+   "sido": "전남",
+   "name": "화순군",
+   "population": 59860,
+   "moisName": "전남광주통합특별시 화순군 (행안부 코드 12760)"
+  },
+  {
+   "code": "46800",
+   "sido": "전남",
+   "name": "장흥군",
+   "population": 33877,
+   "moisName": "전남광주통합특별시 장흥군 (행안부 코드 12770)"
+  },
+  {
+   "code": "46810",
+   "sido": "전남",
+   "name": "강진군",
+   "population": 31603,
+   "moisName": "전남광주통합특별시 강진군 (행안부 코드 12780)"
+  },
+  {
+   "code": "46820",
+   "sido": "전남",
+   "name": "해남군",
+   "population": 61883,
+   "moisName": "전남광주통합특별시 해남군 (행안부 코드 12790)"
+  },
+  {
+   "code": "46830",
+   "sido": "전남",
+   "name": "영암군",
+   "population": 49984,
+   "moisName": "전남광주통합특별시 영암군 (행안부 코드 12800)"
+  },
+  {
+   "code": "46840",
+   "sido": "전남",
+   "name": "무안군",
+   "population": 95537,
+   "moisName": "전남광주통합특별시 무안군 (행안부 코드 12810)"
+  },
+  {
+   "code": "46860",
+   "sido": "전남",
+   "name": "함평군",
+   "population": 29753,
+   "moisName": "전남광주통합특별시 함평군 (행안부 코드 12820)"
+  },
+  {
+   "code": "46870",
+   "sido": "전남",
+   "name": "영광군",
+   "population": 53719,
+   "moisName": "전남광주통합특별시 영광군 (행안부 코드 12830)"
+  },
+  {
+   "code": "46880",
+   "sido": "전남",
+   "name": "장성군",
+   "population": 43079,
+   "moisName": "전남광주통합특별시 장성군 (행안부 코드 12840)"
+  },
+  {
+   "code": "46890",
+   "sido": "전남",
+   "name": "완도군",
+   "population": 44071,
+   "moisName": "전남광주통합특별시 완도군 (행안부 코드 12850)"
+  },
+  {
+   "code": "46900",
+   "sido": "전남",
+   "name": "진도군",
+   "population": 27773,
+   "moisName": "전남광주통합특별시 진도군 (행안부 코드 12860)"
+  },
+  {
+   "code": "46910",
+   "sido": "전남",
+   "name": "신안군",
+   "population": 42384,
+   "moisName": "전남광주통합특별시 신안군 (행안부 코드 12870)"
+  },
+  {
+   "code": "47110",
+   "sido": "경북",
+   "name": "포항시",
+   "population": 486930,
+   "moisName": "(4711* 합산)"
+  },
+  {
+   "code": "47111",
+   "sido": "경북",
+   "name": "포항시 남구",
+   "population": 211051,
+   "moisName": "경상북도 포항시 남구"
+  },
+  {
+   "code": "47113",
+   "sido": "경북",
+   "name": "포항시 북구",
+   "population": 275879,
+   "moisName": "경상북도 포항시 북구"
+  },
+  {
+   "code": "47130",
+   "sido": "경북",
+   "name": "경주시",
+   "population": 242512,
+   "moisName": "경상북도 경주시"
+  },
+  {
+   "code": "47150",
+   "sido": "경북",
+   "name": "김천시",
+   "population": 132433,
+   "moisName": "경상북도 김천시"
+  },
+  {
+   "code": "47170",
+   "sido": "경북",
+   "name": "안동시",
+   "population": 151343,
+   "moisName": "경상북도 안동시"
+  },
+  {
+   "code": "47190",
+   "sido": "경북",
+   "name": "구미시",
+   "population": 402596,
+   "moisName": "경상북도 구미시"
+  },
+  {
+   "code": "47210",
+   "sido": "경북",
+   "name": "영주시",
+   "population": 96237,
+   "moisName": "경상북도 영주시"
+  },
+  {
+   "code": "47230",
+   "sido": "경북",
+   "name": "영천시",
+   "population": 93605,
+   "moisName": "경상북도 영천시"
+  },
+  {
+   "code": "47250",
+   "sido": "경북",
+   "name": "상주시",
+   "population": 88920,
+   "moisName": "경상북도 상주시"
+  },
+  {
+   "code": "47280",
+   "sido": "경북",
+   "name": "문경시",
+   "population": 64657,
+   "moisName": "경상북도 문경시"
+  },
+  {
+   "code": "47290",
+   "sido": "경북",
+   "name": "경산시",
+   "population": 263020,
+   "moisName": "경상북도 경산시"
+  },
+  {
+   "code": "47730",
+   "sido": "경북",
+   "name": "의성군",
+   "population": 47879,
+   "moisName": "경상북도 의성군"
+  },
+  {
+   "code": "47750",
+   "sido": "경북",
+   "name": "청송군",
+   "population": 24560,
+   "moisName": "경상북도 청송군"
+  },
+  {
+   "code": "47760",
+   "sido": "경북",
+   "name": "영양군",
+   "population": 15956,
+   "moisName": "경상북도 영양군"
+  },
+  {
+   "code": "47770",
+   "sido": "경북",
+   "name": "영덕군",
+   "population": 32511,
+   "moisName": "경상북도 영덕군"
+  },
+  {
+   "code": "47820",
+   "sido": "경북",
+   "name": "청도군",
+   "population": 39988,
+   "moisName": "경상북도 청도군"
+  },
+  {
+   "code": "47830",
+   "sido": "경북",
+   "name": "고령군",
+   "population": 29429,
+   "moisName": "경상북도 고령군"
+  },
+  {
+   "code": "47840",
+   "sido": "경북",
+   "name": "성주군",
+   "population": 40293,
+   "moisName": "경상북도 성주군"
+  },
+  {
+   "code": "47850",
+   "sido": "경북",
+   "name": "칠곡군",
+   "population": 103426,
+   "moisName": "경상북도 칠곡군"
+  },
+  {
+   "code": "47900",
+   "sido": "경북",
+   "name": "예천군",
+   "population": 53275,
+   "moisName": "경상북도 예천군"
+  },
+  {
+   "code": "47920",
+   "sido": "경북",
+   "name": "봉화군",
+   "population": 28041,
+   "moisName": "경상북도 봉화군"
+  },
+  {
+   "code": "47930",
+   "sido": "경북",
+   "name": "울진군",
+   "population": 46319,
+   "moisName": "경상북도 울진군"
+  },
+  {
+   "code": "47940",
+   "sido": "경북",
+   "name": "울릉군",
+   "population": 8747,
+   "moisName": "경상북도 울릉군"
+  },
+  {
+   "code": "48120",
+   "sido": "경남",
+   "name": "창원시",
+   "population": 985013,
+   "moisName": "(4812* 합산)"
+  },
+  {
+   "code": "48121",
+   "sido": "경남",
+   "name": "창원시 의창구",
+   "population": 209833,
+   "moisName": "경상남도 창원시 의창구"
+  },
+  {
+   "code": "48123",
+   "sido": "경남",
+   "name": "창원시 성산구",
+   "population": 244872,
+   "moisName": "경상남도 창원시 성산구"
+  },
+  {
+   "code": "48125",
+   "sido": "경남",
+   "name": "창원시 마산합포구",
+   "population": 174168,
+   "moisName": "경상남도 창원시 마산합포구"
+  },
+  {
+   "code": "48127",
+   "sido": "경남",
+   "name": "창원시 마산회원구",
+   "population": 173677,
+   "moisName": "경상남도 창원시 마산회원구"
+  },
+  {
+   "code": "48129",
+   "sido": "경남",
+   "name": "창원시 진해구",
+   "population": 182463,
+   "moisName": "경상남도 창원시 진해구"
+  },
+  {
+   "code": "48170",
+   "sido": "경남",
+   "name": "진주시",
+   "population": 334017,
+   "moisName": "경상남도 진주시"
+  },
+  {
+   "code": "48220",
+   "sido": "경남",
+   "name": "통영시",
+   "population": 115975,
+   "moisName": "경상남도 통영시"
+  },
+  {
+   "code": "48240",
+   "sido": "경남",
+   "name": "사천시",
+   "population": 107796,
+   "moisName": "경상남도 사천시"
+  },
+  {
+   "code": "48250",
+   "sido": "경남",
+   "name": "김해시",
+   "population": 532854,
+   "moisName": "경상남도 김해시"
+  },
+  {
+   "code": "48270",
+   "sido": "경남",
+   "name": "밀양시",
+   "population": 98305,
+   "moisName": "경상남도 밀양시"
+  },
+  {
+   "code": "48310",
+   "sido": "경남",
+   "name": "거제시",
+   "population": 228774,
+   "moisName": "경상남도 거제시"
+  },
+  {
+   "code": "48330",
+   "sido": "경남",
+   "name": "양산시",
+   "population": 361044,
+   "moisName": "경상남도 양산시"
+  },
+  {
+   "code": "48720",
+   "sido": "경남",
+   "name": "의령군",
+   "population": 24518,
+   "moisName": "경상남도 의령군"
+  },
+  {
+   "code": "48730",
+   "sido": "경남",
+   "name": "함안군",
+   "population": 56655,
+   "moisName": "경상남도 함안군"
+  },
+  {
+   "code": "48740",
+   "sido": "경남",
+   "name": "창녕군",
+   "population": 54173,
+   "moisName": "경상남도 창녕군"
+  },
+  {
+   "code": "48820",
+   "sido": "경남",
+   "name": "고성군",
+   "population": 46712,
+   "moisName": "경상남도 고성군"
+  },
+  {
+   "code": "48840",
+   "sido": "경남",
+   "name": "남해군",
+   "population": 41073,
+   "moisName": "경상남도 남해군"
+  },
+  {
+   "code": "48850",
+   "sido": "경남",
+   "name": "하동군",
+   "population": 39565,
+   "moisName": "경상남도 하동군"
+  },
+  {
+   "code": "48860",
+   "sido": "경남",
+   "name": "산청군",
+   "population": 32628,
+   "moisName": "경상남도 산청군"
+  },
+  {
+   "code": "48870",
+   "sido": "경남",
+   "name": "함양군",
+   "population": 35074,
+   "moisName": "경상남도 함양군"
+  },
+  {
+   "code": "48880",
+   "sido": "경남",
+   "name": "거창군",
+   "population": 58737,
+   "moisName": "경상남도 거창군"
+  },
+  {
+   "code": "48890",
+   "sido": "경남",
+   "name": "합천군",
+   "population": 38732,
+   "moisName": "경상남도 합천군"
+  },
+  {
+   "code": "50110",
+   "sido": "제주",
+   "name": "제주시",
+   "population": 484149,
+   "moisName": "제주특별자치도 제주시"
+  },
+  {
+   "code": "50130",
+   "sido": "제주",
+   "name": "서귀포시",
+   "population": 178532,
+   "moisName": "제주특별자치도 서귀포시"
+  },
+  {
+   "code": "51110",
+   "sido": "강원",
+   "name": "춘천시",
+   "population": 284783,
+   "moisName": "강원특별자치도 춘천시"
+  },
+  {
+   "code": "51130",
+   "sido": "강원",
+   "name": "원주시",
+   "population": 365379,
+   "moisName": "강원특별자치도 원주시"
+  },
+  {
+   "code": "51150",
+   "sido": "강원",
+   "name": "강릉시",
+   "population": 205440,
+   "moisName": "강원특별자치도 강릉시"
+  },
+  {
+   "code": "51170",
+   "sido": "강원",
+   "name": "동해시",
+   "population": 85534,
+   "moisName": "강원특별자치도 동해시"
+  },
+  {
+   "code": "51190",
+   "sido": "강원",
+   "name": "태백시",
+   "population": 36680,
+   "moisName": "강원특별자치도 태백시"
+  },
+  {
+   "code": "51210",
+   "sido": "강원",
+   "name": "속초시",
+   "population": 78788,
+   "moisName": "강원특별자치도 속초시"
+  },
+  {
+   "code": "51230",
+   "sido": "강원",
+   "name": "삼척시",
+   "population": 60041,
+   "moisName": "강원특별자치도 삼척시"
+  },
+  {
+   "code": "51720",
+   "sido": "강원",
+   "name": "홍천군",
+   "population": 65817,
+   "moisName": "강원특별자치도 홍천군"
+  },
+  {
+   "code": "51730",
+   "sido": "강원",
+   "name": "횡성군",
+   "population": 45465,
+   "moisName": "강원특별자치도 횡성군"
+  },
+  {
+   "code": "51750",
+   "sido": "강원",
+   "name": "영월군",
+   "population": 35651,
+   "moisName": "강원특별자치도 영월군"
+  },
+  {
+   "code": "51760",
+   "sido": "강원",
+   "name": "평창군",
+   "population": 39849,
+   "moisName": "강원특별자치도 평창군"
+  },
+  {
+   "code": "51770",
+   "sido": "강원",
+   "name": "정선군",
+   "population": 35137,
+   "moisName": "강원특별자치도 정선군"
+  },
+  {
+   "code": "51780",
+   "sido": "강원",
+   "name": "철원군",
+   "population": 39598,
+   "moisName": "강원특별자치도 철원군"
+  },
+  {
+   "code": "51790",
+   "sido": "강원",
+   "name": "화천군",
+   "population": 22908,
+   "moisName": "강원특별자치도 화천군"
+  },
+  {
+   "code": "51800",
+   "sido": "강원",
+   "name": "양구군",
+   "population": 20354,
+   "moisName": "강원특별자치도 양구군"
+  },
+  {
+   "code": "51810",
+   "sido": "강원",
+   "name": "인제군",
+   "population": 30692,
+   "moisName": "강원특별자치도 인제군"
+  },
+  {
+   "code": "51820",
+   "sido": "강원",
+   "name": "고성군",
+   "population": 27196,
+   "moisName": "강원특별자치도 고성군"
+  },
+  {
+   "code": "51830",
+   "sido": "강원",
+   "name": "양양군",
+   "population": 27350,
+   "moisName": "강원특별자치도 양양군"
+  },
+  {
+   "code": "52110",
+   "sido": "전북",
+   "name": "전주시",
+   "population": 618908,
+   "moisName": "(5211* 합산)"
+  },
+  {
+   "code": "52111",
+   "sido": "전북",
+   "name": "전주시 완산구",
+   "population": 312490,
+   "moisName": "전북특별자치도 전주시 완산구"
+  },
+  {
+   "code": "52113",
+   "sido": "전북",
+   "name": "전주시 덕진구",
+   "population": 306418,
+   "moisName": "전북특별자치도 전주시 덕진구"
+  },
+  {
+   "code": "52130",
+   "sido": "전북",
+   "name": "군산시",
+   "population": 255517,
+   "moisName": "전북특별자치도 군산시"
+  },
+  {
+   "code": "52140",
+   "sido": "전북",
+   "name": "익산시",
+   "population": 266639,
+   "moisName": "전북특별자치도 익산시"
+  },
+  {
+   "code": "52180",
+   "sido": "전북",
+   "name": "정읍시",
+   "population": 100580,
+   "moisName": "전북특별자치도 정읍시"
+  },
+  {
+   "code": "52190",
+   "sido": "전북",
+   "name": "남원시",
+   "population": 73604,
+   "moisName": "전북특별자치도 남원시"
+  },
+  {
+   "code": "52210",
+   "sido": "전북",
+   "name": "김제시",
+   "population": 81585,
+   "moisName": "전북특별자치도 김제시"
+  },
+  {
+   "code": "52710",
+   "sido": "전북",
+   "name": "완주군",
+   "population": 100642,
+   "moisName": "전북특별자치도 완주군"
+  },
+  {
+   "code": "52720",
+   "sido": "전북",
+   "name": "진안군",
+   "population": 24930,
+   "moisName": "전북특별자치도 진안군"
+  },
+  {
+   "code": "52730",
+   "sido": "전북",
+   "name": "무주군",
+   "population": 23455,
+   "moisName": "전북특별자치도 무주군"
+  },
+  {
+   "code": "52740",
+   "sido": "전북",
+   "name": "장수군",
+   "population": 21184,
+   "moisName": "전북특별자치도 장수군"
+  },
+  {
+   "code": "52750",
+   "sido": "전북",
+   "name": "임실군",
+   "population": 25290,
+   "moisName": "전북특별자치도 임실군"
+  },
+  {
+   "code": "52770",
+   "sido": "전북",
+   "name": "순창군",
+   "population": 27654,
+   "moisName": "전북특별자치도 순창군"
+  },
+  {
+   "code": "52790",
+   "sido": "전북",
+   "name": "고창군",
+   "population": 50025,
+   "moisName": "전북특별자치도 고창군"
+  },
+  {
+   "code": "52800",
+   "sido": "전북",
+   "name": "부안군",
+   "population": 46952,
+   "moisName": "전북특별자치도 부안군"
+  }
+ ]
+}

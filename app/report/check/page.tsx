@@ -25,7 +25,7 @@ import {
 import { bandText, nextYearRange } from "@/lib/range";
 import { backtestSentence, RANGE_BACKTEST_PUBLISHED } from "@/lib/backtest";
 import { peerBandFor } from "@/lib/peerband";
-import { populationOf } from "@/lib/festivals";
+import { populationOfCode } from "@/lib/region";
 import { 긴시각 } from "@/lib/datetime";
 import { Num, measured } from "@/app/_components/num";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
@@ -100,7 +100,8 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
-  const pop = populationOf(q.sido, q.sigungu) ?? q.populationManMyeong;
+  // 담당자 입력 → 행안부 표 → null (app/check/page.tsx 와 같은 순서)
+  const pop = q.populationManMyeong ?? populationOfCode(code);
   const peer = pop !== null ? peerBandFor(pop) : null;
   const visitors = q.n !== null ? checkVisitors({ n: q.n, basis: q.basis, counting: q.counting }, hist.years, peer) : null;
   const schedule = q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;

@@ -404,7 +404,7 @@ test("판정 견본 — 군포 2027(목표 60만) 은 주의, 명 수는 전부 
   // N0(2026-09-11): 619건에 군포시가 없어도 견본은 또래 구간이 서야 한다
   assert.doesNotMatch(본문, /619건 자료에 없어/, "견본에 인구 없음 경고가 떴다");
   assert.match(본문, /또래 평균/, "견본에 또래 구간이 없다");
-  assert.match(본문, /견본 인구 출처/, "견본 인구 출처가 없다");
+  assert.match(본문, /인구 출처/, "견본 인구 출처가 없다");
   assert.match(본문, /1\.1~1\.3배/, "내년 구간(평균)이 없다");
   assert.match(본문, /1\.4~1\.6배/, "내년 구간(최대일)이 없다");
   // 안 잰 적중률에 신뢰도 라벨을 붙이지 않는다 (M1)
@@ -516,4 +516,14 @@ test("견본 2건 — 화천산천어축제(글로벌축제)는 상한 초과 + 
   const 보고서 = (await (await fetch(BASE + "/report/check?demo=hwacheon")).text()).replace(/<!--\s*-->/g, "");
   assert.match(보고서, /화천산천어축제/, "보고서가 화천 견본을 잃었다");
   assert.match(보고서, /손익분기 회전율/, "보고서에 회전율이 없다");
+});
+
+
+// 2026-09-12 M5a-1 — 619건에 없는 시군구도 행안부 표로 또래가 선다 (함평군: 619건 0건, 2026-07 개편으로 행안부 코드 12820)
+test("619건에 없는 시군구(함평군)를 넣어도 또래 구간이 서고, 인구 출처가 행안부로 찍힌다", async () => {
+  const h = (await (await fetch(BASE + "/check?name=x&sido=전남&sigungu=함평군&n=300000&basis=period&counting=personDays&start=2027-04-24&end=2027-05-05")).text()).replace(/<!--\s*-->/g, "");
+  assert.match(h, /또래 평균/, "함평군 또래 구간이 없다");
+  assert.doesNotMatch(h, /인구가 행안부 주민등록 표에 없어/, "인구 없음 경고가 떴다");
+  assert.match(h, /행정안전부 주민등록인구 2026-08 기준/, "인구 출처가 없다");
+  assert.doesNotMatch(출처셀걷기(h), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
 });

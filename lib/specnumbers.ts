@@ -16,7 +16,7 @@ import { coverageStats, manifest, loadDaily } from "@/lib/kto/daily";
 import { historyOf } from "@/lib/history";
 import { DEMOS } from "@/lib/checkquery";
 import { peerBandFor } from "@/lib/peerband";
-import { populationOf } from "@/lib/festivals";
+import { populationOfCode } from "@/lib/region";
 
 const ymd = (s: string | null) => (s ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : "—");
 
@@ -31,8 +31,8 @@ function demoLabel(key: keyof typeof DEMOS) {
   const d = DEMOS[key].query;
   const code = d.sido === "경기" ? "41410" : "51790";
   const hist = historyOf(loadDaily(code), d.history, "spec").years;
-  // 화면(app/check/page.tsx)과 같은 순서 — 619건에 없는 견본(군포·화천)은 견본 고정 인구를 쓴다
-  const pop = populationOf(d.sido, d.sigungu) ?? d.populationManMyeong;
+  // 화면(app/check/page.tsx)과 같은 순서 — 담당자(견본) 입력 → 행안부 표
+  const pop = d.populationManMyeong ?? populationOfCode(code);
   const v = checkVisitors({ n: d.n!, basis: d.basis, counting: d.counting }, hist, pop !== null ? peerBandFor(pop) : null).verdict;
   return v;
 }

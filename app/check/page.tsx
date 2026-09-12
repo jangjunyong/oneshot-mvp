@@ -25,7 +25,7 @@ import {
 import { bandText, nextYearRange } from "@/lib/range";
 import { backtestSentence, RANGE_BACKTEST_PUBLISHED } from "@/lib/backtest";
 import { peerBandFor } from "@/lib/peerband";
-import { populationOf } from "@/lib/festivals";
+import { populationOfCode, populationSource } from "@/lib/region";
 import { ymdDashed } from "@/lib/history";
 import { Num } from "@/app/_components/num";
 import { DataUsage } from "@/app/_components/data-usage";
@@ -99,8 +99,11 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
   // 619건에 없는 시군구(299곳 중 121곳)는 담당자가 적은 인구로 또래를 고른다. 없으면 또래 없음 — 이웃 시도로 대신하지 않는다
-  const pop619 = q.sido && q.sigungu ? populationOf(q.sido, q.sigungu) : null;
-  const pop = pop619 ?? q.populationManMyeong;
+  // 인구 우선순위(2026-09-12 M5a-1): 담당자 입력(pop) → 행안부 주민등록 표(lib/region) → null. 619건 인구는 또래 분포에만 쓴다
+  const popMois = code ? populationOfCode(code) : null;
+  const pop = q.populationManMyeong ?? popMois;
+  const popSource =
+    q.populationManMyeong !== null ? (견본?.populationSource ?? "담당자 입력(출처 미표기)") : popMois !== null ? populationSource() : null;
   const peer = pop !== null ? peerBandFor(pop) : null;
 
   const 판정가능 = errors.length === 0 && code !== null;
@@ -197,7 +200,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
         <div className="dim">
           <span>SECTION A — 기획안</span>
         </div>
-        <CheckForm q={q} populationSource={견본?.populationSource ?? null} />
+        <CheckForm q={q} populationSource={popSource} />
 
         {판정가능 && (
           <>
@@ -452,13 +455,14 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         </p>
                         <p className="note">
                           {range.peerLabel} {peer?.n}곳의 중앙값~상위 5%. 619건을 같은 산출식으로 재계산한 값.
+                          {popSource && ` 이 축제의 인구 기준: ${popSource}.`}
                         </p>
                       </>
                     )}
                     {!range.peerMean && pop === null && (
                       <p className="alert" data-level="주의">
-                        {q.sido} {q.sigungu} 의 인구가 619건 자료에 없어 또래 구간을 못 낸다. 위 폼의 지역 인구(만 명)를 적으면 같은 인구 구간의
-                        또래 구간이 선다.
+                        {q.sido} {q.sigungu} 의 인구가 행안부 주민등록 표에 없어(2026-07 개편으로 사라진 구 등) 또래 구간을 못 낸다. 위 폼의
+                        지역 인구(만 명)를 적으면 같은 인구 구간의 또래 구간이 선다.
                       </p>
                     )}
                     <p className="note">
@@ -562,7 +566,7 @@ function CheckForm({ q, populationSource }: { q: CheckQuery; populationSource: s
         <label htmlFor="pop">지역 인구</label>
         <input id="pop" name="pop" inputMode="numeric" defaultValue={q.populationManMyeong === null ? "" : String(q.populationManMyeong)} placeholder="예) 13.4" />
         <span className="note">
-          만 명 · 행안부 주민등록인구. 619건 자료에 있는 시군구는 비워도 된다{populationSource && <> · 견본 인구 출처: {populationSource}</>}
+          만 명 · 비우면 행안부 주민등록인구 표를 쓴다{populationSource && <> · 지금 인구 출처: {populationSource}</>}
         </span>
       </p>
       <p>

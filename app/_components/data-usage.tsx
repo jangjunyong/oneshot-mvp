@@ -8,6 +8,7 @@ import type { PeerBand } from "@/lib/verdict";
 import type { CompetitionStatus } from "@/lib/overlap";
 import { coverageStats, manifest } from "@/lib/kto/daily";
 import { FESTIVALS, RECOMPUTED } from "@/lib/festivals";
+import { REGION_META } from "@/lib/region";
 import { Num } from "@/app/_components/num";
 
 const DATE = (s: string) => `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
@@ -93,7 +94,8 @@ export function DataUsage({
               {peer ? `또래 ${peer.n}곳 (${peer.label})` : "인구가 없어 또래 없음"}
               <span className="note">
                 {" "}
-                · 619건의 인구는 원 목록 값이라 출처·기준 시점이 없다. 군포·화천 두 사례는 시·군청 주민등록값, 담당자 입력은 출처 미표기
+                · 이 축제의 인구 기준은 행안부 주민등록({REGION_META.baseMonth.slice(0, 7)}, {REGION_META.matched}곳 적재). 619건 분포 쪽 인구는 원 목록
+                값이라 출처·기준 시점이 없다
               </span>
             </td>
             <td className="note">정적 수집 · 빌드 전 재계산</td>
