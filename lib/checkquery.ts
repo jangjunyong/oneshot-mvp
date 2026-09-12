@@ -125,6 +125,9 @@ export const DEMOS: Record<DemoKey, Demo> = {
 const DEMO_BY_NAME: Record<string, DemoKey> = { [GUNPO_2027.name]: "gunpo", [HWACHEON_2027.name]: "hwacheon" };
 
 type Params = Record<string, string | string[] | undefined>;
+
+/** 판정이 읽는 키 전부. `draft`·`demo` 같은 주석 키는 여기 없다 — 판정 결정론의 경계 */
+export const CHECK_KEYS = ["name", "sido", "sigungu", "n", "basis", "counting", "budget", "pop", "start", "end", "h1s", "h1e", "h2s", "h2e", "h3s", "h3e"] as const;
 const str = (p: Params, k: string) => (typeof p[k] === "string" ? (p[k] as string).trim() : "");
 
 export interface ParsedCheck {
@@ -137,7 +140,9 @@ export interface ParsedCheck {
 }
 
 export function parseCheckQuery(params: Params): ParsedCheck {
-  const touched = ["sigungu", "n", "start", "name", "sido"].some((k) => str(params, k) !== "");
+  // 견본은 판정 파라미터가 하나도 없을 때만. 값이 비어 있어도 키가 있으면 담당자 입력이다 —
+  // 2026-09-11 실사용: 기획서 다리가 `?sido=&sigungu=&budget=9000` 으로 왔는데 값이 비었다고 견본(군포)으로 떨어졌다
+  const touched = CHECK_KEYS.some((k) => k in params);
   if (!touched) {
     const key: DemoKey = str(params, "demo") === "hwacheon" ? "hwacheon" : "gunpo";
     return { query: DEMOS[key].query, isDemo: true, demo: key, errors: [] };

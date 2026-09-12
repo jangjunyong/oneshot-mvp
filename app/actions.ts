@@ -18,7 +18,8 @@ import { countExtractsToday, deleteEntry, save, saveDraft } from "@/lib/store";
 import { extractPlan, hasModelKey } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
 import { validatePlanInput } from "@/lib/match";
-import { DAILY_EXTRACT_LIMIT } from "@/lib/types";
+import { DAILY_EXTRACT_LIMIT, type Extraction } from "@/lib/types";
+import { checkUrlFromExtraction } from "@/lib/checkquery";
 
 // "use server" 파일의 export 는 전부 async 여야 한다. 이건 내부용이라 안 낸다.
 const 오류로 = (message: string, extra = "") =>
@@ -68,8 +69,10 @@ export async function 추출(formData: FormData) {
   // 추출이 죽어도 앱은 살아 있어야 한다 — 수동 입력으로 떨어뜨린다.
   // 여기서 샘플로 대신 채우면 지어낸 값이 근거인 척한다. 그건 안 한다.
   let id: string;
+  let extracted: Extraction;
   try {
-    id = await saveDraft(await extractPlan(planText));
+    extracted = await extractPlan(planText);
+    id = await saveDraft(extracted);
   } catch (e) {
     // extractFailureMessage 가 이미 완결된 한 문장을 준다(다음 행동까지
     // 포함). 여기서 덧붙이면 "…직접 넣어 주세요 — 항목을 직접 넣어 주세요"
@@ -82,7 +85,9 @@ export async function 추출(formData: FormData) {
     );
     return;
   }
-  redirect(`/?draft=${id}`);
+  // 확인 화면을 거치지 않고 판정으로 간다 (2026-09-11 사용자 지시 7). 뽑은 값은 URL(판정 파라미터)에,
+  // 초안 id 는 주석(`draft`)에 — 판정은 URL 만 읽고, 초안은 근거 문장·못 찾은 항목을 그리는 데만 쓴다
+  redirect(`${checkUrlFromExtraction(extracted, "")}&draft=${id}`);
 }
 
 /** 2단계 — 사람이 확인·수정한 값을 저장한다. 여기부터는 모델이 끼지 않는다 */

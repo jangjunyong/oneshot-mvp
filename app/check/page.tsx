@@ -29,6 +29,8 @@ import { populationOf } from "@/lib/festivals";
 import { ymdDashed } from "@/lib/history";
 import { Num } from "@/app/_components/num";
 import { DataUsage } from "@/app/_components/data-usage";
+import { DraftNote } from "@/app/_components/draft-note";
+import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
 import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
 import { coordsOf } from "@/lib/match";
@@ -71,6 +73,17 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const params = await searchParams;
   const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  // 기획서에서 온 초안 — 주석일 뿐이다. 판정 파라미터(CHECK_KEYS)는 parseCheckQuery 만 읽고 draft 는 여기서만 읽는다.
+  // 못 읽어도 판정은 그대로 선다
+  const draftId = typeof params.draft === "string" ? params.draft : null;
+  let draft: Draft | null = null;
+  if (draftId) {
+    try {
+      draft = await getDraft(draftId);
+    } catch {
+      draft = null;
+    }
+  }
   const 견본 = demo ? DEMOS[demo] : null;
   const 다른견본 = demo === "gunpo" ? DEMOS.hwacheon : demo === "hwacheon" ? DEMOS.gunpo : null;
   // 사람이 친 표기("충청남도 보령")를 KT 표기("충남 보령시")로 — 이 뒤로는 인구·좌표·경쟁 조회가 전부 이 이름을 쓴다
@@ -179,6 +192,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
           </p>
         )}
 
+        {draft && <DraftNote draft={draft} id={draftId!} />}
+
         <div className="dim">
           <span>SECTION A — 기획안</span>
         </div>
@@ -189,7 +204,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
             <div className="dim">
               <span>SECTION B — 판정</span>
             </div>
-            <div className="check-layout">
+            {/* 판정 블록의 경계 — e2e 가 `draft` 유무로 이 안의 HTML 이 같은지 잰다(결정론). 초안 유래 표시는 전부 이 밖에 */}
+            <div id="verdict" className="check-layout">
               <section className="check-main">
                 <h2>
                   {q.name || `${q.sido} ${q.sigungu} 축제`} {q.start && q.end ? `${DATE(q.start)} ~ ${DATE(q.end)}` : ""}

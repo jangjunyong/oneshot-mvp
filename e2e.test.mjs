@@ -310,7 +310,22 @@ test("기획서를 붙여넣으면 뽑은 항목이 채워진 확인 화면으�
   );
   assert.ok(res.status < 500, `추출이 서버 오류로 끝났다 (${res.status})`);
 
-  // 초안 화면으로 넘어가야 한다
+  // 2026-09-12: 확인 화면을 거치지 않고 판정(/check)으로 바로 간다. 뽑은 값은 URL, 초안 id 는 draft 주석
+  const loc = res.headers.get("location") ?? res.headers.get("x-action-redirect") ?? "";
+  assert.match(loc, /\/check\?/, `판정으로 리다이렉트하지 않았다: ${loc}`);
+  assert.match(loc, /draft=\d+/, `초안 id 가 안 실렸다: ${loc}`);
+  const 판정페이지 = (await (await fetch(BASE + loc.replace(/^https?:\/\/[^/]+/, ""))).text()).replace(/<!--\s*-->/g, "");
+  assert.match(판정페이지, /기획안에서 옮겨 적은 값/, "초안 주석 블록이 없다");
+  assert.match(판정페이지, /고정 샘플/, "샘플이라는 표시가 판정 화면에 없다");
+  assert.doesNotMatch(판정페이지, /견본입니다/, "다리로 왔는데 견본 판정을 보여 준다");
+  assert.doesNotMatch(출처셀걷기(판정페이지), /\d[\d,]*\s*명/, "판정 화면 출처 셀 밖에 명 수가 있다");
+  // 결정론 — draft 를 빼도 판정 블록(#verdict)의 HTML 은 같다
+  const 없이 = (await (await fetch(BASE + loc.replace(/^https?:\/\/[^/]+/, "").replace(/&draft=\d+/, ""))).text()).replace(/<!--\s*-->/g, "");
+  const 블록 = (h) => h.match(/<div id="verdict"[\s\S]*?<\/div>\s*<\/main>/)?.[0] ?? h.match(/<div id="verdict"[\s\S]{0,20000}/)?.[0] ?? "";
+  assert.ok(블록(판정페이지).length > 500, "판정 블록을 못 찾았다");
+  assert.equal(블록(판정페이지), 블록(없이), "draft 주석이 판정 블록을 바꿨다");
+
+  // 초안 화면(보조 진단 입력)은 링크로 남아 있다
   const 확인 = await (await fetch(BASE + "/?draft=1")).text();
   assert.match(확인, /뽑은 항목 확인/, "확인 화면이 아니다");
   assert.match(확인, /이 기획안 진단하기/, "진단 버튼이 없다");

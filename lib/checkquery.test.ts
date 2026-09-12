@@ -132,3 +132,18 @@ test("N0 견본 2건은 지역 인구와 그 출처를 함께 갖는다 (619건�
   assert.equal(DEMOS.gunpo.query.populationManMyeong, 24.9);
   assert.equal(DEMOS.hwacheon.query.populationManMyeong, 2.3);
 });
+
+
+// 2026-09-12 M3a-1 — 기획서 다리가 `?sido=&sigungu=&budget=9000` 처럼 값이 비어 와도 견본(군포)으로 떨어지면 안 된다.
+// 견본은 판정 키가 하나도 없을 때만이고, `draft`·`demo` 같은 주석 키는 판정에 안 보인다
+test("판정 키가 값 없이 있어도 담당자 입력이고, 주석 키(draft)만으로는 견본이다", () => {
+  const bridge = parseCheckQuery({ sido: "", sigungu: "", budget: "9000" });
+  assert.equal(bridge.isDemo, false);
+  assert.ok(bridge.errors.some((e) => e.includes("시도와 시군구")));
+  assert.equal(bridge.query.budgetManWon, 9000);
+  const onlyDraft = parseCheckQuery({ draft: "17" });
+  assert.equal(onlyDraft.isDemo, true, "draft 는 판정 키가 아니다");
+  const unknown = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", zzz: "1", draft: "3", t: "abc" });
+  const known = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000" });
+  assert.deepEqual(unknown.query, known.query, "모르는 키가 판정을 바꿨다");
+});
