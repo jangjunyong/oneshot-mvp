@@ -51,3 +51,35 @@ test("같은 시도의 후보 목록을 낸다 (못 찾았을 때 화면에 보�
   assert.ok(names.length >= 15);
   assert.deepEqual(sigunguNamesOf("없는도"), []);
 });
+
+// 2026-09-12 — sigungu.json 의 sido 빈 12xxx 27행(전남 22·광주 5, 2026-07-01 부터 새 코드)을 같은 이름의 정식 행에 병합한다.
+// 병합 전에는 목포·함평 자료가 2026-06-30 에서 끝난 것처럼 읽혔고 7~8월 40일은 아무 입력으로도 못 닿았다.
+test("Nz sido 빈 행은 목록에 없고, 전남·광주는 병합돼 자료 끝까지 이어진다", async () => {
+  const { sigunguList, loadDaily, dailyRange, codeAliases, coverageStats, manifest } = await import("@/lib/kto/daily");
+  const list = sigunguList();
+  assert.equal(list.filter((x) => x.sido === "").length, 0, "sido 빈 행이 목록에 남았다");
+  assert.equal(list.length, 272);
+  assert.deepEqual(codeAliases("46110"), ["12110"], "목포시 병합 코드");
+  assert.deepEqual(codeAliases("29110"), ["12210"], "광주 동구 병합 코드");
+  assert.deepEqual(codeAliases("41410"), [], "군포시는 병합 없음");
+  const mokpo = dailyRange("46110");
+  assert.ok(mokpo);
+  assert.equal(mokpo.to, manifest().to, "목포 자료가 적재 끝까지 이어져야 한다");
+  assert.equal(mokpo.days, manifest().days, "목포 일수 = 전수");
+  const rows = loadDaily("46860");
+  assert.equal(new Set(rows.map((r) => r.ymd)).size, rows.length, "함평 병합 뒤 날짜 중복 0");
+  for (let i = 1; i < rows.length; i++) assert.ok(rows[i - 1].ymd < rows[i].ymd, "날짜 오름차순");
+  const cov = coverageStats();
+  assert.equal(cov.sigungu, 272);
+  assert.equal(cov.fullCount, 258, "2,658일 전수 시군구 수");
+  assert.equal(cov.rows, 697403, "적재 행 합계는 병합 전과 같다");
+  assert.equal(cov.minDays, 40);
+});
+
+test("Nz 부천 원미구처럼 늦게 시작한 시군구는 자기 범위를 낸다 (전역 매니페스트가 아니다)", async () => {
+  const { dailyRange, manifest, sigunguList } = await import("@/lib/kto/daily");
+  const late = sigunguList().find((x) => x.days === 952);
+  assert.ok(late, "952일짜리 시군구가 있어야 한다");
+  const r = dailyRange(late.code);
+  assert.ok(r && r.from > manifest().from!, `${late.name} 시작일이 전역 시작일보다 늦어야 한다`);
+});

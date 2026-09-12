@@ -6,7 +6,7 @@
 // 옛 진단서(app/report/page.tsx)는 그대로 둔다 — 그쪽은 619건 옛 정의 진단이다.
 
 import Link from "next/link";
-import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
+import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
@@ -96,6 +96,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   }
 
   const rows = loadDaily(code);
+  const dataRange = dailyRange(code);
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
@@ -332,8 +333,8 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
         <header className="report-head">
           <h1>근거 — {이름}</h1>
           <p className="num">
-            KT 이동통신 기반 시군구 일별 방문자(현지인·외지인·외국인 체류) · 적재 {DATE(man.from ?? "")}~{DATE(man.to ?? "")} {man.days.toLocaleString("ko-KR")}일 · 빠진 날{" "}
-            {man.missing.length}일
+            KT 이동통신 기반 시군구 일별 방문자(현지인·외지인·외국인 체류) · 전국 적재 {DATE(man.from ?? "")}~{DATE(man.to ?? "")} · 이 시군구 자료{" "}
+            {dataRange ? `${DATE(dataRange.from)}~${DATE(dataRange.to)} (${dataRange.days.toLocaleString("ko-KR")}일)` : "없음"}
           </p>
         </header>
 

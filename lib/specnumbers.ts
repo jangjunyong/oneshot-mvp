@@ -12,7 +12,7 @@ import { RANGE_BACKTEST_PUBLISHED, PRIOR_PEAK_MIN } from "@/lib/backtest";
 import { THRESHOLDS, checkVisitors } from "@/lib/verdict";
 import { DISTANCE_THRESHOLD, GRADE_CUT } from "@/lib/types";
 import { FESTIVALS, RECOMPUTED } from "@/lib/festivals";
-import { manifest, loadDaily } from "@/lib/kto/daily";
+import { coverageStats, manifest, loadDaily } from "@/lib/kto/daily";
 import { historyOf } from "@/lib/history";
 import { DEMOS } from "@/lib/checkquery";
 import { peerBandFor } from "@/lib/peerband";
@@ -31,7 +31,8 @@ function demoLabel(key: keyof typeof DEMOS) {
   const d = DEMOS[key].query;
   const code = d.sido === "경기" ? "41410" : "51790";
   const hist = historyOf(loadDaily(code), d.history, "spec").years;
-  const pop = populationOf(d.sido, d.sigungu);
+  // 화면(app/check/page.tsx)과 같은 순서 — 619건에 없는 견본(군포·화천)은 견본 고정 인구를 쓴다
+  const pop = populationOf(d.sido, d.sigungu) ?? d.populationManMyeong;
   const v = checkVisitors({ n: d.n!, basis: d.basis, counting: d.counting }, hist, pop !== null ? peerBandFor(pop) : null).verdict;
   return v;
 }
@@ -39,6 +40,7 @@ function demoLabel(key: keyof typeof DEMOS) {
 /** 문서에 그대로 들어가는 문자열들. 키는 설명용, 값이 대조 대상이다 */
 export function specNumbers(): Record<string, string> {
   const m = manifest();
+  const cov = coverageStats();
   const bt = RANGE_BACKTEST_PUBLISHED;
   const gunpoOld = checkVisitors({ n: 217502, basis: "peakDay", counting: "personDays" }, historyOf(loadDaily("41410"), DEMOS.gunpo.query.history, "spec").years).verdict;
   const gunpo = demoLabel("gunpo");
@@ -67,7 +69,12 @@ export function specNumbers(): Record<string, string> {
     화천견본: hwacheon.label,
     화천회전율: `${hwacheon.breakevenTurnover!.toFixed(2)}회`,
     일수: `${m.days.toLocaleString("ko-KR")}일`,
-    시군구: `${m.sigungu}개`,
+    // 2026-09-12 정정 — "299개 × 2,658일, 빠진 날 0"은 거짓이었다. 전남·광주 27곳은 12xxx 로 갈라져 있었고(병합됨),
+    // 부천 3구·화성 4구·인천 신설 4구는 KT 제공 시작일이 늦다. 전수와 나머지를 갈라 적는다
+    시군구: `${cov.sigungu}개`,
+    전수시군구: `${cov.fullCount}곳`,
+    적재행: `${cov.rows.toLocaleString("ko-KR")}행`,
+    최소일수: `${cov.minDays}일`,
     자료기간: `${ymd(m.from)}~${ymd(m.to)}`,
     유닛: `유닛 ${countTests(unitFiles)}`,
     e2e: `e2e ${countTests(["e2e.test.mjs"])}`,

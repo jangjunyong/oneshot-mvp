@@ -6,8 +6,8 @@
 // 모델 호출 0회.
 
 import Link from "next/link";
-import { loadDaily, manifest, resolveRegion, sigunguNamesOf } from "@/lib/kto/daily";
-import { historyOf } from "@/lib/history";
+import { dailyRange, loadDaily, manifest, resolveRegion, sigunguNamesOf } from "@/lib/kto/daily";
+import { historyOf, SKIP_REASON } from "@/lib/history";
 import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, HISTORY_SLOTS, parseCheckQuery, type CheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
 import {
@@ -79,6 +79,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
   const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
+  // 적재 범위는 전역 매니페스트가 아니라 이 시군구 행에서 — 지역마다 시작일이 다르다(최소 40일)
+  const dataRange = code ? dailyRange(code) : null;
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
@@ -473,8 +475,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                 )}
                 {hist.skipped.map((s) => (
                   <p key={s.period.start} className="note">
-                    {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 자료 밖이라 뺐다 ({s.reason}). 적재 범위{" "}
-                    {DATE(man.from ?? "")}~{DATE(man.to ?? "")}.
+                    {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 자료 밖이라 뺐다 ({SKIP_REASON[s.reason]}). 이 시군구 자료{" "}
+                    {dataRange ? `${DATE(dataRange.from)}~${DATE(dataRange.to)}` : "없음"}.
                   </p>
                 ))}
                 <p className="note">

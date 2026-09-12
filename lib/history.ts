@@ -27,6 +27,13 @@ export interface History {
   skipped: HistorySkip[];
 }
 
+/** 화면에 내는 건너뜀 사유 — 영문 enum 을 그대로 노출하지 않는다 (2026-09-11 실사용 지적) */
+export const SKIP_REASON: Record<HistorySkip["reason"], string> = {
+  "bad-range": "날짜 순서가 맞지 않음",
+  "no-festival-days": "그 기간의 일별 자료가 없음",
+  "insufficient-window": "앞뒤 4주 자료가 절반도 없음",
+};
+
 /** 한 해. 산출이 안 서면 null */
 export function historyYear(rows: readonly DailyRow[], period: Period, fetchedAt: string): HistoryYear | null {
   const r = computeSurge({ rows, start: period.start, end: period.end });

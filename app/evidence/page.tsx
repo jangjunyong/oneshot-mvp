@@ -5,7 +5,7 @@
 // 자바스크립트 0. 곡선은 서버가 SVG 로 그린다.
 
 import Link from "next/link";
-import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
+import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, DEMOS, parseCheckQuery } from "@/lib/checkquery";
 import { computeSurge, type DailyRow } from "@/lib/surge";
@@ -98,6 +98,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
   const qs = checkQueryString(q, isDemo);
   const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
+  const dataRange = code ? dailyRange(code) : null;
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
@@ -152,8 +153,8 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
 
       <main>
         <span className="grid-ref">
-          <b>A-03</b> · 실측 근거 · {KT_API} · 적재 {DATE(man.from ?? "")}~{DATE(man.to ?? "")} ({man.days.toLocaleString("ko-KR")}일, 빠진 날{" "}
-          {man.missing.length}일)
+          <b>A-03</b> · 실측 근거 · {KT_API} · 전국 적재 {DATE(man.from ?? "")}~{DATE(man.to ?? "")}
+          {dataRange && ` · 이 시군구 자료 ${DATE(dataRange.from)}~${DATE(dataRange.to)} (${dataRange.days.toLocaleString("ko-KR")}일)`}
         </span>
         <h1 className="display">
           이 축제가
