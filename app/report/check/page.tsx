@@ -234,7 +234,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
               <tr>
                 <td>주차면 · 부스 수</td>
                 <td>—</td>
-                <td colSpan={2}>공사 데이터에 주차·부스 수요가 없다. 담당자 확인. 부스 통로 밀도는 행사장 도면 시뮬로 본다.</td>
+                <td colSpan={2}>공사 데이터에 주차·부스 수요가 없다. 담당자 확인. 부스 통로 밀도는 시뮬레이션으로 본다.</td>
                 <td className="report-label">근거 없음</td>
                 <td>—</td>
               </tr>

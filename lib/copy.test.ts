@@ -5,9 +5,20 @@
 // "무엇을 안 하는가"보다 먼저)을 어기면 여기서 깨진다.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 
 const read = (p: string) => readFileSync(p, "utf8");
+
+/** 하위 폴더까지 .tsx 전부 — 파일 목록을 손으로 적으면 새 화면이 검사 밖에 남는다 */
+function allTsx(dir: string): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = `${dir}/${e.name}`;
+    if (e.isDirectory()) out.push(...allTsx(p));
+    else if (e.name.endsWith(".tsx")) out.push(p);
+  }
+  return out;
+}
 
 /** JSX 소스에서 첫 문단을 뽑는다 — `.lede` 가 있으면 그것, 없으면 <h1> 뒤 첫 <p>. */
 function firstParagraph(src: string): string {
@@ -155,9 +166,10 @@ test("V1-6 /venue: 스트레스 중엔 재생이 막히고, 유입 배열·밀�
 
 
 test("M6-3 옛 라벨 '성립 불가' 와 가정 회전율 구간 '1.0~2.0' 이 코드·화면·e2e 에 없다", () => {
-  const files = ["lib/verdict.ts", "lib/budget.ts", "app/check/page.tsx", "app/report/check/page.tsx", "app/layout.tsx", "e2e.test.mjs", "lib/verdict.test.ts", "lib/budget.test.ts"];
+  // 2026-09-12: 목록에 app/page.tsx 가 없어 홈 카드의 옛 라벨(줄바꿈으로 갈라져 grep 도 못 잡던)이 9/10 이후로 살아 있었다. app/**/*.tsx 전수로
+  const files = ["lib/verdict.ts", "lib/budget.ts", "app/layout.tsx", "e2e.test.mjs", "lib/verdict.test.ts", "lib/budget.test.ts", ...allTsx("app")];
   for (const f of files) {
-    const s = read(f);
+    const s = read(f).replace(/\s+/g, " ");
     assert.ok(!s.includes("성립 불가"), `${f} 에 '성립 불가' 가 남았다`);
     assert.ok(!s.includes("1.0~2.0"), `${f} 에 가정 회전율 구간이 있다`);
   }
@@ -167,4 +179,31 @@ test("M6-5 단위 안내에 '둘 다 골라야 판정한다' 와 회전율 한 �
   const s = read("app/check/page.tsx");
   assert.ok(s.includes("둘 다 골라야 판정한다"));
   assert.ok(s.includes("이 선택이 손익분기 회전율 표시를 바꾼다"));
+});
+
+
+// 2026-09-12 사용자 지시 6 — 공사 데이터가 이 판정의 어디에 쓰였는지 한 블록으로. 접힘 밖, 판정표 위
+test("M0-데이터활용 블록이 있고 공사 엔드포인트 3종·빌드 전 적재·모델 0회가 적혀 있다", () => {
+  const comp = read("app/_components/data-usage.tsx");
+  for (const must of ["KT_API", "searchFestival2", "데이터랩 축제 목록", "빌드 전", "모델은 부르지 않는다", "coverageStats"]) {
+    assert.ok(comp.includes(must), `data-usage.tsx 에 "${must}" 가 없다`);
+  }
+  const check = read("app/check/page.tsx");
+  const use = check.indexOf("<DataUsage");
+  const table = check.indexOf('<table className="report-table check-table">');
+  assert.ok(use > 0 && table > use, "DataUsage 가 판정표 앞에 없다");
+  assert.ok(!/<details[^>]*>[\s\S]*<DataUsage/.test(check.slice(0, use).slice(-2000)), "DataUsage 가 details 안에 있다");
+});
+
+test("M0-검색삭제 축제 검색 절과 선택 액션이 없다 (사용자 지시 3)", () => {
+  assert.ok(!read("app/page.tsx").includes("등록된 축제에서 찾기"), "축제 검색 절이 남았다");
+  assert.ok(!read("app/actions.ts").includes("export async function 선택"), "선택 액션이 남았다");
+});
+
+test("M0-개명 나침반과 화면 제목이 '시뮬레이션'이고 '행사장 도면'은 화면 문구에 없다 (사용자 지시 7)", () => {
+  for (const f of allTsx("app")) {
+    const s = read(f).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "");
+    assert.ok(!s.includes("행사장 도면"), `${f} 에 '행사장 도면' 이 남았다`);
+  }
+  assert.ok(read("app/venue/page.tsx").includes("<h1>시뮬레이션</h1>"));
 });

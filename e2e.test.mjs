@@ -344,7 +344,7 @@ test("기획서를 붙여넣으면 뽑은 항목이 채워진 확인 화면으�
 
 test("도면 화면이 뜨고, 진단 이력에서 도면으로 가는 길이 있다", async () => {
   const 도면 = await (await fetch(BASE + "/venue")).text();
-  assert.match(도면, /행사장 도면/, "도면 화면이 안 뜬다");
+  assert.match(도면, /시뮬레이션/, "시뮬레이션 화면이 안 뜬다");
 
   // 캔버스는 클라이언트 몫이라 SSR 본문엔 로딩 문구까지만 있으면 된다
   assert.match(도면, /편집기를 불러오는 중|venue-layout/, "편집기 자리가 없다");
@@ -355,7 +355,7 @@ test("도면 화면이 뜨고, 진단 이력에서 도면으로 가는 길이 �
     theme: "1", population: "14", accessibility: "2",
   });
   const 홈 = await (await fetch(BASE + "/")).text();
-  assert.match(홈, /행사장 도면/, "이력에서 도면으로 가는 링크가 없다");
+  assert.match(홈, /시뮬레이션/, "이력에서 시뮬레이션으로 가는 링크가 없다");
   assert.match(홈, /venue\?entry=/, "링크가 진단 이력과 연결돼 있지 않다");
 });
 

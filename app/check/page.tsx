@@ -28,8 +28,9 @@ import { peerBandFor } from "@/lib/peerband";
 import { populationOf } from "@/lib/festivals";
 import { ymdDashed } from "@/lib/history";
 import { Num } from "@/app/_components/num";
+import { DataUsage } from "@/app/_components/data-usage";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
-import { attributionCaveat, competitorsNear, NEARBY_RADIUS_KM, type Competitor, type CompetitionStatus } from "@/lib/overlap";
+import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
 import { coordsOf } from "@/lib/match";
 
 export const dynamic = "force-dynamic";
@@ -115,7 +116,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
     }
   }
   const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
-  const 시군구배수 = 경쟁.length > 0;
   const stageNum = (key: string) => {
     const m = by.get(key);
     return m ? <Num m={m} /> : <span className="note">—</span>;
@@ -130,7 +130,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
             기획안 판정
           </Link>
           <Link href={`/evidence${qs}`}>실측 근거</Link>
-          <Link href="/venue">행사장 도면</Link>
+          <Link href="/venue">시뮬레이션</Link>
           <Link href="/">진단(보조)</Link>
         </nav>
       </header>
@@ -205,6 +205,14 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     <p className="check-sentence">
                       <Sentence seg={explainVisitors(visitors.verdict)} by={by} />
                     </p>
+
+                    <DataUsage
+                      by={by}
+                      historyYears={hist.years.length}
+                      dataRange={dataRange}
+                      peer={peer}
+                      competition={{ status: 경쟁상태, count: 경쟁.length }}
+                    />
 
                     <table className="report-table check-table">
                       <thead>
@@ -330,7 +338,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     )}
                     {[
                       noEvidence("주차면", "주차 수요를 잴 공사 데이터가 없다. 담당자 확인."),
-                      noEvidence("부스 수", "부스 수요를 잴 공사 데이터가 없다. 행사장 도면 시뮬로 통로 밀도만 본다."),
+                      noEvidence("부스 수", "부스 수요를 잴 공사 데이터가 없다. 시뮬레이션으로 통로 밀도만 본다."),
                       ...(budget ? [] : [noEvidence("예산", "기획안에 예산이 없다. 예산 미공개. 적으면 1인당 예산을 대조한다.")]),
                     ].map((v) => (
                       <tr key={v.item}>
@@ -438,8 +446,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       </p>
                     )}
                     <p className="note">
-                      배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다.
-                      {시군구배수 && ` 작년 기간에 반경 ${NEARBY_RADIUS_KM}km 다른 축제가 있어 이 배수는 개최 주 시군구 배수다.`}
+                      배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다. 같은 시기 다른 축제가 섞였는지는 위 단서의 귀속 경고가 말한다.
                     </p>
                   </div>
                 )}

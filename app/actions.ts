@@ -17,7 +17,6 @@ import { redirect } from "next/navigation";
 import { countExtractsToday, deleteEntry, save, saveDraft } from "@/lib/store";
 import { extractPlan, hasModelKey } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
-import { festivalStartDate, toExtraction } from "@/lib/tourapi";
 import { validatePlanInput } from "@/lib/match";
 import { DAILY_EXTRACT_LIMIT } from "@/lib/types";
 
@@ -81,37 +80,6 @@ export async function 추출(formData: FormData) {
         : "자동 추출에 실패했습니다. 항목을 직접 넣어 주세요",
       "&manual=1",
     );
-    return;
-  }
-  redirect(`/?draft=${id}`);
-}
-
-/**
- * 1단계의 다른 입구 — 검색 결과에서 축제 하나를 고르면 TourAPI 등록
- * 정보(주소·개최일)로 초안을 만든다. 모델은 부르지 않으므로 하루 한도
- * 밖이다. 테마·접근성은 등록 정보에 없어 사람이 확인 화면에서 채운다.
- */
-export async function 선택(formData: FormData) {
-  const contentId = String(formData.get("contentId") ?? "");
-  const title = String(formData.get("title") ?? "");
-  const addr1 = String(formData.get("addr1") ?? "");
-  if (!/^\d+$/.test(contentId)) {
-    오류로("선택한 축제를 읽지 못했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
-  }
-
-  // 개최일 조회가 죽어도 주소만으로 초안은 만들 수 있다. 죽이지 않는다.
-  let eventstartdate = "";
-  try {
-    eventstartdate = await festivalStartDate(contentId);
-  } catch {
-    eventstartdate = "";
-  }
-
-  let id: string;
-  try {
-    id = await saveDraft(toExtraction({ title, addr1, eventstartdate }));
-  } catch {
-    오류로("초안 저장에 실패했습니다 — 항목을 직접 넣어 주세요", "&manual=1");
     return;
   }
   redirect(`/?draft=${id}`);

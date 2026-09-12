@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { 짧은시각 } from "@/lib/datetime";
-import { 저장, 선택, 지운다, 추출 } from "@/app/actions";
+import { 저장, 지운다, 추출 } from "@/app/actions";
 import {
   getDraft,
   HISTORY_LIMIT,
@@ -15,10 +15,8 @@ import { checkUrlFromExtraction } from "@/lib/checkquery";
 import {
   festivalDetail,
   hasTourKey,
-  searchFestivals,
   searchFestivalsInPeriod,
   type FestivalDetail,
-  type TourFestival,
 } from "@/lib/tourapi";
 import {
   competitionHeadline,
@@ -56,7 +54,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const 입력오류 = params.err;
   const draftId = typeof params.draft === "string" ? params.draft : null;
   const 수동입력 = params.manual === "1";
-  const 검색어 = typeof params.q === "string" ? params.q.trim() : "";
 
   // 지도에 펼 진단과 그 안에서 고른 핀. 선택은 URL 에만 있다 —
   // 클라이언트 상태로 두면 619건 좌표가 번들로 딸려 들어가고,
@@ -74,17 +71,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     }
   }
   const 확인단계 = draft !== null || 수동입력;
-
-  // 축제 이름 검색 — TourAPI 가 죽어도 붙여넣기·직접 입력은 살아 있어야 한다.
-  let 검색결과: TourFestival[] = [];
-  let 검색실패 = false;
-  if (검색어 && hasTourKey() && !확인단계) {
-    try {
-      검색결과 = await searchFestivals(검색어);
-    } catch {
-      검색실패 = true;
-    }
-  }
 
   // 목록을 못 읽어도 입력 화면은 살아 있어야 한다.
   let entries: Entry[] = [];
@@ -174,7 +160,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <nav>
           <Link href="/check">기획안 판정</Link>
           <Link href="/evidence">실측 근거</Link>
-          <Link href="/venue">행사장 도면</Link>
+          <Link href="/venue">시뮬레이션</Link>
           <Link href="/" aria-current="page">진단(보조)</Link>
         </nav>
       </header>
@@ -207,8 +193,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <li>
             <b>이 축제의 실측으로 판정합니다</b>
             <span>
-              공사 KT 일별 방문자로 지난 회차의 배수를 재고, 기획안이 그 안에 있는지 셋으로 검사합니다. 통과·주의·과대·성립
-              불가 중 하나와 <strong>내년 배수 구간</strong>이 나옵니다
+              공사 KT 일별 방문자로 지난 회차의 배수를 재고, 기획안이 그 안에 있는지 셋으로 검사합니다. 통과·주의·과대·과소·상한 초과
+              중 하나와 <strong>내년 배수 구간</strong>이 나옵니다
             </span>
           </li>
           <li>
@@ -238,6 +224,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       {입력오류 && (
         <p className="alert" data-level="심각" role="alert">
           {입력오류}
+          {/* 한도가 찼거나 추출이 죽어도 빈손으로 보내지 않는다 — 견본 판정은 모델 없이 선다 */}
+          {params.manual && (
+            <>
+              {" "}
+              그동안은 <Link href="/check">견본 판정(군포·화천)</Link>을 먼저 보거나 <Link href="/check">판정 화면</Link>에 숫자를 직접 적을 수 있습니다.
+            </>
+          )}
         </p>
       )}
 
@@ -284,57 +277,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
           </form>
 
-          {/* 키가 없으면 섹션째 숨긴다. 담당자에게 환경변수 이름을 보여주는 건
-              안내가 아니라 소음이다 — 붙여넣기·직접 입력은 그대로 있으니
-              없는 기능을 광고하지 않는 쪽이 낫다. */}
-          {hasTourKey() && (
-            <>
-              <h2>또는 등록된 축제에서 찾기</h2>
-              <p className="note">
-                한국관광공사 TourAPI 에 등록된 축제를 이름으로 찾아 지역·시기를
-                채워 드립니다. 테마·접근성은 등록 정보에 없어 직접 고릅니다.
-              </p>
-              {/* 검색은 상태를 바꾸지 않는다 — GET 으로 URL 에 남겨 새로고침해도 유지된다 */}
-              <form action="/" method="get">
-                <p>
-                  <input
-                    name="q"
-                    defaultValue={검색어}
-                    placeholder="예) 김밥축제"
-                    required
-                  />{" "}
-                  <button type="submit">축제 검색</button>
-                </p>
-              </form>
-              {검색실패 && (
-                <p className="alert" data-level="주의" role="alert">
-                  축제 검색에 실패했습니다. 잠시 후 다시 하거나{" "}
-                  <Link href="/?manual=1">직접 입력</Link>해 주세요
-                </p>
-              )}
-              {검색어 && !검색실패 && 검색결과.length === 0 && (
-                <p className="note">
-                  “{검색어}” 로 등록된 축제를 찾지 못했습니다. 이름을 바꿔
-                  보거나 <Link href="/?manual=1">직접 입력</Link>해 주세요
-                </p>
-              )}
-              {검색결과.length > 0 && (
-                <ul>
-                  {검색결과.map((f) => (
-                    <li key={f.contentId}>
-                      <form action={선택}>
-                        <input type="hidden" name="contentId" value={f.contentId} />
-                        <input type="hidden" name="title" value={f.title} />
-                        <input type="hidden" name="addr1" value={f.addr1} />
-                        <button type="submit">{f.title}</button>{" "}
-                        <span className="note">{f.addr1 || "주소 없음"}</span>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
         </>
       ) : (
         <>
@@ -901,7 +843,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 <p>
                   {/* 경보를 받았다 — 그래서 어떻게 대비하나. 도면(M1)으로 잇는다 */}
                   <Link href={`/venue?entry=${고름.e.id}`}>
-                    이 쏠림에 대비하기 · 행사장 도면 →
+                    이 쏠림에 대비하기 · 시뮬레이션 →
                   </Link>
                   {" · "}
                   {/* 근거는 화면에만 있으면 결재에 못 올라간다 */}
@@ -947,7 +889,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 ) : (
                   <Link href={`/?entry=${e.id}#twin`}>지도에서 보기</Link>
                 )}{" "}
-                · <Link href={`/venue?entry=${e.id}`}>행사장 도면 →</Link>
+                · <Link href={`/venue?entry=${e.id}`}>시뮬레이션 →</Link>
               </p>
 
               {/* 시연 중 쌓인 시험 데이터를 그 자리에서 치운다. 확인창은 안 띄운다

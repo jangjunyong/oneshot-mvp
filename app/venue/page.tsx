@@ -15,7 +15,7 @@ import { EditorShell } from "@/app/venue/editor-shell";
 import { SimShell } from "@/app/venue/sim-shell";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "행사장 도면 · 기획안 팩트체크" };
+export const metadata = { title: "시뮬레이션 · 기획안 팩트체크" };
 
 const 오류로 = (message: string, extra = "") =>
   redirect("/venue?err=" + encodeURIComponent(message) + extra);
@@ -140,7 +140,7 @@ export default async function VenuePage({
         <nav>
           <Link href="/check">기획안 판정</Link>
           <Link href="/evidence">실측 근거</Link>
-          <Link href="/venue" aria-current="page">행사장 도면</Link>
+          <Link href="/venue" aria-current="page">시뮬레이션</Link>
           <Link href="/">진단(보조)</Link>
         </nav>
       </header>
@@ -149,7 +149,7 @@ export default async function VenuePage({
         <span className="grid-ref">
           <b>B-01</b> · 경보를 받은 뒤 · 쏠림에 대비하는 배치
         </span>
-        <h1>행사장 도면</h1>
+        <h1>시뮬레이션</h1>
         <p className="lede">
           OSM 실도면(위성으로 대조 가능) 위에서 보행자 시뮬레이션을 돌려, 진단에서 나온
           실측 배수로 <strong>어디가 막히는지</strong>를 그 자리에서 잽니다. 몇 명이 아니라 몇 배를,

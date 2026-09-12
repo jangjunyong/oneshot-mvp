@@ -277,8 +277,8 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
             {scan === null && !도면?.venue.sim ? (
               <p className="note">
                 {도면?.venue.geo
-                  ? "실도면은 저장돼 있지만 시뮬을 돌린 뒤 저장한 요약이 없습니다. 행사장 도면에서 재생 뒤 저장하면 여기 들어갑니다"
-                  : "이 진단에 연결된 도면이 아직 없습니다. 행사장 도면을 그리면 배치의 병목까지 이 진단서에 들어갑니다"}
+                  ? "실도면은 저장돼 있지만 시뮬을 돌린 뒤 저장한 요약이 없습니다. 시뮬레이션에서 재생 뒤 저장하면 여기 들어갑니다"
+                  : "이 진단에 연결된 도면이 아직 없습니다. 시뮬레이션에서 도면을 그리면 배치의 병목까지 이 진단서에 들어갑니다"}
               </p>
             ) : scan === null ? null : scan.blocked ? (
               <p className="note">{scan.blocked}</p>

@@ -146,7 +146,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
           <Link href="/evidence" aria-current="page">
             실측 근거
           </Link>
-          <Link href="/venue">행사장 도면</Link>
+          <Link href="/venue">시뮬레이션</Link>
           <Link href="/">진단(보조)</Link>
         </nav>
       </header>

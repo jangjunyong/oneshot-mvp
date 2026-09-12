@@ -492,7 +492,12 @@ export default function SimMap({
           break;
         case "headlessDone": pendingRef.current.headless?.(m); pendingRef.current.headless = undefined; break;
         case "stressDone": pendingRef.current.stress?.(m); pendingRef.current.stress = undefined; break;
-        case "error": setStatus(m.message); setAsking(null); setStressMsg(null); break;
+        // 오류가 나면 대기 중이던 질문·스트레스 약속을 풀어 준다. 안 풀면 runQuestion 의 가드가
+        // 새로고침 전까지 질문 버튼을 영영 막는다 (2026-09-11 Architect 지적, S1 #12)
+        case "error":
+          setStatus(m.message); setAsking(null); setStressMsg(null);
+          pendingRef.current.headless = undefined; pendingRef.current.stress = undefined;
+          break;
       }
     };
     worker.onerror = (ev) => setStatus("시뮬 워커를 못 띄웠습니다: " + (ev.message || "알 수 없는 오류"));
