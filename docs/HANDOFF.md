@@ -1,7 +1,32 @@
-# 인수인계 — 2026-09-10 (맨 위가 지금. 아래로 09-09 밤·09-09 밤 시뮬·08-31 기록)
+# 인수인계 — 2026-09-12 밤 (맨 위가 지금. 아래로 09-09 밤·09-09 밤 시뮬·08-31 기록)
 
 > 새 세션은 이 절을 먼저 읽고, 이어서 **`docs/verdict_2026-09-09_ralplan.md` §1.3(사슬)·§4(마디별 수용 기준 M0~M7·M12)** 를 읽는다.
 > 그다음 `docs/DECISIONS.md` 의 2026-09-09·10 절. 08-31 기록은 `/`·`/report`·데이터·작업 규약에 여전히 맞다.
+
+## (2026-09-12 밤) 개편 v4.1 — 사용자 지시 1~9 전부, C1→A1→B→A2→C2→D→E→F 커밋 8개 push
+
+계획: `~/.claude/plans/glowing-chasing-eich.md` (초안 → critic·architect·레드팀 3인 병렬 검증 → 반영본). 원인 진단(§0): 라이브=HEAD 였는데 나침반 4개를 한 번도 안 고쳤고, `/check` 는 글을 지운 게 아니라 하나도 안 접은 채 3,400자였다.
+
+| 마디 | 한 것 | 커밋 |
+|---|---|---|
+| C1 | 굵기 400/500·대문자·양수 자간·모노 라벨 0, 눈썹(A-01~B-01)·SECTION 치수선·표제란 삭제, sticky 상단바, `--gap-section`, Archivo 제거. `p{word-break:keep-all;text-wrap:pretty}` (리드 "다." 고아 줄) | b20bc5e |
+| A1 | 나침반 셋(기획안 넣기 `/` · 판정 `/check` · 시뮬레이션 `/venue`). `app/_components/twins-block.tsx` — 옛 `/` 의 지도·카드·등급·감당 범위·달 바꾸면·자기검증을 `/check` 로. 입력은 URL(sido·sigungu·start→월·pop) + 주석 키 `theme`·`acc`·`pin`(CHECK_KEYS 밖, 링크 방식, CheckForm hidden 으로 보존). `<span id="verdict-end">` 표식. 판정이 서면 14칸 폼은 `details.check-form-fold` | 4bfe1bb |
+| B | 리드 한 문장, 견본 배너 185→50자, 단서·백테스트 접힘(귀속 경고만 밖), 시뮬 요약 3줄을 판정표 아래로, 구간·폼·데이터 활용 노트 압축. e2e "열린 글자 수"(렌더 HTML, 닫힌 details 제외) | 5e8b976 |
+| A2 | `app/page.tsx` 전면 교체: PDF 올리기(주)·견본 버튼(같은 크기)·붙여넣기 접힘·관광데이터 3줄. 진단 이력·지도·5축 폼·직접 입력·`/?manual=1`·`/?draft=` 확인 화면 **삭제**. e2e 7건→새 5건 | 64c5e59 |
+| C2 | 판정·근거 h1 본문 크기, 표 머리 회색 헤어라인, 폼·카드 괘선. 인쇄 게이트 `/report/check` 헤드리스 크롬 2장 확인 | f434cfd |
+| D | `scripts/region-centroid.mjs`(브이월드 district L2, KT 코드로 대조) → `data/region/centroid.json` 298/299(인천 중구만 없음). `coordsOf`: 619건 정확 일치 → 대표점 → null. **"군포 → 양평" 시도 폴백 삭제**. 지도 좌하단 로고 슬롯(`public/logo.svg|png` 있을 때만) | 0b9e7bd |
+| E | `resolveRegion` 시도 토큰 벗기기(아는 시도일 때만, "수원시 장안구" 보존), 추출 시군구 KT 표기화, `checkUrlFromExtraction` 에 theme·acc. 실호출 1건("군포"만 적은 합성 기획서) 정상 | 1f0c748 |
+| F | `/venue` 기본 카드 + autoplay 1회. `lib/judgeguide.ts` → `docs/심사위원_시연안내.md` + `public/심사위원_안내.pdf`(2장), 숫자는 코드 생성·유닛 대조 | 212b8a0 |
+
+실측: 열린 글자 `/` 1,543→522 · `/check` 3,983→3,494 · `/venue` 105→327(카드 포함). 유닛 335 · e2e 16. 낯선 축제("충청남도 보령", 접미사 없음)를 `/check` 폼 URL 로 끝까지: 과소·신뢰도 낮음, 또래 행안부, 닮은 축제 블록 정상.
+
+**남은 것 / 사실대로 적어 두는 것**
+- 로고 이미지(사용자 지시 4): 파일이 아직 안 왔다. `public/logo.svg` 또는 `logo.png` 를 넣으면 `app/twin-map.tsx` 가 좌하단에 그린다(코드 변경 0). 3D 지도 로고는 2차
+- `/report?entry=`·`/venue?entry=` 는 견본(demo)과 기존 DB 행에만 동작한다 — 새 entry 를 만드는 경로가 없다. `lib/store.ts`·`저장/지운다` 액션·`app/_components/form-fields.tsx`·`app/report/page.tsx` 는 코드로만 남았다
+- `/check` 열린 글자 3,494 는 판정표·데이터 활용 표·구간 카드·닮은 축제 카드가 대부분이다(표는 접지 않기로). 더 줄이려면 데이터 활용 표를 3행 2열로
+- 3D 지도는 닮은 축제 접힘 안, 껍데기가 클릭 전엔 maplibre 청크를 안 받는다. VWorld 키는 여전히 RSC 페이로드에 실린다(S1 #10 미해결)
+- 디자인 목업(프리뷰 브랜치)은 만들지 않았다 — C1 을 main 에 바로 올려 배포본이 곧 목업이다. 사용자가 "이 방향" 또는 수정 한마디를 주면 C2 위에 덧댄다
+- 헤드라인(`lib/grade.ts`)의 "—" 는 엔진 불변 목록이라 손대지 않았다
 
 ## (2026-09-12) 계획 v3 실행 중 — 사용자 지시 9개 + 근본 문제, 마디 단위 커밋
 
