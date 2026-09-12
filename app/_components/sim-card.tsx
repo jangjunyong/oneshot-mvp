@@ -31,17 +31,17 @@ export function SimCardBlock({ isGunpo }: { isGunpo: boolean }) {
       ) : (
         <>
           <p>
-            군포철쭉축제 실도면(부스 114·출입구 4)에서 개장 뒤 {S.minutes}분을 미리 돌렸습니다. 최대 밀도 <Dens v={card.peak.density} /> ({card.peak.where}).{" "}
+            군포철쭉축제 실도면(부스 114·출입구 4), 개장 뒤 {S.minutes}분. 최대 밀도 <Dens v={card.peak.density} /> ({card.peak.where}).{" "}
             {card.secAbove5 >= 60
-              ? `행안부 "위험" 등급이 ${Math.round(card.secAbove5)}초 이어진 자리가 있습니다${card.limitWhere ? `: ${card.limitWhere}` : ""}. 이 가정에서는 배치를 바꿔야 합니다.`
+              ? `행안부 "위험" 등급이 ${Math.round(card.secAbove5)}초 이어진 자리가 있습니다${card.limitWhere ? `: ${card.limitWhere}` : ""}.`
               : card.hotspots.length > 0
-                ? `행안부 "주의" 등급 이상이 잠시 나타난 자리 ${card.hotspots.length}곳(${card.hotspots.map((h) => h.where).join(" · ")}). "위험" 등급이 이어진 자리는 없습니다.`
+                ? `"주의" 등급이 잠시 나타난 자리 ${card.hotspots.length}곳, "위험"이 이어진 자리는 없습니다.`
                 : `"주의" 등급 이상이 지속된 자리는 없습니다.`}{" "}
-            가정 안에서의 결과이고 안전하다는 뜻이 아닙니다.
+            가정 안의 결과이고 안전하다는 뜻이 아닙니다.
           </p>
           <p className="note">
-            가정: 시간당 유입 {S.inflowPerHour.map((n) => n.toLocaleString("ko-KR")).join(" → ")} (출처 없음, 순수 가정) · 1인 {S.visitsPerPerson}곳 방문 · 관람 {S.dwellSecMean}초 · 점 하나 = {S.personsPerAgent}. 밀도 등급 경계 3·5는 행안부 다중운집인파사고 안전관리 가이드라인(2024.9).{" "}
-            <Link href="/venue">시뮬레이션에서 배치·유입을 바꿔 직접 돌리기 →</Link>
+            가정: 시간당 유입 {S.inflowPerHour.map((n) => n.toLocaleString("ko-KR")).join("→")}(출처 없음) · 점 하나 = {S.personsPerAgent} · 등급 경계 3·5는 행안부 가이드라인(2024.9).{" "}
+            <Link href="/venue">직접 돌리기 →</Link>
           </p>
         </>
       )}

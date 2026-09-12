@@ -59,7 +59,7 @@ export function DataUsage({
               TourAPI <code>{KT_API}</code>
               <span className="note"> KT 이동통신 시군구 일별 체류</span>
             </th>
-            <td>1·2·3단계 분모 · 자기 이력 {historyYears}년 · 내년 배수 구간 · −52주 백테스트</td>
+            <td>판정 3단계의 분모 · 자기 이력 {historyYears}년 · 내년 배수 구간</td>
             <td>
               {cells.length === 0
                 ? "이력이 없어 실측 셀 없음"
@@ -89,24 +89,18 @@ export function DataUsage({
               데이터랩 축제 목록 {FESTIVALS.length}건
               <span className="note"> + 위 일별 자료로 재계산 {RECOMPUTED}/{FESTIVALS.length}</span>
             </th>
-            <td>또래 구간(같은 인구 구간의 배수 분포) · 보조 근거(닮은 축제)</td>
+            <td>또래 구간(같은 인구 구간의 배수 분포) · 닮은 축제</td>
             <td>
               {peer ? `또래 ${peer.n}곳 (${peer.label})` : "인구가 없어 또래 없음"}
-              <span className="note">
-                {" "}
-                · 이 축제의 인구 기준은 행안부 주민등록({REGION_META.baseMonth.slice(0, 7)}, {REGION_META.matched}곳 적재). 619건 분포 쪽 인구는 원 목록
-                값이라 출처·기준 시점이 없다
-              </span>
+              <span className="note"> · 인구 기준 행안부 주민등록({REGION_META.baseMonth.slice(0, 7)}, {REGION_META.matched}곳)</span>
             </td>
             <td className="note">정적 수집 · 빌드 전 재계산</td>
           </tr>
         </tbody>
       </table>
       <p className="note data-usage-scale">
-        공사 API 를 시연 1건이 아니라 전국 KT 시군구 단위 <b>{cov.sigungu}개</b>를 빌드 전에 통째로 당겨 두었다 —{" "}
-        {DATE(man.from ?? "")}~{DATE(man.to ?? "")} <b>{man.days.toLocaleString("ko-KR")}일</b> 전수가 <b>{cov.fullCount}곳</b>, 나머지는 KT 제공
-        시작일부터(최소 <b>{cov.minDays}일</b>), 합계 <b>{cov.rows.toLocaleString("ko-KR")}행</b>. 그래서 어느 시군구를 넣어도 판정이 그 자리에서 선다.
-        판정과 구간은 규칙이 내고 모델은 부르지 않는다.
+        전국 KT 시군구 <b>{cov.sigungu}개</b>를 빌드 전에 통째로 적재({DATE(man.from ?? "")}~{DATE(man.to ?? "")}, 합계{" "}
+        <b>{cov.rows.toLocaleString("ko-KR")}행</b>). 판정과 구간은 규칙이 내고 모델은 부르지 않는다.
       </p>
     </section>
   );

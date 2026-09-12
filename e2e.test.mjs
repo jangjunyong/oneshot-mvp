@@ -582,3 +582,25 @@ test("첫 화면에 PDF 입력·양식 링크·견본 2건이 있고, /form 은 
   for (const must of ["예상 방문객", "지난 회차", "총예산", "개최 지역"]) assert.ok(양식.includes(must), `양식에 "${must}" 가 없다`);
   assert.doesNotMatch(출처셀걷기(양식), /\d[\d,]*\s*명/, "양식에 출처 없는 명 수가 있다");
 });
+
+
+// 2026-09-12 지시 1·5 — 화면에 열린 글자 수를 렌더 HTML 기준으로 잰다(소스 계수는 다른 파일에서 오는 문장을 0으로 센다).
+// 닫힌 <details> 안은 빼고, 태그·스크립트를 걷은 뒤 공백을 접어 센다. 상한은 실측(2026-09-12 B 마디 뒤 값)의 1.1배.
+function 열린글자수(html) {
+  let h = html.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<!--\s*-->/g, "");
+  // 안쪽부터 닫힌 details 를 걷는다 — 중첩이라 한 번에 안 잡힌다
+  for (let i = 0; i < 10; i++) {
+    const next = h.replace(/<details(?![^>]*\sopen)[^>]*>(?:(?!<details)[\s\S])*?<\/details>/g, "");
+    if (next === h) break;
+    h = next;
+  }
+  return h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().length;
+}
+// "/" 는 A2(첫 화면 새로 쓰기) 전 실측 1,543자 — A2 뒤 다시 재서 내린다
+const 글자상한 = { "/": 1700, "/check": 3600, "/venue": 300 };
+test("열린 글자 수 — 첫 화면·판정(군포 견본)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
+  const 잰값 = {};
+  for (const path of Object.keys(글자상한)) 잰값[path] = 열린글자수(await (await fetch(BASE + path)).text());
+  console.log("열린 글자 수", JSON.stringify(잰값));
+  for (const [path, cap] of Object.entries(글자상한)) assert.ok(잰값[path] <= cap, `${path} 열린 글자 ${잰값[path]}자 > 상한 ${cap}자`);
+});

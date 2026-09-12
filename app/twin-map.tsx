@@ -195,8 +195,8 @@ export function TwinMap({
       <figcaption className="note">
         {matched.length === 0
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
-          : `점 = 좌표가 있는 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 파란 핀 = 이 기획안의 지역` +
-            (못올린수 > 0 ? ` · 좌표가 없어 지도에 못 올린 ${못올린수}곳은 아래 목록에 있습니다` : "")}
+          : `점 = 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 파란 핀 = 이 기획안` +
+            (못올린수 > 0 ? ` · 좌표가 없어 못 올린 ${못올린수}곳은 카드에만` : "")}
         <br />
         해안선: {COAST_SOURCE}
       </figcaption>

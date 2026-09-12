@@ -146,12 +146,7 @@ export default async function VenuePage({
 
       <main>
         <h1>시뮬레이션</h1>
-        <p className="lede">
-          OSM 실도면(위성으로 대조 가능) 위에서 보행자 시뮬레이션을 돌려, 진단에서 나온
-          실측 배수로 <strong>어디가 막히는지</strong>를 그 자리에서 잽니다. 몇 명이 아니라 몇 배를,
-          하나의 점이 아니라 구간의 아래위로 배수를 바꿔 가며 배치가 견디는지를 봅니다.
-          방문객 수를 예측하지 않습니다.
-        </p>
+        <p className="lede">실도면 위에서 보행자를 흘려, 판정의 배수로 어디가 막히는지 봅니다.</p>
 
       {오류 && (
         <p className="alert" data-level="심각" role="alert">

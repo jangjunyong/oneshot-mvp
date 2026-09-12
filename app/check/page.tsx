@@ -180,14 +180,11 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
           <br />
           실측으로 판정합니다
         </h1>
-        <p className="lede">
-          담당자가 쓴 예상 방문객을 <strong>이 축제가 실제로 겪은 배수</strong>와 같은 자로 잽니다. 몇 명이
-          아니라 몇 배를, 점이 아니라 구간으로. 판정과 구간은 규칙이 내고 모델은 부르지 않습니다.
-        </p>
+        <p className="lede">담당자가 쓴 예상 방문객을 이 축제가 실제로 겪은 배수로 판정합니다.</p>
 
         {견본 && (
           <p className="alert" data-level="근거없음">
-            <strong>견본</strong>입니다. {견본.banner}
+            <strong>견본</strong>입니다 · {견본.banner}
             {다른견본 && (
               <>
                 {" "}
@@ -396,16 +393,20 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                   </tbody>
                 </table>
 
-                {(visitors || 귀속경고) && (
-                  <details className="selfcheck" open>
+                {/* 시뮬 요약은 판정표 바로 아래 세 줄 — 옆 열 450자에서 옮겼다 (2026-09-12 지시 7) */}
+                <SimCardBlock isGunpo={code === "41410"} />
+
+                {/* 귀속 경고는 유일한 실시간 공사 API 결과라 접지 않는다. 나머지 단서는 접는다 */}
+                {귀속경고 && (
+                  <p className="note attribution" data-status={경쟁상태}>
+                    <strong>귀속 경고</strong> {귀속경고}
+                  </p>
+                )}
+                {visitors && (
+                  <details className="selfcheck">
                     <summary>단서 · 이 판정이 말하지 않는 것</summary>
                     <ul>
-                      {귀속경고 && (
-                        <li className="attribution" data-status={경쟁상태}>
-                          <strong>귀속 경고</strong> {귀속경고}
-                        </li>
-                      )}
-                      {visitors?.verdict.caveats.map((c) => (
+                      {visitors.verdict.caveats.map((c) => (
                         <li key={c}>{c}</li>
                       ))}
                       <li>
@@ -443,8 +444,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     </div>
                   </>
                 )}
-                <SimCardBlock isGunpo={code === "41410"} />
-
                 <h2>내년 배수 구간</h2>
                 {range && (
                   <div className="range-card" data-years={range.years.length}>
@@ -459,10 +458,13 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <strong className="num">{bandText(range.peak)}</strong>
                         </p>
                         <p className="note">
-                          자기 이력 {range.years.join("·")} 의 연도별 배수를 0.1 단위로 바깥 반올림한 구간. 이력 범위({range.years.length}년).
-                          적중률은 −52주 근사로만 쟀다(아래).{range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
+                          연도별 배수({range.years.join("·")})를 0.1 단위로 바깥 반올림. 이력 범위({range.years.length}년). 적중률은 −52주 근사로만 쟀다.
+                          {range.years.length === 1 && " 이력이 1년뿐이라 구간이 점이다."}
                         </p>
-                        <p className="note backtest">{backtestSentence(RANGE_BACKTEST_PUBLISHED)}</p>
+                        <details className="selfcheck">
+                          <summary>적중률은 어떻게 쟀나 (−52주 근사)</summary>
+                          <p className="note backtest">{backtestSentence(RANGE_BACKTEST_PUBLISHED)}</p>
+                        </details>
                       </>
                     ) : (
                       <p className="note">자기 이력이 없어 또래 구간만 낸다.</p>
@@ -478,8 +480,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <span className="num">{bandText(range.peerPeak)}</span>
                         </p>
                         <p className="note">
-                          {range.peerLabel} {peer?.n}곳의 중앙값~상위 5%. 619건을 같은 산출식으로 재계산한 값.
-                          {popSource && ` 이 축제의 인구 기준: ${popSource}.`}
+                          {range.peerLabel} {peer?.n}곳의 중앙값~상위 5%(619건 재계산).{popSource && ` 인구 출처: ${popSource}.`}
                         </p>
                       </>
                     )}
@@ -489,9 +490,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         지역 인구(만 명)를 적으면 같은 인구 구간의 또래 구간이 선다.
                       </p>
                     )}
-                    <p className="note">
-                      배수는 평소(전후 4주 외지인 중앙값) 대비다. 명 수로 바꾸지 않는다. 같은 시기 다른 축제가 섞였는지는 위 단서의 귀속 경고가 말한다.
-                    </p>
+                    <p className="note">배수는 평소(전후 4주 외지인 중앙값) 대비이고 명 수로 바꾸지 않는다.</p>
                   </div>
                 )}
 
@@ -628,10 +627,7 @@ function CheckForm({ q, populationSource, twin }: { q: CheckQuery; populationSou
           </p>
         );
       })}
-      <p className="note">
-        지난 회차 날짜는 담당자가 안다. KT 자료는 시군구 유동인구라 축제가 언제였는지 모른다. 가장 최근 해가
-        &ldquo;작년&rdquo;이 되어 1·2단계의 분모가 된다. 모르면 비워 두세요 — 이력 없이 또래 기준 참고값만 냅니다.
-      </p>
+      <p className="note">지난 회차 날짜는 담당자가 안다. 가장 최근 해가 &ldquo;작년&rdquo;이 되어 분모가 된다. 모르면 비워 두세요.</p>
       <p>
         <button type="submit">판정</button>
       </p>

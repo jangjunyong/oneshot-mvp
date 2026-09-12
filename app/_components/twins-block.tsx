@@ -51,9 +51,7 @@ export function TwinsBlock(p: TwinsBlockProps) {
   return (
     <section id="twins" className="twins section" aria-labelledby="twins-h">
       <h2 id="twins-h">닮은 과거 축제</h2>
-      <p className="note">
-        전국 619개 축제에서 지역·인구·접근성·시기·테마 다섯 축으로 고른 3곳. 판정의 보조 근거이고, 배수는 전부 실측입니다.
-      </p>
+      <p className="note">전국 619개 축제에서 다섯 축으로 고른 3곳. 보조 근거이고 배수는 실측입니다.</p>
 
       {/* 테마·접근성은 문서에서만 온다. GET 폼이 아니라 링크다 — 폼은 판정 쿼리를 통째로 갈아 견본으로 튄다 */}
       <p className="twin-choose">

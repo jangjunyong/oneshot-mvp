@@ -153,10 +153,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
           <br />
           실제로 겪은 것
         </h1>
-        <p className="lede">
-          시군구에 있던 사람을 KT 이동통신으로 센 일별 값입니다. 축제 방문객이 아니라 <strong>시군구 유동인구</strong>라서,
-          평소(전후 4주) 대비 배수와 같은 요일 대비 순증으로 축제 몫을 뽑습니다. 산출식은 <code>lib/surge.ts</code> 한 곳입니다.
-        </p>
+        <p className="lede">KT 이동통신으로 센 시군구 일별 외지인. 평소(전후 4주) 대비 배수가 판정의 분모입니다.</p>
 
         {isDemo && demo && (
           <p className="alert" data-level="근거없음">

@@ -100,19 +100,10 @@ export function TwinCards({
           <>
             <p className="twin-card-label">어떻게 골랐나</p>
             <p className="twin-card-name">{scope}에서 {matched.length}곳</p>
-            <p className="twin-card-meta">
-              지역·인구·접근성·시기·테마 다섯 축으로 쟀습니다
-            </p>
-            {/* 닮음 거리(0.09 같은 값)를 여기 내던 것을 걷어냈다.
-                담당자가 그 숫자로 할 수 있는 일이 없다 — 결재에서
-                "닮음 거리가 0.09였습니다"라고 답할 수 없고, 척도가 없으면
-                0.11 이 0.27 의 절반이라는 것도 뜻을 못 만든다.
-                불문율 3 이 금지한 "유사도 점수만 던지기"가 바로 이것이고,
-                왜 닮았는지는 아래 details 와 핀 카드가 축별로 낸다 */}
-            <p className="twin-card-foot">
-              다섯 축이 충분히 가깝지 않으면 쓰지 않습니다. 억지로 가장 가까운
-              것을 내놓지 않습니다.
-            </p>
+            <p className="twin-card-meta">지역·인구·접근성·시기·테마 다섯 축</p>
+            {/* 닮음 거리(0.09 같은 값)는 내지 않는다 — 담당자가 그 숫자로 할 수 있는 일이 없다(불문율 3).
+                왜 닮았는지는 접힘 안 목록과 핀 카드가 축별로 낸다 */}
+            <p className="twin-card-foot">가깝지 않으면 억지로 내지 않습니다</p>
           </>
         )}
       </div>
