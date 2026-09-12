@@ -83,3 +83,11 @@ test("Nz 부천 원미구처럼 늦게 시작한 시군구는 자기 범위를 �
   const r = dailyRange(late.code);
   assert.ok(r && r.from > manifest().from!, `${late.name} 시작일이 전역 시작일보다 늦어야 한다`);
 });
+
+// 2026-09-12 E — 시군구 칸에 시도가 섞여 와도 풀고, 자치구 이름은 깨지 않는다
+test("resolveRegion 은 '경기도 군포시'처럼 시도가 섞인 시군구도 풀고, '수원시 장안구'는 그대로 자치구다", () => {
+  assert.equal(resolveRegion("경기", "경기도 군포시")?.code, "41410");
+  assert.equal(resolveRegion("경기도", "경기 군포")?.code, "41410");
+  assert.equal(resolveRegion("경기", "수원시 장안구")?.code, "41111");
+  assert.equal(resolveRegion("경기", "군포")?.code, "41410");
+});

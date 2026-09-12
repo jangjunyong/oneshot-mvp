@@ -23,6 +23,7 @@ import {
 } from "@/lib/types";
 import { populationOf } from "@/lib/festivals";
 import { shortSido } from "@/lib/tourapi";
+import { resolveRegion } from "@/lib/kto/daily";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -305,6 +306,12 @@ function assemble(out: ModelOutput, source: Extraction["source"]): Extraction {
   // 조용히 진단이 나간다. 무료 모델이 계속 429 라 이 길을 아무도 안 지나가
   // 여태 안 드러났다.
   const normalized: ModelOutput = { ...out, sido: shortSido(out.sido) };
+  // 시군구도 KT 표기로 맞춘다 — 모델이 "군포"로 주면 "군포시"로. 자치구("수원시 장안구")는 619건 표기가 시 단위라
+  // 그대로 두지 않고 시(수원시)로 내린다: populationOf·coordsOf 가 그 이름을 쓴다 (2026-09-12 E)
+  if (normalized.sido && normalized.sigungu) {
+    const r = resolveRegion(normalized.sido, normalized.sigungu);
+    if (r) normalized.sigungu = r.name.includes(" ") ? r.name.split(" ")[0] : r.name;
+  }
 
   const missing = (Object.keys(KOREAN_NAME) as ExtractedKey[])
     .filter((k) => normalized[k] === null || normalized[k] === undefined)

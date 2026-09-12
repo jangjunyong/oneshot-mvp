@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { checkQueryString, DEMOS, GUNPO_2027, HWACHEON_2027, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, checkUrlFromExtraction, DEMOS, GUNPO_2027, HWACHEON_2027, parseCheckQuery } from "@/lib/checkquery";
 import { manifest } from "@/lib/kto/daily";
 
 test("빈 URL 이면 군포 2027 견본", () => {
@@ -146,4 +146,14 @@ test("판정 키가 값 없이 있어도 담당자 입력이고, 주석 키(draf
   const unknown = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", zzz: "1", draft: "3", t: "abc" });
   const known = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000" });
   assert.deepEqual(unknown.query, known.query, "모르는 키가 판정을 바꿨다");
+});
+
+// 2026-09-12 E — 추출 결과의 테마·접근성은 주석 키로 /check 에 실린다 (판정 키 아님)
+test("checkUrlFromExtraction 은 theme·acc 를 주석 키로 싣고, 없으면 싣지 않는다", () => {
+  const base = { sido: "경기", sigungu: "군포시", month: 4, populationManMyeong: null, evidence: {}, missing: [], source: "llm" as const, facts: undefined };
+  const with_ = checkUrlFromExtraction({ ...base, themeCode: 2, accessibility: 4 });
+  assert.match(with_, /[?&]theme=2/);
+  assert.match(with_, /[?&]acc=4/);
+  const without = checkUrlFromExtraction({ ...base, themeCode: null, accessibility: null });
+  assert.doesNotMatch(without, /theme=|acc=/);
 });

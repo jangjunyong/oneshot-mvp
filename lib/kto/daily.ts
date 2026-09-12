@@ -151,7 +151,11 @@ export function coverageStats(): { sigungu: number; fullDays: number; fullCount:
 export function resolveRegion(sido: string, sigungu: string): SigunguInfo | null {
   const list = sigunguList();
   const sd = (shortSido(sido) ?? sido).trim();
-  const s = sigungu.replace(/\s+/g, " ").trim();
+  let s = sigungu.replace(/\s+/g, " ").trim();
+  // 시군구 칸에 "경기도 군포시"처럼 시도가 같이 오면 앞 토큰을 벗긴다 — 단 그 토큰이 **아는 시도 이름**일 때만.
+  // "수원시 장안구"의 첫 토큰(수원시)은 시도가 아니라 벗기지 않는다 (2026-09-12 E, architect 지적)
+  const tok = s.split(" ")[0];
+  if (s.includes(" ") && (shortSido(tok) !== tok || tok === sd)) s = s.slice(tok.length).trim();
   const inSido = list.filter((x) => x.sido === sd);
   if (inSido.length === 0) return null;
   const squash = (t: string) => t.replace(/\s+/g, "");

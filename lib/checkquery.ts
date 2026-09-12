@@ -288,5 +288,6 @@ export function checkUrlFromExtraction(e: Extraction, name = ""): string {
     end: f?.endDate ? ymdCompact(f.endDate) : "",
     history: [],
   };
-  return "/check" + checkQueryString(q, false);
+  // 테마·접근성은 판정에 안 쓰지만 닮은 축제 블록이 읽는다 — 주석 키로 실어 보낸다 (2026-09-12 E)
+  return "/check" + appendQuery(checkQueryString(q, false), { theme: e.themeCode, acc: e.accessibility });
 }
