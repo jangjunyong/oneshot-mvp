@@ -366,8 +366,11 @@ export default function SimMap({
   initialGeo,
   entryId,
   saveAction,
+  autoplay = false,
 }: {
   vworldKey: string | null;
+  /** 진입하자마자 기본 시나리오를 한 번 재생한다 (2026-09-12 F, 사용자 지시 7 "기본으로 돌려 둬라"). 담당자가 안 눌러도 결과가 선다 */
+  autoplay?: boolean;
   scenario: { surge: number | null; label: string } | null;
   initialCenter: { lat: number; lng: number } | null;
   /** 저장된 도면. 없으면 군포 기본 도면 파일을 읽는다 */
@@ -441,6 +444,8 @@ export default function SimMap({
   const [stressMsg, setStressMsg] = useState<string | null>(null);
   const [venue, setVenue] = useState<SimVenue | null>(null);
   const [ready, setReady] = useState(false);
+  // 자동 재생은 첫 build 뒤 한 번만 — 도면을 고쳐 다시 만들 때마다 멋대로 돌면 편집을 방해한다
+  const autoplayedRef = useRef(false);
   const [mode, setMode] = useState<EditMode>("view");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<FC[]>([]);
@@ -605,6 +610,13 @@ export default function SimMap({
     send({ type: "scale", v: scale });
   }, [scale]);
   useEffect(() => { speedRef.current = speed; send({ type: "speed", v: speed }); }, [speed]);
+  useEffect(() => {
+    if (!autoplay || !ready || autoplayedRef.current || runningRef.current) return;
+    autoplayedRef.current = true;
+    runningRef.current = true;
+    setRunning(true);
+    send({ type: "run" });
+  }, [autoplay, ready]);
   useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
   const changeMode = (k: EditMode) => {
     modeRef.current = k; draftRef.current = [];

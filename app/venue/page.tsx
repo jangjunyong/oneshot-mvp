@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SimCardBlock } from "@/app/_components/sim-card";
 import { redirect } from "next/navigation";
 import {
   getEntry,
@@ -169,7 +170,11 @@ export default async function VenuePage({
         )
       )}
 
+      {/* 기본 도면(군포 실도면)으로 들어왔으면 미리 돌린 요약을 먼저 보이고, 아래 시뮬은 자동으로 한 번 재생한다 (2026-09-12 F) */}
+      {!entryId && !venue.geo && <SimCardBlock isGunpo />}
+
       <SimShell
+        autoplay={!entryId && !venue.geo}
         initialCenter={initialCenter}
         vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
         scenario={scenario}

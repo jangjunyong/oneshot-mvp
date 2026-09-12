@@ -365,7 +365,7 @@ function 열린글자수(html) {
   return h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().length;
 }
 // 실측(2026-09-12): / 522 · /check 3,499 · /venue 105 — 상한은 그 1.1배 안팎
-const 글자상한 = { "/": 600, "/check": 3600, "/venue": 300 };
+const 글자상한 = { "/": 600, "/check": 3600, "/venue": 450 };
 test("열린 글자 수 — 첫 화면·판정(군포 견본)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
   const 잰값 = {};
   for (const path of Object.keys(글자상한)) 잰값[path] = 열린글자수(await (await fetch(BASE + path)).text());

@@ -18,6 +18,7 @@ export function SimShell(props: {
   initialGeo: NonNullable<Venue["geo"]> | null;
   entryId: string | null;
   saveAction: (formData: FormData) => Promise<void>;
+  autoplay?: boolean;
 }) {
   return <SimMap {...props} />;
 }
