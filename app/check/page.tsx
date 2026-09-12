@@ -216,7 +216,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
                 {visitors ? (
                   <>
-                    <p className="alert" data-level={LEVEL_OF[visitors.verdict.label]} data-labeled="">
+                    <p className="alert" data-level={LEVEL_OF[visitors.verdict.label]} data-label={visitors.verdict.label} data-labeled="">
                       <strong>예상 방문객 {visitors.verdict.label}</strong>
                       {visitors.verdict.confidence === "low" && " · 신뢰도 낮음"}
                       {visitors.verdict.confidence === "none" && " · 비교할 이력이 없다"}
@@ -264,7 +264,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                             </td>
                             <td className="num">{s.ratio === null ? "—" : s.ratio.toFixed(2)}</td>
                             <td>
-                              <span className="chip" data-level={LEVEL_OF[s.result as Label]}>
+                              <span className="chip" data-level={LEVEL_OF[s.result as Label]} data-label={s.result}>
                                 {s.result}
                               </span>
                             </td>
@@ -324,7 +324,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       <td>{schedule ? schedule.note : "—"}</td>
                       <td>
                         {schedule && (
-                          <span className="chip" data-level={LEVEL_OF[schedule.label]}>
+                          <span className="chip" data-level={LEVEL_OF[schedule.label]} data-label={schedule.label}>
                             {schedule.label}
                           </span>
                         )}
@@ -348,7 +348,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           )}
                         </td>
                         <td>
-                          <span className="chip" data-level={LEVEL_OF[budget.verdict.label]}>
+                          <span className="chip" data-level={LEVEL_OF[budget.verdict.label]} data-label={budget.verdict.label}>
                             {budget.verdict.label}
                           </span>
                           <span className="note check-cell-label">방문객 판정 상속</span>
@@ -365,7 +365,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         <td className="note">—</td>
                         <td className="note">{v.note}</td>
                         <td>
-                          <span className="chip" data-level="근거없음">
+                          <span className="chip" data-level="근거없음" data-label={v.label}>
                             {v.label}
                           </span>
                         </td>

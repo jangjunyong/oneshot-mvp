@@ -364,7 +364,9 @@ ul.scan-findings strong { background: var(--severe); }
   font-size: 9px;
   letter-spacing: 0.02em;
 }
-.map-origin { fill: none; stroke: var(--severe); }
+.map-origin { fill: none; stroke: var(--accent); }
+.map-origin .pin-body { fill: url(#pin-grad); stroke: var(--surface); stroke-width: 1.2; }
+.map-origin .pin-eye { fill: var(--surface); opacity: 0.92; }
 
 /* 핀. 색은 여기서만 정한다 — 도면 시스템 토큰 밖으로 새지 않게 */
 .pin { cursor: pointer; }
@@ -372,8 +374,8 @@ ul.scan-findings strong { background: var(--severe); }
 .pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
 .pin text { fill: var(--surface); }
 .pin-foot { fill: var(--ink); opacity: 0.18; }
-.pin[data-selected] line { stroke: var(--severe); }
-.pin[data-selected] circle { fill: var(--severe); }
+.pin[data-selected] line { stroke: var(--accent); }
+.pin[data-selected] circle { fill: var(--accent); }
 
 /* 지도 한 장 + 그 지도가 말하는 것을 나란히 */
 .twin-layout {
@@ -407,8 +409,8 @@ ul.scan-findings strong { background: var(--severe); }
 
 /* 누를 수 있다는 것이 보여야 누른다 */
 .twin-map a { text-decoration: none; }
-.pin:hover circle { fill: var(--severe); }
-.pin:hover line { stroke: var(--severe); }
+.pin:hover circle { fill: var(--accent); }
+.pin:hover line { stroke: var(--accent); }
 .twin-map a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* 핀 하나를 눌렀을 때 펴지는 그 축제의 근거 */
@@ -869,10 +871,10 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
   font-size: 7px;
 }
 /* 이 기획안 — 화면에서 유일하게 굵고 붉다 */
-.peer-me line { stroke: var(--severe); stroke-width: 2; }
-.peer-me circle { fill: var(--severe); }
+.peer-me line { stroke: var(--accent); stroke-width: 2; }
+.peer-me circle { fill: var(--accent); }
 .peer-melabel {
-  fill: var(--severe);
+  fill: var(--accent);
   font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
@@ -982,3 +984,25 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .aux-head { margin: var(--s4) 0 var(--s1); font-size: var(--text-base); font-weight: 500; color: var(--concrete); }
 
 .attribution[data-status="fail"] { color: var(--caution); }
+
+/* ── 판정 7종의 형태 어휘 (2026-09-12 흑백 전환) ─────────────────────────────
+   색을 걷었으므로 등급은 채움·테두리로 말한다. 라벨 문자열은 항상 함께 찍힌다(WCAG 1.4.1).
+   상한 초과 = 반전 / 과대 = 굵은 실선 / 주의 = 점선 / 과소 = 파선 / 통과 = 가는 실선 / 근거 없음·단위 미상 = 해칭 */
+.alert[data-label="상한 초과"], .chip[data-label="상한 초과"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.alert[data-label="과대"] { border-left: 8px solid var(--ink); background: var(--raised); color: var(--ink); }
+.chip[data-label="과대"] { border: 2px solid var(--ink); color: var(--ink); background: var(--surface); font-weight: 700; }
+.alert[data-label="주의"] { border-left: 5px dotted var(--ink); background: var(--surface); color: var(--ink); }
+.chip[data-label="주의"] { border: 2px dotted var(--ink); color: var(--ink); background: var(--surface); }
+.alert[data-label="과소"] { border-left: 5px dashed var(--ink); background: var(--surface); color: var(--ink); }
+.chip[data-label="과소"] { border: 2px dashed var(--ink); color: var(--ink); background: var(--surface); }
+.alert[data-label="통과"] { border-left: 3px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.chip[data-label="통과"] { border: 1px solid var(--line-strong); color: var(--ink); background: var(--surface); }
+.alert[data-label="근거 없음"], .alert[data-label="단위 미상"], .chip[data-label="근거 없음"], .chip[data-label="단위 미상"] {
+  background: repeating-linear-gradient(45deg, transparent 0 3px, var(--line) 3px 4px);
+  color: var(--concrete); border-color: var(--line-strong);
+}
+.chip[data-label="주의 신호"] { border: 2px dotted var(--ink); color: var(--ink); background: var(--surface); }
+.chip[data-label="계산 불가"], .chip[data-label="신호 없음"] { background: repeating-linear-gradient(45deg, transparent 0 3px, var(--line) 3px 4px); color: var(--concrete); }
+@media print {
+  .map-origin .pin-body { fill: var(--ink); }
+}

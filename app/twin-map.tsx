@@ -161,10 +161,16 @@ export function TwinMap({
 
         {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
         {o && (
-          <g className="map-origin" strokeWidth="2">
-            <circle cx={o.x} cy={o.y} r="7" />
-            <line x1={o.x - 11} y1={o.y} x2={o.x + 11} y2={o.y} />
-            <line x1={o.x} y1={o.y - 11} x2={o.x} y2={o.y + 11} />
+          /* 사용자 지시 4(2026-09-11): 파란 그라데이션 위치 핀. 화면의 유일한 유채색이고 "이 기획안이 여기 있다"만 뜻한다 */
+          <g className="map-origin" transform={`translate(${o.x} ${o.y})`} aria-label="이 기획안의 지역">
+            <defs>
+              <linearGradient id="pin-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="var(--accent-light)" />
+                <stop offset="1" stopColor="var(--accent-deep)" />
+              </linearGradient>
+            </defs>
+            <path className="pin-body" d="M0 0 C-5.5 -7.5 -10 -12 -10 -18 A10 10 0 1 1 10 -18 C10 -12 5.5 -7.5 0 0 Z" />
+            <circle className="pin-eye" cx="0" cy="-18" r="4" />
           </g>
         )}
 
@@ -188,7 +194,7 @@ export function TwinMap({
       <figcaption className="note">
         {matched.length === 0
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
-          : `점 = 좌표가 있는 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · ⊕ = 이 기획안의 지역` +
+          : `점 = 좌표가 있는 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 파란 핀 = 이 기획안의 지역` +
             (못올린수 > 0 ? ` · 좌표가 없어 지도에 못 올린 ${못올린수}곳은 아래 목록에 있습니다` : "")}
         <br />
         해안선: {COAST_SOURCE}

@@ -156,7 +156,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
         </header>
 
         <section className="report-verdict">
-          <p className="alert" data-level={LEVEL_OF[최종]}>
+          <p className="alert" data-level={LEVEL_OF[최종]} data-label={최종}>
             예상 방문객 {최종}
             {visitors?.verdict.confidence === "low" && " · 신뢰도 낮음"}
           </p>

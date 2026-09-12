@@ -29,13 +29,18 @@
   --redline:  #171717;
 
   /* 상태 — 유채색은 여기서만 쓴다 (경보·성공·경고) */
-  --severe:    #C62A20;
-  --severe-bg: #FDF3F2;
-  --caution:   #8A5A00;
-  --caution-bg:#FDF8EE;
+  --severe:    #171717;  /* 2026-09-12 흑백 전환 — 이름은 유지, 값만 무채색. 등급은 형태(data-label)로 구분 */
+  --severe-bg: #EDEDED;
+  --caution:   #444444;
+  --caution-bg:#F5F5F5;
+
+  /* 화면에서 유일한 유채색 — "당신의 기획안이 여기 있다"(지도 핀)에만 쓴다. 상태·버튼·링크에는 쓰지 않는다 */
+  --accent:       #2F7BEE;
+  --accent-deep:  #0F4FB8;
+  --accent-light: #7FB2F5;
 
   /* 서체 — var(--font-*-loaded) 는 next/font 등에서 주입되면 우선한다 */
-  --font-display: var(--font-display-loaded), "Archivo", "Pretendard", "IBM Plex Sans KR", sans-serif;
+  --font-display: var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif; /* 한글 헤드라인에 라틴 서체(Archivo)를 섞지 않는다 */
   --font-body:    var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
   /* 세리프는 아무도 로드하지 않아 바탕체로 떨어졌다 — 본문 서체로 (2026-09-10) */
   --font-serif:   var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
@@ -49,13 +54,13 @@
   --text-lg:   1.333rem;
   --text-xl:   1.777rem;
   --text-2xl:  2.369rem;
-  --text-display: clamp(2.8rem, 7.5vw, 6.5rem);
+  --text-display: clamp(2.1rem, 4.2vw, 3.2rem);
 
   /* 간격 — 8px 모듈 */
   --s1: 0.5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2rem;
   --s6: 3rem;    --s8: 4rem;  --s12: 6rem;
 
-  --radius: 6px;
+  --radius: 0;
   --ring: 0 0 0 1px rgba(0, 0, 0, 0.08);
 
   --sheet-max: 1200px;
