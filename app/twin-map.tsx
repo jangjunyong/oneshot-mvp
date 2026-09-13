@@ -71,29 +71,22 @@ function Pin({
   href: string;
   selected: boolean;
 }) {
-  // 사용자가 준 핀 그림(public/pin.png, 2026-09-12). 그림의 끝(꼭짓점)이 (x, y - stem) 에 오게 놓고,
-  // 번호는 그림의 흰 원 자리(폭 50%·높이 37%)에 찍는다. 기둥은 이웃과 겹쳐 머리를 올렸을 때만 보인다
-  const w = PIN_IMG_W * (selected ? 1.25 : 1);
-  const h = w;
-  const tipY = y - stem;
+  // 검정선 핀으로 되돌렸다(2026-09-13 사용자 지시 — 파란 핀 그림보다 원래 쓰던 검정선이 낫다)
+  const r = selected ? PIN_HEAD_R + 2 : PIN_HEAD_R;
   return (
     <Link href={href} aria-label={`닮은 축제 ${label} 자세히 보기`}>
       <g className="pin" data-selected={selected ? "1" : undefined}>
-        <line x1={x} y1={y} x2={x} y2={tipY} strokeWidth={1.2} />
-        <image href={PIN_IMG} x={x - w / 2} y={tipY - h * PIN_TIP} width={w} height={h} />
-        <text className="pin-num" x={x} y={tipY - h * PIN_TIP + h * PIN_EYE + 4} textAnchor="middle" fontSize={selected ? 12 : 11} fontWeight="500">
+        {/* 바닥 그림자 — 핀이 땅에 꽂혀 있다는 유일한 단서 */}
+        <ellipse className="pin-foot" cx={x} cy={y} rx={r * 0.75} ry={r * 0.3} />
+        <line x1={x} y1={y} x2={x} y2={y - stem} strokeWidth={selected ? 3 : 2} />
+        <circle cx={x} cy={y - stem} r={r} />
+        <text x={x} y={y - stem + 4} textAnchor="middle" fontSize={selected ? 12 : 11} fontWeight="500">
           {label}
         </text>
       </g>
     </Link>
   );
 }
-
-/** 핀 그림 규격 — 512×512 원본에서 꼭짓점은 높이의 86%, 흰 원 중심은 37% 자리 */
-const PIN_IMG = "/pin.png";
-const PIN_IMG_W = PIN_HEAD_R * 4.2;
-const PIN_TIP = 0.86;
-const PIN_EYE = 0.37;
 
 /** 이 핀이 지금 고른 것인가 (1/0) — 그리는 순서를 정하는 데도 쓴다 */
 const 고른것 = (g: { ids: string[] }, selectedPin: string | null) =>
@@ -162,10 +155,12 @@ export function TwinMap({
 
         <path className="map-dots" d={배경점들} strokeWidth="2.6" strokeLinecap="round" />
 
-        {/* 입력 지역 — '이 기획안'. 같은 핀 그림을 조금 크게, 번호 없이 (사용자 지시 4, 2026-09-12 핀 그림 교체) */}
+        {/* 입력 지역 — 핀이 아니라 과녁이다. 여기가 '이 기획안'이다 */}
         {o && (
-          <g className="map-origin" transform={`translate(${o.x} ${o.y})`} aria-label="이 기획안의 지역">
-            <image className="pin-body" href={PIN_IMG} x={-PIN_IMG_W * 0.7} y={-PIN_IMG_W * 1.4 * PIN_TIP} width={PIN_IMG_W * 1.4} height={PIN_IMG_W * 1.4} />
+          <g className="map-origin" strokeWidth="2" aria-label="이 기획안의 지역">
+            <circle cx={o.x} cy={o.y} r="7" />
+            <line x1={o.x - 11} y1={o.y} x2={o.x + 11} y2={o.y} />
+            <line x1={o.x} y1={o.y - 11} x2={o.x} y2={o.y + 11} />
           </g>
         )}
 
@@ -189,7 +184,7 @@ export function TwinMap({
       <figcaption className="note">
         {matched.length === 0
           ? `비교할 만한 과거 축제가 없습니다 — 찾아본 범위: ${scope}`
-          : `점 = 축제 ${찍히는축제.length}곳 · 번호 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · 큰 핀 = 이 기획안` +
+          : `점 = 축제 ${찍히는축제.length}곳 · 핀 = 닮은 축제 ${matched.length}곳(누르면 근거) · ⊕ = 이 기획안` +
             (못올린수 > 0 ? ` · 좌표가 없어 못 올린 ${못올린수}곳은 카드에만` : "")}
         <br />
         해안선: {COAST_SOURCE}

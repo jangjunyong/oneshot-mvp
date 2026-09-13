@@ -355,18 +355,14 @@ ul.scan-findings strong { background: var(--severe); }
   font-family: var(--font-body);
   font-size: 9px;
 }
-.map-origin { fill: none; stroke: var(--accent); }
-.map-origin .pin-body { fill: url(#pin-grad); stroke: var(--surface); stroke-width: 1.2; }
-.map-origin .pin-eye { fill: var(--surface); opacity: 0.92; }
+.map-origin { fill: none; stroke: var(--ink); }
 
-/* 핀. 색은 여기서만 정한다 — 도면 시스템 토큰 밖으로 새지 않게 */
+/* 핀. 검정선 — 고른 핀은 색이 아니라 크기·굵기로 갈린다 (2026-09-13 사용자 지시로 파란 핀 그림에서 되돌림) */
 .pin { cursor: pointer; }
 .pin line { stroke: var(--ink); }
-.pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; } /* 옛 원형 머리 — 지금은 pin.png 그림 */
+.pin circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1.5; }
 .pin text { fill: var(--surface); }
 .pin-foot { fill: var(--ink); opacity: 0.18; }
-.pin[data-selected] line { stroke: var(--accent); }
-.pin[data-selected] circle { fill: var(--accent); }
 
 /* 지도 한 장 + 그 지도가 말하는 것을 나란히 */
 .twin-layout {
@@ -399,8 +395,8 @@ ul.scan-findings strong { background: var(--severe); }
 
 /* 누를 수 있다는 것이 보여야 누른다 */
 .twin-map a { text-decoration: none; }
-.pin:hover circle { fill: var(--accent); }
-.pin:hover line { stroke: var(--accent); }
+.pin:hover circle { fill: var(--concrete); }
+.pin:hover line { stroke: var(--concrete); }
 .twin-map a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* 핀 하나를 눌렀을 때 펴지는 그 축제의 근거 */
@@ -984,10 +980,6 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 }
 .chip[data-label="주의 신호"] { border: 2px dotted var(--ink); color: var(--ink); background: var(--surface); }
 .chip[data-label="계산 불가"], .chip[data-label="신호 없음"] { background: repeating-linear-gradient(45deg, transparent 0 3px, var(--line) 3px 4px); color: var(--concrete); }
-@media print {
-  .map-origin .pin-body { fill: var(--ink); }
-}
-
 /* ── 기획안 입력 양식(/form) — 인쇄해서 손으로 채우는 한 장 ───────────────────── */
 .form-table th[scope="row"] { width: 9rem; text-align: left; font-weight: 500; }
 .form-blank { display: inline-block; min-width: 14rem; height: 1.4em; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
@@ -1055,7 +1047,3 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .check-side h2, .data-usage h2, .sim-card h2, .twins h2 { font-size: var(--text-lg); }
 h2.section { font-size: var(--text-xl); }
 
-/* 핀 번호 — 핀 그림(public/pin.png)의 흰 원 위에 찍힌다 */
-.pin .pin-num { fill: var(--ink); }
-.pin[data-selected] .pin-num { font-weight: 500; }
-@media print { .map-origin .pin-body { fill: none; } }

@@ -1,6 +1,6 @@
-// 흑백 + 파란 핀 규율(2026-09-12 사용자 지시 8·4)의 기계 검사.
+// 흑백 규율(2026-09-12 사용자 지시 8)의 기계 검사. 지도 핀은 2026-09-13 사용자 지시로 검정선으로 되돌렸다.
 //
-// 유채색은 --accent* 세 토큰에만 있고, 그 토큰은 지도 핀·"당신의 위치" 표식에만 쓴다.
+// 유채색은 --accent* 세 토큰에만 있고, 그 토큰은 또래 띠의 "이 기획안" 표식에만 쓴다.
 // CSS 만 보면 캔버스 코드의 하드코딩 색이 새므로 tsx 도 훑는다(히트맵·3D 선택 마커는 예외 목록으로 명시).
 
 import { test } from "node:test";
@@ -48,14 +48,14 @@ test("D-2 app/**/*.{css,tsx} 에 하드코딩 유채색이 없다 (예외: 3D �
   assert.deepEqual(bad, [], bad.join("\n"));
 });
 
-test("D-3 --accent 는 지도 핀·'당신의 위치' 표식에만 쓴다 — 버튼·링크·경보에는 안 쓴다", () => {
+test("D-3 --accent 는 또래 띠의 '이 기획안' 표식에만 쓴다 — 지도 핀·버튼·링크·경보에는 안 쓴다", () => {
   const css = read("app/globals.css");
   const lines = css.split("\n").map((l, i) => [i + 1, l] as const).filter(([, l]) => /var\(--accent/.test(l));
   for (const [n, l] of lines) {
     const ctx = css.split("\n").slice(Math.max(0, n - 4), n).join("\n");
-    assert.ok(/map-origin|pin|peer-me/.test(ctx + l), `globals.css:${n} 에서 accent 를 다른 곳에 썼다: ${l.trim()}`);
+    assert.ok(/peer-me/.test(ctx + l), `globals.css:${n} 에서 accent 를 다른 곳에 썼다: ${l.trim()}`);
   }
-  assert.ok(lines.length >= 4, "핀·선택 핀·또래 표식에 accent 가 안 붙었다");
+  assert.ok(!/\.pin[^{]*\{[^}]*accent|\.map-origin[^{]*\{[^}]*accent/.test(css), "지도 핀에 유채색이 붙었다 — 검정선이어야 한다");
 });
 
 test("D-4 판정 7종은 data-label 형태 어휘를 갖고, 화면은 data-label 을 붙인다", () => {
@@ -65,5 +65,7 @@ test("D-4 판정 7종은 data-label 형태 어휘를 갖고, 화면은 data-labe
   }
   assert.ok(read("app/check/page.tsx").includes("data-label={visitors.verdict.label}"), "/check 판정 알림에 data-label 이 없다");
   assert.ok(read("app/report/check/page.tsx").includes("data-label={최종}"), "/report/check 결론에 data-label 이 없다");
-  assert.ok(read("app/twin-map.tsx").includes('className="pin-body"'), "지도에 파란 핀이 없다");
+  const map = read("app/twin-map.tsx");
+  assert.ok(map.includes('className="pin-foot"') && map.includes('className="map-origin"'), "지도에 검정선 핀·과녁이 없다");
+  assert.ok(!map.includes("pin.png"), "지도 핀이 그림으로 돌아갔다");
 });
