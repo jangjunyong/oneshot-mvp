@@ -11,6 +11,7 @@ import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { SKIP_REASON } from "@/lib/history";
 import { festivalSignal, signalNote } from "@/lib/signal";
+import { SIGNAL_CALENDAR } from "@/lib/calendar";
 import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
@@ -382,7 +383,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     <td>{y.visitors === null || y.visitors <= 0 ? "—" : <Num m={measured(`${y.year}-v`, "Σ 같은 요일 순증", y.visitors, "명", KT_API, period(y), y.fetchedAt)} />}</td>
                     <td>
                       {(() => {
-                        const s = festivalSignal(rows, y.start, y.end);
+                        const s = festivalSignal(rows, y.start, y.end, SIGNAL_CALENDAR);
                         return s ? (
                           <>
                             {s.tier} <span className="report-cell-label">{signalNote(s)}</span>

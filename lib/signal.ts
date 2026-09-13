@@ -16,10 +16,11 @@
 //   뚜렷함 z 3.0 = 관리도 μ+3σ(파리 이동통신 이벤트 탐지, C12). 이 분야 공개 문턱은 이것과 μ+2.32σ 뿐이고, 시군구·일 단위로 오탐률을 잰 사례는 없다
 //   구분 안 됨 = 진짜 축제에 경고가 뜨는 비율을 5% 아래로 묶는 값 — 목표 초과율을 먼저 정하고 문턱을 고르는 방식(C11 이상치 2% 가정, C12 목표 1%)
 //
-// 등급 문턱 (값은 SIGNAL_THRESHOLDS, 619건 진짜 vs ±13·26주 옮긴 가짜 1,818건):
-//   뚜렷함: rank ≥ 0.95 이고 zPeak ≥ 3.0 → 진짜 축제 26.2% · 가짜 11.7%
-//   구분 안 됨: rank < 0.60 이고 zPeak < 1.0 → 진짜 축제 4.2% · 가짜 9.1%
+// 등급 문턱 (값은 SIGNAL_THRESHOLDS, 619건 진짜 vs ±13·26주 옮긴 가짜 1,818건, 설·추석 연휴를 평소에서 뺀 화면 설정 SIGNAL_CALENDAR 기준):
+//   뚜렷함: rank ≥ 0.95 이고 zPeak ≥ 3.0 → 진짜 축제 31.3% · 가짜 13.7%   (명절 보정 없으면 26.2% · 11.7%)
+//   구분 안 됨: rank < 0.60 이고 zPeak < 1.0 → 진짜 축제 4.2% · 가짜 8.5%   (보정 없으면 4.2% · 9.1%)
 //   그 사이: 약함
+// 명절 보정은 분별력을 조금 올린다(zPeak AUC 0.605 → 0.624, rank 0.665 → 0.669) — 판정에 쓸 만큼은 아니다
 
 import { median, type DailyRow } from "@/lib/surge";
 
@@ -36,6 +37,8 @@ export interface FestivalSignal {
   /** 전년 같은 달 자료가 20일 미만이면 null */
   yoyPeak: number | null;
   tier: SignalTier;
+  /** 축제 기간과 겹친 명절·공휴일 이름(중복 없이). 겹치면 증가가 축제 몫인지 명절 몫인지 가를 수 없다 */
+  holidays: string[];
 }
 
 const DAY = 86400000;
@@ -47,30 +50,43 @@ function mad(xs: readonly number[]): number {
   return median(xs.map((x) => Math.abs(x - md)))!;
 }
 
-/** 표 한 칸에 들어가는 설명 — "z 4.50 · 1년 중 가장 붐빈 날 · 전년 같은 달 1.42배" */
+/** 표 한 칸에 들어가는 설명 — "z 4.50 · 1년 중 가장 붐빈 날 · 전년 같은 달 1.42배 · 추석과 겹침" */
 export function signalNote(s: FestivalSignal): string {
   const top = (1 - s.rank) * 100;
   const rank = top < 0.5 ? "1년 중 가장 붐빈 날" : `1년 중 상위 ${top.toFixed(0)}%`;
-  return `z ${s.zPeak.toFixed(2)} · ${rank}${s.yoyPeak !== null ? ` · 전년 같은 달 ${s.yoyPeak.toFixed(2)}배` : ""}`;
+  const overlap = s.holidays.length ? ` · ${s.holidays.join("·")}과 겹침` : "";
+  return `z ${s.zPeak.toFixed(2)} · ${rank}${s.yoyPeak !== null ? ` · 전년 같은 달 ${s.yoyPeak.toFixed(2)}배` : ""}${overlap}`;
 }
 
-/** 전후 4주 창이 양쪽 다 차야 한다(lib/surge.ts 와 같은 조건). 모자라면 null */
-export function festivalSignal(rows: readonly DailyRow[], start: string, end: string): FestivalSignal | null {
+export interface SignalOptions {
+  /** "평소"에서 뺄 날(명절 연휴 덩어리 등, lib/calendar.ts holidayBlock). 전후 4주 창과 1년 순위 비교에서 빠진다 */
+  exclude?: ReadonlySet<string>;
+  /** 축제 기간과 겹친 공휴일 이름을 찾는 함수(lib/calendar.ts holidayNames) */
+  namesOf?: (ymd: string) => readonly string[];
+}
+
+/** 전후 4주 창이 양쪽 다 절반(14일) 이상 차야 한다 — 뺀 날(명절)은 빈 날로 친다. 모자라면 null */
+export function festivalSignal(rows: readonly DailyRow[], start: string, end: string, opts: SignalOptions = {}): FestivalSignal | null {
   const t0 = toTime(start), t1 = toTime(end);
   if (!(t1 >= t0)) return null;
   const by = new Map(rows.map((r) => [r.ymd, r]));
+  const skip = opts.exclude;
+  const usable = (ymd: string) => (skip?.has(ymd) ? undefined : by.get(ymd));
   const before: number[] = [], after: number[] = [];
   for (let k = 1; k <= 28; k++) {
-    const a = by.get(toYmd(t0 - k * DAY));
-    const b = by.get(toYmd(t1 + k * DAY));
+    const a = usable(toYmd(t0 - k * DAY));
+    const b = usable(toYmd(t1 + k * DAY));
     if (a) before.push(a.out);
     if (b) after.push(b.out);
   }
   if (before.length < 14 || after.length < 14) return null;
   const festOut: number[] = [];
+  const holidaySet = new Set<string>();
   for (let t = t0; t <= t1; t += DAY) {
-    const r = by.get(toYmd(t));
+    const ymd = toYmd(t);
+    const r = by.get(ymd);
     if (r) festOut.push(r.out);
+    for (const n of opts.namesOf?.(ymd) ?? []) holidaySet.add(n.replace(/ (전날|다음 날)$/, "").replace(/^대체공휴일\((.+)\)$/, "$1"));
   }
   if (festOut.length === 0) return null;
 
@@ -82,7 +98,10 @@ export function festivalSignal(rows: readonly DailyRow[], start: string, end: st
 
   const year: number[] = [];
   for (let t = t0 - 182 * DAY; t <= t1 + 182 * DAY; t += DAY) {
-    const r = by.get(toYmd(t));
+    const ymd = toYmd(t);
+    // 축제 기간 자신은 빼지 않는다(순위의 기준점). 그 밖의 명절 날만 비교 대상에서 뺀다
+    const inFest = t >= t0 && t <= t1;
+    const r = inFest ? by.get(ymd) : usable(ymd);
     if (r) year.push(r.out);
   }
   const rank = year.filter((v) => v <= peak).length / year.length;
@@ -97,5 +116,5 @@ export function festivalSignal(rows: readonly DailyRow[], start: string, end: st
 
   const { clear, flat } = SIGNAL_THRESHOLDS;
   const tier: SignalTier = rank >= clear.rank && zPeak >= clear.z ? "뚜렷함" : rank < flat.rank && zPeak < flat.z ? "구분 안 됨" : "약함";
-  return { zPeak, rank, yoyPeak, tier };
+  return { zPeak, rank, yoyPeak, tier, holidays: [...holidaySet] };
 }

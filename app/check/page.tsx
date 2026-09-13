@@ -41,6 +41,7 @@ import { DataUsage } from "@/app/_components/data-usage";
 import { DraftNote } from "@/app/_components/draft-note";
 import { SimCardBlock } from "@/app/_components/sim-card";
 import { festivalSignal, signalNote } from "@/lib/signal";
+import { SIGNAL_CALENDAR } from "@/lib/calendar";
 import { PlanGate } from "@/app/_components/plan-gate";
 import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
@@ -111,7 +112,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
-  const signals = new Map(hist.years.map((y) => [y.year, festivalSignal(rows, y.start, y.end)]));
+  const signals = new Map(hist.years.map((y) => [y.year, festivalSignal(rows, y.start, y.end, SIGNAL_CALENDAR)]));
   // 619건에 없는 시군구(299곳 중 121곳)는 담당자가 적은 인구로 또래를 고른다. 없으면 또래 없음 — 이웃 시도로 대신하지 않는다
   // 인구 우선순위(2026-09-12 M5a-1): 담당자 입력(pop) → 행안부 주민등록 표(lib/region) → null. 619건 인구는 또래 분포에만 쓴다
   const popMois = code ? populationOfCode(code) : null;

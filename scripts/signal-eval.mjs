@@ -9,6 +9,11 @@
 import { readFileSync } from "node:fs";
 import { loadDaily } from "@/lib/kto/daily";
 import { festivalSignal, SIGNAL_THRESHOLDS } from "@/lib/signal";
+import { holidayBlock, holidayNames } from "@/lib/calendar";
+
+// 명절·공휴일 보정 변형 셋을 같이 잰다 (2026-09-14): 없음 / 설·추석 연휴 덩어리를 평소에서 뺌 / 모든 공휴일 연휴 덩어리를 뺌
+const VARIANTS = { "보정 없음": undefined, "설·추석 제외": holidayBlock("lunar"), "공휴일 전체 제외": holidayBlock("all") };
+const VARIANT = process.argv.find((a) => a.startsWith("--variant="))?.slice(10) ?? null;
 
 const festRaw = JSON.parse(readFileSync("data/festivals.json", "utf8"));
 const fest = Array.isArray(festRaw) ? festRaw : (festRaw.festivals ?? Object.values(festRaw).find(Array.isArray));
@@ -34,16 +39,20 @@ for (const f of fest) {
 }
 const overlaps = (code, a, b) => (periodsByCode.get(code) ?? []).some(([x, y]) => a <= y + 7 * DAY && b >= x - 7 * DAY);
 
-const real = [], fake = [];
-for (const it of items) {
-  const r = festivalSignal(rowsOf(it.code), it.a, it.b);
-  if (r) real.push({ ...r, pop: it.pop });
-  for (const weeks of [-26, -13, 13, 26]) {
-    const fa = t(it.a) + weeks * 7 * DAY, fb = t(it.b) + weeks * 7 * DAY;
-    if (overlaps(it.code, fa, fb)) continue;
-    const z = festivalSignal(rowsOf(it.code), ymd(fa), ymd(fb));
-    if (z) fake.push({ ...z, pop: it.pop });
+function collect(exclude) {
+  const real = [], fake = [];
+  const opts = { exclude, namesOf: holidayNames };
+  for (const it of items) {
+    const r = festivalSignal(rowsOf(it.code), it.a, it.b, opts);
+    if (r) real.push({ ...r, pop: it.pop });
+    for (const weeks of [-26, -13, 13, 26]) {
+      const fa = t(it.a) + weeks * 7 * DAY, fb = t(it.b) + weeks * 7 * DAY;
+      if (overlaps(it.code, fa, fb)) continue;
+      const z = festivalSignal(rowsOf(it.code), ymd(fa), ymd(fb), opts);
+      if (z) fake.push({ ...z, pop: it.pop });
+    }
   }
+  return { real, fake };
 }
 
 function auc(R, F) {
@@ -60,15 +69,21 @@ function auc(R, F) {
 }
 const pct = (xs, fn) => `${((100 * xs.filter(fn).length) / xs.length).toFixed(1)}%`;
 
-console.log(`진짜 ${real.length} · 가짜 ${fake.length}`);
-console.log(`AUC zPeak ${auc(real.map((o) => o.zPeak), fake.map((o) => o.zPeak)).toFixed(3)} · rank ${auc(real.map((o) => o.rank), fake.map((o) => o.rank)).toFixed(3)}`);
 console.log(`문턱 ${JSON.stringify(SIGNAL_THRESHOLDS)}`);
-for (const tier of ["뚜렷함", "약함", "구분 안 됨"]) {
-  console.log(`  ${tier.padEnd(6)} 진짜 ${pct(real, (o) => o.tier === tier).padStart(6)} · 가짜 ${pct(fake, (o) => o.tier === tier).padStart(6)}`);
-}
-console.log("인구 구간별 AUC (rank)");
-for (const [label, fn] of [["<10만", (p) => p < 10], ["10~30만", (p) => p >= 10 && p < 30], ["30~60만", (p) => p >= 30 && p < 60], ["≥60만", (p) => p >= 60]]) {
-  const R = real.filter((o) => Number.isFinite(o.pop) && fn(o.pop)), F = fake.filter((o) => Number.isFinite(o.pop) && fn(o.pop));
-  if (R.length < 20 || F.length < 20) continue;
-  console.log(`  ${label.padEnd(8)} 진짜 ${R.length} · AUC ${auc(R.map((o) => o.rank), F.map((o) => o.rank)).toFixed(3)} · 진짜 구분 안 됨 ${pct(R, (o) => o.tier === "구분 안 됨")}`);
+for (const [name, exclude] of Object.entries(VARIANTS)) {
+  if (VARIANT && VARIANT !== name) continue;
+  const { real, fake } = collect(exclude);
+  const withHol = (xs) => xs.filter((o) => o.holidays.length > 0);
+  const noHol = (xs) => xs.filter((o) => o.holidays.length === 0);
+  console.log(`\n[${name}] 진짜 ${real.length} · 가짜 ${fake.length} (명절·공휴일과 겹침: 진짜 ${withHol(real).length} · 가짜 ${withHol(fake).length})`);
+  console.log(`  AUC zPeak ${auc(real.map((o) => o.zPeak), fake.map((o) => o.zPeak)).toFixed(3)} · rank ${auc(real.map((o) => o.rank), fake.map((o) => o.rank)).toFixed(3)} | 공휴일 안 겹친 것만 rank ${auc(noHol(real).map((o) => o.rank), noHol(fake).map((o) => o.rank)).toFixed(3)}`);
+  for (const tier of ["뚜렷함", "약함", "구분 안 됨"]) {
+    console.log(`  ${tier.padEnd(6)} 진짜 ${pct(real, (o) => o.tier === tier).padStart(6)} · 가짜 ${pct(fake, (o) => o.tier === tier).padStart(6)}`);
+  }
+  console.log("  인구 구간별 AUC (rank)");
+  for (const [label, fn] of [["<10만", (p) => p < 10], ["10~30만", (p) => p >= 10 && p < 30], ["30~60만", (p) => p >= 30 && p < 60], ["≥60만", (p) => p >= 60]]) {
+    const R = real.filter((o) => Number.isFinite(o.pop) && fn(o.pop)), F = fake.filter((o) => Number.isFinite(o.pop) && fn(o.pop));
+    if (R.length < 20 || F.length < 20) continue;
+    console.log(`    ${label.padEnd(8)} 진짜 ${R.length} · AUC ${auc(R.map((o) => o.rank), F.map((o) => o.rank)).toFixed(3)} · 진짜 구분 안 됨 ${pct(R, (o) => o.tier === "구분 안 됨")}`);
+  }
 }

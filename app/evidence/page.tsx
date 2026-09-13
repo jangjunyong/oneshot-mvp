@@ -10,6 +10,7 @@ import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { SKIP_REASON } from "@/lib/history";
 import { festivalSignal, signalNote } from "@/lib/signal";
+import { SIGNAL_CALENDAR } from "@/lib/calendar";
 import { PlanGate } from "@/app/_components/plan-gate";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
@@ -35,7 +36,7 @@ const WEEKS = 4;
 /** 한 해의 창(전후 4주) 일별 외지인을 곡선으로. 축척은 여러 해가 같이 쓴다 */
 function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly DailyRow[]; yMax: number; fetchedAt: string }) {
   const by = new Map(rows.map((r) => [r.ymd, r]));
-  const signal = festivalSignal(rows, y.start, y.end);
+  const signal = festivalSignal(rows, y.start, y.end, SIGNAL_CALENDAR);
   const t0 = toTime(y.start) - WEEKS * 7 * DAY;
   const t1 = toTime(y.end) + WEEKS * 7 * DAY;
   const n = Math.round((t1 - t0) / DAY) + 1;
