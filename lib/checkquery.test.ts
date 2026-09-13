@@ -1,14 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { checkQueryString, checkUrlFromExtraction, DEMOS, GUNPO_2027, HWACHEON_2027, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, checkUrlFromExtraction, DEMOS, EMPTY_QUERY, GUNPO_2027, HWACHEON_2027, parseCheckQuery } from "@/lib/checkquery";
 import { manifest } from "@/lib/kto/daily";
 
-test("빈 URL 이면 군포 2027 견본", () => {
+// 2026-09-13 사용자 지시 — 기획서를 넣어야 판정이 선다. 빈 URL 은 견본이 아니라 빈 입력이다
+test("빈 URL 이면 견본이 아니라 빈 입력(empty)이고, demo 파라미터도 견본을 부르지 않는다", () => {
   const p = parseCheckQuery({});
-  assert.equal(p.isDemo, true);
-  assert.deepEqual(p.query, GUNPO_2027);
-  assert.equal(checkQueryString(p.query, true), "");
+  assert.equal(p.empty, true);
+  assert.deepEqual(p.query, EMPTY_QUERY);
+  assert.deepEqual(p.errors, []);
+  assert.equal(checkQueryString(p.query), "");
+  const d = parseCheckQuery({ demo: "hwacheon" });
+  assert.equal(d.empty, true, "demo 파라미터가 견본을 불렀다");
 });
 
 test("담당자 입력 — 날짜는 YYYY-MM-DD 로 받아 YYYYMMDD 로, 이력은 채운 칸만", () => {
@@ -26,7 +30,7 @@ test("담당자 입력 — 날짜는 YYYY-MM-DD 로 받아 YYYYMMDD 로, 이력�
     h3s: "2024-04-20",
     h3e: "2024-04-28",
   });
-  assert.equal(p.isDemo, false);
+  assert.equal(p.empty, false);
   assert.deepEqual(p.errors, []);
   assert.equal(p.query.n, 217502);
   assert.equal(p.query.start, "20270417");
@@ -37,7 +41,7 @@ test("담당자 입력 — 날짜는 YYYY-MM-DD 로 받아 YYYYMMDD 로, 이력�
 });
 
 test("왕복 — 쿼리 문자열로 옮겨 다시 읽으면 같다", () => {
-  const qs = checkQueryString(GUNPO_2027, false);
+  const qs = checkQueryString(GUNPO_2027);
   const params = Object.fromEntries(new URLSearchParams(qs.slice(1)).entries());
   const p = parseCheckQuery(params);
   // 이력의 출처(source)는 픽스처 전용이라 URL 에 실리지 않는다 — 그것만 빼고 같아야 한다
@@ -64,29 +68,23 @@ test("예산(만 원)은 budget 으로 받고 왕복하며, 견본에는 가정�
   const p = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", budget: "12,500" });
   assert.equal(p.query.budgetManWon, 12500);
   assert.deepEqual(p.errors, []);
-  const qs = checkQueryString(p.query, false);
+  const qs = checkQueryString(p.query);
   assert.match(qs, /budget=12500/);
   const none = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000" });
   assert.equal(none.query.budgetManWon, null);
-  assert.ok(!checkQueryString(none.query, false).includes("budget="));
+  assert.ok(!checkQueryString(none.query).includes("budget="));
   const bad = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", budget: "-3" });
   assert.ok(bad.errors.some((e) => e.includes("예산")));
   assert.ok(GUNPO_2027.budgetManWon !== null && GUNPO_2027.budgetManWon > 0, "견본 예산이 없으면 판정 항목이 셋이 못 된다");
 });
 
-test("M7-1 견본은 둘, 서로 다른 시도, demo 파라미터로 고르고 링크가 왕복한다", () => {
+test("M7-1 데모 자료는 둘, 서로 다른 시도, 주소로 옮겨도 판정 입력이 그대로 왕복한다", () => {
   assert.equal(Object.keys(DEMOS).length, 2);
   assert.notEqual(GUNPO_2027.sido, HWACHEON_2027.sido);
-  const h = parseCheckQuery({ demo: "hwacheon" });
-  assert.equal(h.isDemo, true);
-  assert.equal(h.demo, "hwacheon");
-  assert.deepEqual(h.query, HWACHEON_2027);
-  assert.equal(checkQueryString(h.query, true), "?demo=hwacheon");
-  const g = parseCheckQuery({});
-  assert.equal(g.demo, "gunpo");
-  assert.equal(checkQueryString(g.query, true), "");
-  const x = parseCheckQuery({ demo: "없는것" });
-  assert.equal(x.demo, "gunpo", "모르는 견본 이름은 기본 견본으로");
+  const h = parseCheckQuery(Object.fromEntries(new URLSearchParams(checkQueryString(HWACHEON_2027).slice(1)).entries()));
+  assert.equal(h.empty, false);
+  assert.equal(h.query.sigungu, HWACHEON_2027.sigungu);
+  assert.equal(h.query.n, HWACHEON_2027.n);
 });
 
 test("M7-2 견본 이력은 연도마다 출처가 있고 날짜가 KT 자료 범위 안이다", () => {
@@ -112,7 +110,7 @@ test("지역 인구(pop, 만 명)는 URL 로 받고 되돌려 준다. 0 이하�
   const p = parseCheckQuery({ sido: "전남", sigungu: "함평군", n: "300000", basis: "period", counting: "personDays", pop: "3.0" });
   assert.deepEqual(p.errors, []);
   assert.equal(p.query.populationManMyeong, 3);
-  assert.match(checkQueryString(p.query, false), /pop=3/);
+  assert.match(checkQueryString(p.query), /pop=3/);
   const bad = parseCheckQuery({ sido: "전남", sigungu: "함평군", pop: "0" });
   assert.ok(bad.errors.some((e) => e.includes("지역 인구")));
   assert.equal(parseCheckQuery({ sido: "전남", sigungu: "함평군" }).query.populationManMyeong, null);
@@ -134,15 +132,15 @@ test("N0 견본 2건은 지역 인구와 그 출처를 함께 갖는다 (619건�
 });
 
 
-// 2026-09-12 M3a-1 — 기획서 다리가 `?sido=&sigungu=&budget=9000` 처럼 값이 비어 와도 견본(군포)으로 떨어지면 안 된다.
-// 견본은 판정 키가 하나도 없을 때만이고, `draft`·`demo` 같은 주석 키는 판정에 안 보인다
-test("판정 키가 값 없이 있어도 담당자 입력이고, 주석 키(draft)만으로는 견본이다", () => {
+// 2026-09-12 M3a-1 — 기획서 다리가 `?sido=&sigungu=&budget=9000` 처럼 값이 비어 와도 빈 입력으로 떨어지면 안 된다.
+// 빈 입력은 판정 키가 하나도 없을 때만이고, `draft` 같은 주석 키는 판정에 안 보인다
+test("판정 키가 값 없이 있어도 담당자 입력이고, 주석 키(draft)만으로는 빈 입력이다", () => {
   const bridge = parseCheckQuery({ sido: "", sigungu: "", budget: "9000" });
-  assert.equal(bridge.isDemo, false);
+  assert.equal(bridge.empty, false);
   assert.ok(bridge.errors.some((e) => e.includes("시도와 시군구")));
   assert.equal(bridge.query.budgetManWon, 9000);
   const onlyDraft = parseCheckQuery({ draft: "17" });
-  assert.equal(onlyDraft.isDemo, true, "draft 는 판정 키가 아니다");
+  assert.equal(onlyDraft.empty, true, "draft 는 판정 키가 아니다");
   const unknown = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000", zzz: "1", draft: "3", t: "abc" });
   const known = parseCheckQuery({ sido: "경기", sigungu: "군포시", n: "1000" });
   assert.deepEqual(unknown.query, known.query, "모르는 키가 판정을 바꿨다");

@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
-import { checkQueryString, DEMO_BUDGET_SOURCE, DEMOS, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
@@ -68,21 +68,26 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckReportPage({ searchParams }: PageProps<"/report/check">) {
   const params = await searchParams;
-  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, empty, errors } = parseCheckQuery(params);
   const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
   const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
-  const qs = checkQueryString(q, isDemo);
+  const qs = checkQueryString(q);
   const code = region?.code ?? null;
 
-  if (errors.length > 0 || code === null) {
+  if (empty || errors.length > 0 || code === null) {
     return (
       <div className="report">
         <main>
           <h1>보고서를 만들 수 없습니다</h1>
+          {empty && (
+            <p>
+              기획서를 먼저 넣어 주세요. <Link href="/">기획안 넣기 →</Link>
+            </p>
+          )}
           {errors.map((e) => (
             <p key={e}>{e}</p>
           ))}
-          {code === null && errors.length === 0 && (
+          {!empty && code === null && errors.length === 0 && (
             <p>
               &ldquo;{q.sido} {q.sigungu}&rdquo; 에 맞는 KT 시군구를 찾지 못했습니다.
             </p>
@@ -106,7 +111,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const visitors = q.n !== null ? checkVisitors({ n: q.n, basis: q.basis, counting: q.counting }, hist.years, peer) : null;
   const schedule = q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = nextYearRange(hist.years, peer);
-  const budget = visitors ? checkBudget(q.budgetManWon, visitors, isDemo ? DEMO_BUDGET_SOURCE : "기획안") : null;
+  const budget = visitors ? checkBudget(q.budgetManWon, visitors, "기획안") : null;
   const evidence: Measured[] = [...(visitors?.evidence ?? []), ...(budget?.evidence ?? [])];
   const by = new Map<string, Measured>(evidence.map((m) => [m.key, m]));
   const last = hist.years.length ? hist.years[hist.years.length - 1] : null;
@@ -143,12 +148,6 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
       <section className="report-page">
         <header className="report-head">
           <h1>기획안 검증 보고서</h1>
-          {isDemo && demo && (
-            <p className="report-demo">
-              <strong>견본</strong> · {DEMOS[demo].banner} 결재에 쓸 문서가 아닙니다. 예상 방문객 출처: {DEMOS[demo].claimSource}. 지역 인구
-              출처: {DEMOS[demo].populationSource}.
-            </p>
-          )}
           <p className="num">
             {이름} · {q.sido} {q.sigungu}(시군구 {code}) · 기획 기간 {q.start && q.end ? `${DATE(q.start)}~${DATE(q.end)}` : "미기재"} · 자기 이력{" "}
             {hist.years.length ? hist.years.map((y) => y.year).join("·") : "없음"}
@@ -261,7 +260,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     {budget.verdict.label}
                     <span className="report-cell-label">방문객 판정 상속</span>
                   </td>
-                  <td>임계 없음. 비는 2단계 순증분 비와 같다. 1인당 예산의 오차는 예상 방문객의 오차라 그 판정을 물려받는다{isDemo && q.budgetManWon !== null && ". 견본 예산은 가정값"}</td>
+                  <td>임계 없음. 비는 2단계 순증분 비와 같다. 1인당 예산의 오차는 예상 방문객의 오차라 그 판정을 물려받는다</td>
                 </tr>
               ) : (
                 <tr>
@@ -322,7 +321,6 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
         </section>
 
         <footer className="report-foot">
-          {isDemo && <span className="report-foot-demo">견본 · 결재용 아님</span>}
           <span>1/2</span>
           <span>인쇄 {긴시각()}</span>
           <span>출처 한국관광공사 TourAPI · {KT_API} · 조회 {fetchedAt}</span>
@@ -448,7 +446,6 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
         </section>
 
         <footer className="report-foot">
-          {isDemo && <span className="report-foot-demo">견본 · 결재용 아님</span>}
           <span>2/2</span>
           <span>인쇄 {긴시각()}</span>
           <span>출처 한국관광공사 {KT_API} · 조회 {fetchedAt}</span>

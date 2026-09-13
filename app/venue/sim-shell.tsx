@@ -16,9 +16,12 @@ export function SimShell(props: {
   scenario: { surge: number | null; label: string } | null;
   initialCenter: { lat: number; lng: number } | null;
   initialGeo: NonNullable<Venue["geo"]> | null;
+  /** 저장해 둔 배치도 밑그림(data URL). 자리는 initialGeo.underlay 에 있다 */
+  initialUnderlay: string | null;
+  /** 이 도면이 딸린 기획안의 판정 URL 쿼리("?…"). 저장 뒤 같은 기획안으로 돌아오는 데 쓴다 */
+  planQuery: string;
   entryId: string | null;
   saveAction: (formData: FormData) => Promise<void>;
-  autoplay?: boolean;
 }) {
   return <SimMap {...props} />;
 }

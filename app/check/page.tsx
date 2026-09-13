@@ -11,8 +11,6 @@ import { historyOf, SKIP_REASON } from "@/lib/history";
 import {
   appendQuery,
   checkQueryString,
-  DEMO_BUDGET_SOURCE,
-  DEMOS,
   HISTORY_SLOTS,
   parseCheckQuery,
   parseTwinParams,
@@ -42,6 +40,7 @@ import { Num } from "@/app/_components/num";
 import { DataUsage } from "@/app/_components/data-usage";
 import { DraftNote } from "@/app/_components/draft-note";
 import { SimCardBlock } from "@/app/_components/sim-card";
+import { PlanGate } from "@/app/_components/plan-gate";
 import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
 import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
@@ -84,7 +83,8 @@ function Sentence({ seg, by }: { seg: Segment[]; by: Map<string, Measured> }) {
 
 export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const params = await searchParams;
-  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, empty, errors } = parseCheckQuery(params);
+  if (empty) return <PlanGate title="판정" active="/check" />;
   // 기획서에서 온 초안 — 주석일 뿐이다. 판정 파라미터(CHECK_KEYS)는 parseCheckQuery 만 읽고 draft 는 여기서만 읽는다.
   // 못 읽어도 판정은 그대로 선다
   const draftId = typeof params.draft === "string" ? params.draft : null;
@@ -96,15 +96,12 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
       draft = null;
     }
   }
-  const 견본 = demo ? DEMOS[demo] : null;
-  const 다른견본 = demo === "gunpo" ? DEMOS.hwacheon : demo === "hwacheon" ? DEMOS.gunpo : null;
-  // 닮은 축제 블록의 주석 키(theme·acc·pin) — 판정 결정론 경계 밖. 견본은 DEMOS 의 가정값을 기본으로 쓴다
-  const twin0 = parseTwinParams(params);
-  const twin: TwinParams = { ...twin0, theme: twin0.theme ?? 견본?.themeCode ?? null, acc: twin0.acc ?? 견본?.accessibility ?? null };
+  // 닮은 축제 블록의 주석 키(theme·acc·pin) — 판정 결정론 경계 밖
+  const twin: TwinParams = parseTwinParams(params);
   // 사람이 친 표기("충청남도 보령")를 KT 표기("충남 보령시")로 — 이 뒤로는 인구·좌표·경쟁 조회가 전부 이 이름을 쓴다
   const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
   const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
-  const qs = checkQueryString(q, isDemo);
+  const qs = checkQueryString(q);
 
   const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
@@ -118,7 +115,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const popMois = code ? populationOfCode(code) : null;
   const pop = q.populationManMyeong ?? popMois;
   const popSource =
-    q.populationManMyeong !== null ? (견본?.populationSource ?? "담당자 입력(출처 미표기)") : popMois !== null ? populationSource() : null;
+    q.populationManMyeong !== null ? "담당자 입력(출처 미표기)" : popMois !== null ? populationSource() : null;
   const peer = pop !== null ? peerBandFor(pop) : null;
 
   const 판정가능 = errors.length === 0 && code !== null;
@@ -127,7 +124,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const schedule = 판정가능 && q.start && q.end ? checkSchedule({ start: q.start, end: q.end }, hist.years) : null;
   const range = 판정가능 ? nextYearRange(hist.years, peer) : null;
   // 1인당 예산 대조 — 새 자료·새 라벨 0. 분모는 방문객 판정 2단계의 실측 셀(같은 단위)
-  const budget = visitors ? checkBudget(q.budgetManWon, visitors, isDemo ? DEMO_BUDGET_SOURCE : "기획안") : null;
+  const budget = visitors ? checkBudget(q.budgetManWon, visitors, "기획안") : null;
   const by = new Map<string, Measured>([...(visitors?.evidence ?? []), ...(budget?.evidence ?? [])].map((m) => [m.key, m]));
 
   // 순증 귀속 경고 — 작년(이력 중 최근 해) 축제 기간에 반경 50km 다른 축제가 있었나. 공사 TourAPI 실시간.
@@ -170,7 +167,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
           <Link href="/check" aria-current="page">
             판정
           </Link>
-          <Link href="/venue">시뮬레이션</Link>
+          <Link href={`/venue${qs}`}>시뮬레이션</Link>
         </nav>
       </header>
 
@@ -182,17 +179,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
         </h1>
         <p className="lede">담당자가 쓴 예상 방문객을 이 축제가 실제로 겪은 배수로 판정합니다.</p>
 
-        {견본 && (
-          <p className="alert" data-level="근거없음">
-            <strong>견본</strong>입니다 · {견본.banner}
-            {다른견본 && (
-              <>
-                {" "}
-                다른 견본: <Link href={`/check${checkQueryString(다른견본.query, true) || "?demo=gunpo"}`}>{다른견본.query.name} →</Link>
-              </>
-            )}
-          </p>
-        )}
         {errors.map((e) => (
           <p key={e} className="alert" data-level="심각" role="alert">
             {e}
@@ -393,8 +379,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                   </tbody>
                 </table>
 
-                {/* 시뮬 요약은 판정표 바로 아래 세 줄 — 옆 열 450자에서 옮겼다 (2026-09-12 지시 7) */}
-                <SimCardBlock isGunpo={code === "41410"} />
+                {/* 시뮬 요약은 판정표 바로 아래 세 줄 — 미리 돌린 도면이 군포뿐이라 군포 기획안에만 (2026-09-13) */}
+                {code === "41410" && <SimCardBlock venueHref={`/venue${qs}`} />}
 
                 {/* 귀속 경고는 유일한 실시간 공사 API 결과라 접지 않는다. 나머지 단서는 접는다 */}
                 {귀속경고 && (
@@ -439,7 +425,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       <p className="note">
                         총예산 {stageNum("budget")}
                         {budget.verdict.ratio !== null && <> · 실측 기준이 기획안 기준의 {budget.verdict.ratio.toFixed(1)}배</>}. {budget.verdict.note}
-                        {isDemo && q.budgetManWon !== null && " 견본 예산은 가정값이다."}
                       </p>
                     </div>
                   </>
@@ -553,7 +538,6 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
               pinHref={(id) => twinHref({ pin: id || null })}
               pinHrefBase={`/check${twinQs({ pin: null }) ? twinQs({ pin: null }) + "&" : "?"}pin=`}
               pinHrefSuffix="#twins"
-              isDemo={isDemo}
               vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
             />
           </>

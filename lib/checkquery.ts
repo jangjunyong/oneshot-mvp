@@ -1,7 +1,8 @@
 // /check · /evidence 의 입력은 URL 이다 — 저장 없이 같은 링크면 같은 판정(결정론)이고,
 // 자바스크립트 없는 e2e 가 그대로 검증한다. 여기서 URL 을 읽고 되돌려 쓴다. 순수 함수.
 //
-// 아무 입력도 없으면 군포 2027 견본이 선다 — 심사위원의 시크릿 창에서도 첫 화면이 비지 않게.
+// 아무 입력도 없으면 빈 입력(empty)이다 — 견본으로 채우지 않는다. 기획서를 넣어야 판정·시뮬레이션이 선다 (2026-09-13 사용자 지시).
+// 아래 DEMOS 는 예비 데모 기획서 PDF(scripts/sample-plan.mjs)·문서 숫자 생성·유닛 회귀가 쓰는 자료이고 화면 경로는 없다.
 
 import type { Basis, Counting } from "@/lib/verdict";
 import type { Extraction } from "@/lib/types";
@@ -30,9 +31,6 @@ export interface CheckQuery {
 }
 
 export const HISTORY_SLOTS = 3;
-
-/** 견본 예산의 출처 표기 — 공개된 예산 수치를 못 찾아(군포시·문화재단·뉴스 2026-09-10 검색) 가정값이다 */
-export const DEMO_BUDGET_SOURCE = "기획안(견본 가정값 · 출처 없음)";
 
 /**
  * 견본 1 — 군포철쭉축제 2027 기획안. 예상 방문객은 군포시가 공개한 2026 목표 60만(경인일보 2026-04-17,
@@ -132,7 +130,7 @@ export const DEMOS: Record<DemoKey, Demo> = {
 /**
  * 닮은 축제 블록이 읽는 주석 키 — 판정 결정론 경계(CHECK_KEYS) 밖이다.
  * `theme`·`acc` 는 619건 5축 중 문서에서만 오는 둘, `pin` 은 지도에서 고른 핀.
- * CHECK_KEYS 에 넣지 않는 이유: 넣으면 `/check?theme=2` 가 견본이 아니라 빈 입력이 되어 2026-09-11 회귀를 되풀이한다.
+ * CHECK_KEYS 에 넣지 않는 이유: 넣으면 주석 키만 있는 주소가 판정 입력으로 읽혀 "시도와 시군구를 적어 주세요" 오류가 된다.
  */
 export interface TwinParams {
   theme: number | null;
@@ -149,8 +147,8 @@ export function parseTwinParams(params: Params): TwinParams {
 }
 
 /**
- * 쿼리 문자열에 주석 키를 덧붙인다. `checkQueryString` 이 낸 "?…" 또는 "" 또는 "?demo=…" 를 그대로 받는다.
- * GET 폼은 쿼리를 통째로 갈아 끼우므로 링크는 이 함수로만 만든다 (견본 폴백 회귀 방지).
+ * 쿼리 문자열에 주석 키를 덧붙인다. `checkQueryString` 이 낸 "?…" 또는 "" 를 그대로 받는다.
+ * GET 폼은 쿼리를 통째로 갈아 끼우므로 링크는 이 함수로만 만든다 (판정 입력이 링크 한 번에 사라지지 않게).
  */
 export function appendQuery(qs: string, extra: Record<string, string | number | null | undefined>): string {
   const p = new URLSearchParams(qs.startsWith("?") ? qs.slice(1) : qs);
@@ -162,31 +160,29 @@ export function appendQuery(qs: string, extra: Record<string, string | number | 
   return s ? "?" + s : "";
 }
 
-const DEMO_BY_NAME: Record<string, DemoKey> = { [GUNPO_2027.name]: "gunpo", [HWACHEON_2027.name]: "hwacheon" };
-
 type Params = Record<string, string | string[] | undefined>;
 
-/** 판정이 읽는 키 전부. `draft`·`demo` 같은 주석 키는 여기 없다 — 판정 결정론의 경계 */
+/** 판정이 읽는 키 전부. `draft` 같은 주석 키는 여기 없다 — 판정 결정론의 경계 */
 export const CHECK_KEYS = ["name", "sido", "sigungu", "n", "basis", "counting", "budget", "pop", "start", "end", "h1s", "h1e", "h2s", "h2e", "h3s", "h3e"] as const;
 const str = (p: Params, k: string) => (typeof p[k] === "string" ? (p[k] as string).trim() : "");
 
+export const EMPTY_QUERY: CheckQuery = {
+  name: "", sido: "", sigungu: "", n: null, basis: null, counting: null, budgetManWon: null, populationManMyeong: null, start: "", end: "", history: [],
+};
+
 export interface ParsedCheck {
   query: CheckQuery;
-  isDemo: boolean;
-  /** 견본이면 어느 것인지. 담당자 입력이면 null */
-  demo: DemoKey | null;
+  /** 판정 키가 하나도 없다 — 기획서를 아직 안 넣었다. 화면은 판정 대신 "기획서를 먼저 넣어 주세요"를 낸다 */
+  empty: boolean;
   /** 담당자가 고쳐야 하는 것. 비어 있으면 판정으로 간다 */
   errors: string[];
 }
 
 export function parseCheckQuery(params: Params): ParsedCheck {
-  // 견본은 판정 파라미터가 하나도 없을 때만. 값이 비어 있어도 키가 있으면 담당자 입력이다 —
+  // 판정 키가 하나라도 있으면 값이 비어 있어도 담당자 입력이다 —
   // 2026-09-11 실사용: 기획서 다리가 `?sido=&sigungu=&budget=9000` 으로 왔는데 값이 비었다고 견본(군포)으로 떨어졌다
   const touched = CHECK_KEYS.some((k) => k in params);
-  if (!touched) {
-    const key: DemoKey = str(params, "demo") === "hwacheon" ? "hwacheon" : "gunpo";
-    return { query: DEMOS[key].query, isDemo: true, demo: key, errors: [] };
-  }
+  if (!touched) return { query: EMPTY_QUERY, empty: true, errors: [] };
 
   const errors: string[] = [];
   const nRaw = str(params, "n").replace(/,/g, "");
@@ -240,15 +236,14 @@ export function parseCheckQuery(params: Params): ParsedCheck {
 
   return {
     query: { name: str(params, "name"), sido, sigungu, n, basis, counting, budgetManWon, populationManMyeong, start, end, history },
-    isDemo: false,
-    demo: null,
+    empty: false,
     errors,
   };
 }
 
-/** 같은 입력을 다른 화면(/evidence ↔ /check)으로 옮기는 쿼리 문자열 */
-export function checkQueryString(q: CheckQuery, isDemo: boolean): string {
-  if (isDemo) return DEMO_BY_NAME[q.name] === "hwacheon" ? "?demo=hwacheon" : "";
+/** 같은 입력을 다른 화면(/check ↔ /evidence ↔ /venue)으로 옮기는 쿼리 문자열. 빈 입력이면 "" */
+export function checkQueryString(q: CheckQuery): string {
+  if (q === EMPTY_QUERY) return "";
   const dash = (s: string) => (s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : s);
   const p = new URLSearchParams();
   if (q.name) p.set("name", q.name);
@@ -290,5 +285,5 @@ export function checkUrlFromExtraction(e: Extraction, name = ""): string {
     history: (f?.pastEditions ?? []).slice(-HISTORY_SLOTS).map((p) => ({ year: p.year, start: ymdCompact(p.start), end: ymdCompact(p.end) })),
   };
   // 테마·접근성은 판정에 안 쓰지만 닮은 축제 블록이 읽는다 — 주석 키로 실어 보낸다 (2026-09-12 E)
-  return "/check" + appendQuery(checkQueryString(q, false), { theme: e.themeCode, acc: e.accessibility });
+  return "/check" + appendQuery(checkQueryString(q), { theme: e.themeCode, acc: e.accessibility });
 }

@@ -40,8 +40,6 @@ export interface TwinsBlockProps {
   /** 3D 기둥 클릭 주소 (문자열 둘 — 클라이언트 경계) */
   pinHrefBase: string;
   pinHrefSuffix: string;
-  /** 견본이면 테마·접근성이 가정값이라고 말한다 */
-  isDemo: boolean;
   vworldKey: string | null;
 }
 
@@ -55,7 +53,7 @@ export function TwinsBlock(p: TwinsBlockProps) {
 
       {/* 테마·접근성은 문서에서만 온다. GET 폼이 아니라 링크다 — 폼은 판정 쿼리를 통째로 갈아 견본으로 튄다 */}
       <p className="twin-choose">
-        <span className="twin-choose-label">테마{p.isDemo && p.theme !== null ? " (견본 가정)" : ""}</span>
+        <span className="twin-choose-label">테마</span>
         {Object.entries(THEME_NAME).map(([k, v]) => (
           <Link key={k} href={p.chooseHref({ theme: Number(k) })} data-on={Number(k) === p.theme ? "1" : undefined}>
             {v}
@@ -63,7 +61,7 @@ export function TwinsBlock(p: TwinsBlockProps) {
         ))}
       </p>
       <p className="twin-choose">
-        <span className="twin-choose-label">접근성{p.isDemo && p.acc !== null ? " (견본 가정)" : ""}</span>
+        <span className="twin-choose-label">접근성</span>
         {Object.entries(ACCESSIBILITY_LABEL).map(([k, v]) => (
           <Link key={k} href={p.chooseHref({ acc: Number(k) })} data-on={Number(k) === p.acc ? "1" : undefined}>
             {v}

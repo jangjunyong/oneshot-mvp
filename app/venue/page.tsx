@@ -1,138 +1,88 @@
 import Link from "next/link";
-import { SimCardBlock } from "@/app/_components/sim-card";
 import { redirect } from "next/navigation";
-import {
-  getEntry,
-  getVenue,
-  latestVenueForEntry,
-  saveVenue,
-} from "@/lib/store";
-import { DEMO_ENTRY_ID, DEMO_LABEL } from "@/lib/demo";
-import { coordsOf, findSimilar } from "@/lib/match";
-import { grade } from "@/lib/grade";
-import { planInputOf } from "@/lib/types";
-import { emptyVenue, validateVenue, type Venue } from "@/lib/venue";
-import { EditorShell } from "@/app/venue/editor-shell";
+import { getVenue, saveVenue } from "@/lib/store";
+import { coordsOf } from "@/lib/match";
+import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { resolveRegion } from "@/lib/kto/daily";
+import { validateVenue, type Venue } from "@/lib/venue";
 import { SimShell } from "@/app/venue/sim-shell";
+import { PlanGate } from "@/app/_components/plan-gate";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "시뮬레이션 · 기획안 팩트체크" };
 
-const 오류로 = (message: string, extra = "") =>
-  redirect("/venue?err=" + encodeURIComponent(message) + extra);
+/** 미리 그려 둔 실도면이 있는 시군구 — 지금은 군포(public/venue/gunpo.geojson) 하나다 */
+const PRESET_CODE = "41410";
 
 /**
- * 행사장 도면 편집 화면 (M1).
+ * 시뮬레이션 화면 (2026-09-13 사용자 지시로 다시 짰다).
  *
- * 캔버스 조작은 전부 클라이언트(Konva)의 몫이고, 이 서버 컴포넌트는
- * 불러오기·저장·검증만 맡는다 — 화면이 죽어도 저장된 도면은 남는다.
+ * 기획서를 넣어야 열린다 — 판정과 같은 URL 입력(CHECK_KEYS)을 받는다. 견본으로 채우지 않는다.
+ * 군포 기획안이면 미리 그려 둔 군포 실도면을, 다른 지역이면 그 지역 대표점에 빈 도면을 연다.
+ * PDF 배치도는 그림이라 도면으로 자동 변환하지 않는다 — 편집기에서 밑그림으로 깔고 따라 그린다.
+ * 들어오자마자 돌리지 않는다. 담당자가 도면을 고친 뒤 [시뮬레이션 시작]을 누른다.
  */
-export default async function VenuePage({
-  searchParams,
-}: PageProps<"/venue">) {
+export default async function VenuePage({ searchParams }: PageProps<"/venue">) {
   const params = await searchParams;
   const venueId = typeof params.id === "string" ? params.id : null;
-  const entryParam = typeof params.entry === "string" ? params.entry : null;
   const 저장됨 = params.saved === "1";
-  const 오류 = params.err;
+  const 오류 = typeof params.err === "string" ? params.err : null;
+  const { query: q0, empty } = parseCheckQuery(params);
+  if (empty) return <PlanGate title="시뮬레이션" active="/venue" />;
 
-  /** 도면 저장 — 검증에 걸리면 무엇이 문제인지 말하고 저장하지 않는다 */
+  const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
+  const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
+  const qs = checkQueryString(q);
+
+  /** 도면 저장 — 검증에 걸리면 무엇이 문제인지 말하고 저장하지 않는다. 저장 뒤에도 같은 기획안 주소로 돌아온다 */
   async function 저장(formData: FormData) {
     "use server";
+    const plan = String(formData.get("plan") ?? "");
+    const back = (extra: string) => `/venue${plan}${plan ? "&" : "?"}${extra}`;
     let venue: Venue;
     try {
       venue = JSON.parse(String(formData.get("venue") ?? "")) as Venue;
     } catch {
-      오류로("도면을 읽지 못했습니다. 다시 저장해 주세요");
-      return;
+      redirect(back("err=" + encodeURIComponent("도면을 읽지 못했습니다. 다시 저장해 주세요")));
     }
-
-    // 밑그림은 편집기가 따로 낸다 (한 덩어리로 묶으면 키 입력마다 4MB 사진이
-    // 다시 직렬화된다). 여기서 도로 붙인다. 지우는 경로가 없으므로 빈 값은
-    // "안 올렸다"는 뜻이고, 덮어쓰면 안 된다.
+    // 밑그림(배치도 그림)은 편집기가 따로 낸다 — 도면 JSON 에 넣으면 편집할 때마다 큰 그림이 다시 직렬화된다
     const underlay = String(formData.get("underlay") ?? "");
     if (underlay) venue.underlay = underlay;
-
     const problems = validateVenue(venue);
-    if (problems.length > 0) {
-      오류로("도면을 확인해 주세요: " + problems.join(" · "));
-    }
-
-    const entryId = String(formData.get("entryId") ?? "") || null;
+    if (problems.length > 0) redirect(back("err=" + encodeURIComponent("도면을 확인해 주세요: " + problems.join(" · "))));
     let id: string;
     try {
-      id = await saveVenue(venue, entryId);
+      id = await saveVenue(venue, null);
     } catch {
-      오류로("저장에 실패했습니다. 잠시 후 다시 눌러 주세요.");
-      return;
+      redirect(back("err=" + encodeURIComponent("저장에 실패했습니다. 잠시 후 다시 눌러 주세요.")));
     }
-    redirect(`/venue?id=${id}&saved=1`);
+    redirect(back(`id=${id}&saved=1`));
   }
 
-  /**
-   * 위성 배경을 뺐다(2026-08-30 — 고를 일이 없는 토글이 자리만 차지했다).
-   * 그 전에 저장된 도면이 style:"satellite" 로 들어올 수 있고, 위성은 z19 까지
-   * 열려 있어 브이월드 백지도(z18 상한)에서는 **빈 캔버스**가 된다.
-   * 그래서 불러오는 자리에서 조용히 데려온다.
-   */
-  const 도면정규화 = (v: Venue): Venue =>
-    v.map && (v.map.style ?? "plan") !== "plan"
-      ? { ...v, map: { ...v.map, style: "plan", zoom: Math.min(v.map.zoom, 18) } }
-      : v;
-
-  // 못 불러와도 빈 도면으로 화면은 살아 있어야 한다.
-  let venue = emptyVenue(900, 620);
-  let entryId = entryParam;
+  let saved: Venue | null = null;
   if (venueId) {
     try {
-      const row = await getVenue(venueId);
-      if (row) {
-        venue = 도면정규화(row.venue);
-        entryId = row.entryId ?? entryParam;
-      }
+      saved = (await getVenue(venueId))?.venue ?? null;
     } catch {
-      // 아래에서 빈 도면으로 진행
-    }
-  } else if (entryParam) {
-    // 진단에서 넘어왔는데 도면 id 가 없다. 전에 그려 둔 게 있으면 그걸 연다 —
-    // 매번 빈 캔버스가 뜨면 담당자는 자기가 그린 배치가 사라진 줄 안다.
-    try {
-      const row = await latestVenueForEntry(entryParam);
-      if (row) venue = 도면정규화(row.venue);
-    } catch {
-      // 빈 도면으로 진행
+      saved = null;
     }
   }
 
-  // 진단에서 넘어왔으면 그 지역 좌표에서 지도가 시작되고, 그 진단의
-  // 쌍둥이 실측 배수가 쏠림 스캔의 근거가 된다. 좌표도 배수도 619건
-  // 실측에서 온다 — 여기서도 지어내지 않는다.
-  let initialCenter: { lat: number; lng: number } | null = null;
-  let scenario: { surge: number | null; label: string } | null = null;
-  if (entryId) {
-    try {
-      const entry = await getEntry(entryId);
-      if (entry) {
-        initialCenter = coordsOf(entry.sido, entry.sigungu);
-        const r = findSimilar(planInputOf(entry));
-        // 중앙값을 여기서 다시 세지 않는다. 짝수 개일 때 위/아래가 갈려
-        // 같은 진단인데 이 화면과 진단서가 다른 배수를 쓰게 된다
-        // (report/page.tsx 가 같은 이유로 grade 를 재사용한다).
-        const g = grade(r);
-        if (r.invalid || g.medianSurge === null) {
-          scenario = { surge: null, label: "이 진단은 비교 대상이 없습니다" };
-        } else {
-          scenario = {
-            surge: g.medianSurge,
-            label: `쌍둥이 ${r.matched.length}곳 실측 중앙값 ${g.medianSurge.toFixed(2)}배`,
-          };
-        }
-      }
-    } catch {
-      initialCenter = null;
-      scenario = null;
-    }
-  }
+  const center = region ? coordsOf(q.sido, q.sigungu) : null;
+  const preset = region?.code === PRESET_CODE;
+  // 저장한 도면 → 군포면 미리 그린 실도면(SimMap 이 파일을 읽는다) → 그 밖은 지역 대표점에 빈 도면
+  const initialGeo: Venue["geo"] | null =
+    saved?.geo ??
+    (preset || !center
+      ? null
+      : {
+          type: "FeatureCollection",
+          features: [],
+          origin: [center.lng, center.lat],
+          zoom: 17,
+          name: `${q.name || `${q.sido} ${q.sigungu}`} 배치도`,
+          source: "담당자가 편집기에서 그림",
+        });
 
   return (
     <div className="sheet venue-sheet">
@@ -140,62 +90,41 @@ export default async function VenuePage({
         <span className="logo">기획안 팩트체크</span>
         <nav>
           <Link href="/">기획안 넣기</Link>
-          <Link href="/check">판정</Link>
-          <Link href="/venue" aria-current="page">시뮬레이션</Link>
+          <Link href={`/check${qs}`}>판정</Link>
+          <Link href={`/venue${qs}`} aria-current="page">시뮬레이션</Link>
         </nav>
       </header>
 
       <main>
         <h1>시뮬레이션</h1>
-        <p className="lede">실도면 위에서 보행자를 흘려, 판정의 배수로 어디가 막히는지 봅니다.</p>
+        <p className="lede">배치도를 고친 뒤 보행자를 흘려, 어디가 막히는지 봅니다.</p>
 
-      {오류 && (
-        <p className="alert" data-level="심각" role="alert">
-          {오류}
-        </p>
-      )}
-      {저장됨 && (
-        <p className="note" role="status">
-          저장됐습니다. 이 주소를 다시 열면 이 도면이 그대로 나옵니다
-        </p>
-      )}
-      {entryId === DEMO_ENTRY_ID ? (
-        <p className="note">
-          <strong>{DEMO_LABEL}</strong>의 도면입니다. 강원 속초시 좌표에 예시
-          배치를 깔아 둔 것이고, 저장하면 연결 없는 새 도면으로 따로 남습니다.
-        </p>
-      ) : (
-        entryId && (
-          <p className="note">진단 이력 #{entryId} 에 연결된 도면입니다</p>
-        )
-      )}
-
-      {/* 기본 도면(군포 실도면)으로 들어왔으면 미리 돌린 요약을 먼저 보이고, 아래 시뮬은 자동으로 한 번 재생한다 (2026-09-12 F) */}
-      {!entryId && !venue.geo && <SimCardBlock isGunpo />}
-
-      <SimShell
-        autoplay={!entryId && !venue.geo}
-        initialCenter={initialCenter}
-        vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
-        scenario={scenario}
-        initialGeo={venue.geo ?? null}
-        entryId={entryId}
-        saveAction={저장}
-      />
-
-      <details className="sim-legacy">
-        <summary>예전 캔버스 편집기 (Konva) · 위성 위 편집이 붙을 때까지 남겨 둔다</summary>
-      <EditorShell
-        initialVenue={venue}
-        entryId={entryId}
-        initialCenter={initialCenter}
-        // 서버에서 읽어 넘긴다 — 빌드 인라인(NEXT_PUBLIC)에 기대지 않아
-        // Vercel 에 env 만 넣으면 재배포 한 번으로 백지도가 켜진다
-        vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
-        scenario={scenario}
-        saveAction={저장}
-      />
-      </details>
+        {오류 && (
+          <p className="alert" data-level="심각" role="alert">
+            {오류}
+          </p>
+        )}
+        {저장됨 && (
+          <p className="note" role="status">
+            저장됐습니다. 이 주소를 다시 열면 이 도면이 그대로 나옵니다
+          </p>
+        )}
+        {!region || (!preset && !center && !saved) ? (
+          <p className="alert" data-level="심각" role="alert">
+            &ldquo;{q0.sido} {q0.sigungu}&rdquo; 의 위치를 찾지 못해 지도를 열 수 없습니다. <Link href={`/check${qs}`}>판정 화면에서 지역을 고쳐 주세요 →</Link>
+          </p>
+        ) : (
+          <SimShell
+            initialCenter={center}
+            vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+            scenario={null}
+            initialGeo={initialGeo}
+            initialUnderlay={saved?.underlay ?? null}
+            planQuery={qs}
+            entryId={null}
+            saveAction={저장}
+          />
+        )}
       </main>
     </div>
   );

@@ -159,9 +159,12 @@ test("V1-5 화면마다 metadata title 이 다르다", () => {
   assert.equal(titles.size, 5);
 });
 
-test("V1-6 /venue: 스트레스 중엔 재생이 막히고, 유입 배열·밀도 등급의 출처 문구가 있다", () => {
+test("V1-6 /venue: 스트레스 중엔 시작이 막히고, 유입 배열·밀도 등급의 출처 문구가 있다", () => {
   const s = read("app/venue/sim-map.tsx");
-  assert.ok(s.includes("disabled={running || !ready || !!stressMsg}"), "스트레스 중 재생이 안 막힌다");
+  assert.ok(s.includes("disabled={running || !!stressMsg} onClick={startSim}"), "스트레스 중 시작이 안 막힌다");
+  // 2026-09-13 사용자 지시 — 들어오자마자 돌리지 않는다. 편집이 먼저다
+  assert.ok(!s.includes("autoplay"), "자동 재생이 남았다");
+  assert.ok(s.includes('useRef<EditMode>("select")'), "편집 모드로 열리지 않는다");
   assert.ok(s.includes("출처 없음"), "유입 배열에 출처 없음 표기가 없다");
   assert.ok(s.includes("행안부"), "밀도 등급 출처가 화면에 없다");
   assert.ok(s.includes("상한 배수 과소"), "Weidmann 편향 방향이 없다");

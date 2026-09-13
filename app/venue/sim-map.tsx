@@ -20,10 +20,10 @@ import type { Frame, FromWorker, GridMeta, ToWorker } from "./sim-protocol";
 import { askScenario } from "@/app/venue/ask-action";
 import type { AskScenario, VenueIndex } from "@/lib/simask";
 import {
-  addBooth, addCorridor, alignToNeighbor, centroidM, distM, extendRow, hitCorridor, hitTest, orientationOf, projectionOf,
+  addBooth, addCorridor, addGate, alignToNeighbor, centroidM, distM, extendRow, hitCorridor, hitTest, orientationOf, projectionOf,
   remove as removeFeature, rotate as rotateFeature, rotateTo, setProps, snapToRow, translate as translateFeature,
 } from "@/lib/geoedit";
-import type { Venue } from "@/lib/venue";
+import type { UnderlayPlace, Venue } from "@/lib/venue";
 import {
   makeProjection,
   venueFromGeoJSON,
@@ -36,11 +36,15 @@ type FC = GeoJSON.FeatureCollection & {
   zoom?: number;
   name?: string;
   source?: string;
+  underlay?: UnderlayPlace;
 };
-type EditMode = "view" | "select" | "booth" | "corridor" | "measure";
+type EditMode = "view" | "select" | "gate" | "booth" | "corridor" | "measure" | "ulScale" | "ulMove";
 const MODE_LABEL: Record<EditMode, string> = {
-  view: "보기", select: "선택·옮기기", booth: "부스 놓기", corridor: "통로 그리기", measure: "재기",
+  view: "보기", select: "선택·옮기기", gate: "출입구 놓기", booth: "부스 놓기", corridor: "통로 그리기", measure: "재기",
+  ulScale: "밑그림 축척 맞추기", ulMove: "밑그림 옮기기",
 };
+/** 편집 칸의 모드 버튼 순서. 밑그림 두 모드는 밑그림 칸의 버튼으로 들어간다 */
+const EDIT_MODES: EditMode[] = ["view", "select", "gate", "booth", "corridor", "measure"];
 const BOOTH_CATS = ["체험", "판매", "먹거리", "푸드트럭", "홍보", "전시", "편의"];
 type BaseKind = "plan" | "sat" | "base" | "osm";
 type WhatIf = Record<string, boolean>;
@@ -53,6 +57,22 @@ interface StressRow {
 }
 
 const VENUE_FILE = "/venue/gunpo.geojson";
+
+/** 밑그림 픽셀 (u, v) → 행사장 평면(m). 그림의 v 는 아래로, 평면의 y 는 북쪽으로 는다 */
+function ulToM(p: UnderlayPlace, u: number, v: number): [number, number] {
+  const a = (p.rotDeg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  const dx = (u - p.w / 2) * p.mPerPx, dy = -(v - p.h / 2) * p.mPerPx;
+  return [p.cx + dx * c - dy * s, p.cy + dx * s + dy * c];
+}
+function mToUl(p: UnderlayPlace, x: number, y: number): [number, number] {
+  const a = (p.rotDeg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  const rx = x - p.cx, ry = y - p.cy;
+  const dx = rx * c + ry * s, dy = -rx * s + ry * c;
+  return [dx / p.mPerPx + p.w / 2, -dy / p.mPerPx + p.h / 2];
+}
+/** 출입구가 없으면 들어올 곳이, 통로·부지가 없으면 걸을 곳이 없다 — 엔진 격자를 만들 수 없다 */
+const buildable = (v: SimVenue | null) => !!v && v.gates.length > 0 && (v.corridors.length > 0 || v.sites.length > 0);
+const NEED_MSG = "출입구 한 곳과 통로 하나 이상을 그리면 시뮬레이션을 시작할 수 있습니다";
 
 function rasterStyle(kind: BaseKind, key: string | null): StyleSpecification {
   // 도면 모드 — 타일 없이 흰 바탕. 사람 눈에는 건축 도면처럼 검정 선만 보인다
@@ -366,15 +386,18 @@ export default function SimMap({
   initialGeo,
   entryId,
   saveAction,
-  autoplay = false,
+  initialUnderlay,
+  planQuery,
 }: {
   vworldKey: string | null;
-  /** 진입하자마자 기본 시나리오를 한 번 재생한다 (2026-09-12 F, 사용자 지시 7 "기본으로 돌려 둬라"). 담당자가 안 눌러도 결과가 선다 */
-  autoplay?: boolean;
   scenario: { surge: number | null; label: string } | null;
   initialCenter: { lat: number; lng: number } | null;
-  /** 저장된 도면. 없으면 군포 기본 도면 파일을 읽는다 */
+  /** 저장된 도면 또는 빈 도면. 없으면 군포 기본 도면 파일을 읽는다 */
   initialGeo: FC | null;
+  /** 저장해 둔 배치도 밑그림(data URL). 자리는 initialGeo.underlay */
+  initialUnderlay: string | null;
+  /** 이 도면이 딸린 기획안의 판정 쿼리 — 저장 뒤 같은 기획안으로 돌아온다 */
+  planQuery: string;
   entryId: string | null;
   saveAction: (formData: FormData) => Promise<void>;
 }) {
@@ -398,7 +421,8 @@ export default function SimMap({
   const planRef = useRef(true);
   // 편집 — 프레임마다 상태를 읽지 않으려고 ref 로도 든다
   const fcRef = useRef<FC | null>(null);
-  const modeRef = useRef<EditMode>("view");
+  // 편집이 먼저다 — 들어오자마자 돌리지 않고 선택·옮기기로 연다 (2026-09-13 사용자 지시)
+  const modeRef = useRef<EditMode>("select");
   const selectedRef = useRef<string | null>(null);
   const draftRef = useRef<[number, number][]>([]);
   const dragRef = useRef<{ id: string; start: [number, number]; last: [number, number]; moved: boolean } | null>(null);
@@ -417,7 +441,16 @@ export default function SimMap({
   const geoFormRef = useRef<HTMLFormElement>(null);
   const scaleRef = useRef(scenario?.surge ?? 1.0);
   // 서버가 한 번 넘기는 값 — 지도는 한 번만 만들고, 바뀔 일이 없다
-  const initRef = useRef({ vworldKey, initialCenter, initialGeo });
+  const initRef = useRef({ vworldKey, initialCenter, initialGeo, initialUnderlay });
+  const readyRef = useRef(false);
+  /** [시뮬레이션 시작]을 눌렀는데 격자를 다시 만드는 중이면, 다 만든 뒤 바로 시작한다 */
+  const pendingRunRef = useRef(false);
+  // 배치도 밑그림 — 그림·자리·JPEG(저장용)·축척/옮기기에서 찍은 점(m)
+  const ulImgRef = useRef<HTMLImageElement | null>(null);
+  const ulRef = useRef<UnderlayPlace | null>(null);
+  const ulDataRef = useRef<string | null>(null);
+  const ulPickRef = useRef<[number, number][]>([]);
+  const ulPdfRef = useRef<Awaited<ReturnType<typeof import("unpdf").getDocumentProxy>> | null>(null);
 
   const [fc, setFc] = useState<FC | null>(null);
   const [base, setBase] = useState<BaseKind>("plan");
@@ -444,9 +477,12 @@ export default function SimMap({
   const [stressMsg, setStressMsg] = useState<string | null>(null);
   const [venue, setVenue] = useState<SimVenue | null>(null);
   const [ready, setReady] = useState(false);
-  // 자동 재생은 첫 build 뒤 한 번만 — 도면을 고쳐 다시 만들 때마다 멋대로 돌면 편집을 방해한다
-  const autoplayedRef = useRef(false);
-  const [mode, setMode] = useState<EditMode>("view");
+  const [mode, setMode] = useState<EditMode>("select");
+  const [ul, setUl] = useState<UnderlayPlace | null>(null);
+  const [ulMsg, setUlMsg] = useState<string | null>(null);
+  const [ulPdf, setUlPdf] = useState<{ n: number; page: number } | null>(null);
+  const [ulPicks, setUlPicks] = useState(0);
+  const [ulMeters, setUlMeters] = useState("50");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [history, setHistory] = useState<FC[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -485,6 +521,13 @@ export default function SimMap({
           setStatus(`격자 ${m.meta.w}×${m.meta.h} (${m.meta.cell}m) · 걸을 수 있는 면적 ${m.meta.walkM2.toFixed(0)}㎡ · 워커`);
           setSum(m.summary);
           setReady(true);
+          readyRef.current = true;
+          if (pendingRunRef.current) {
+            pendingRunRef.current = false;
+            runningRef.current = true;
+            setRunning(true);
+            worker.postMessage({ type: "run" } satisfies ToWorker);
+          }
           break;
         case "frame":
           frameRef.current = m.frame;
@@ -578,10 +621,18 @@ export default function SimMap({
     frameRef.current = null;
     densRef.current = null;
     setReady(false);
+    readyRef.current = false;
     // 도면(m)은 바로 — 그리기가 기다리면 안 된다. 격자·거리장은 몇 초라 한 틱(편집 뒤엔 1.5초) 미룬다
-    {
-      const proj0 = projRef.current;
-      if (proj0) { const v0 = venueFromGeoJSON(eff, proj0); venueRef.current = v0; setVenue(v0); }
+    const v0 = venueFromGeoJSON(eff, projRef.current);
+    venueRef.current = v0;
+    setVenue(v0);
+    if (!buildable(v0)) {
+      // 빈 도면(군포 밖 기획안) — 그릴 때까지 격자를 만들지 않는다. 눌러 둔 시작도 풀어 준다
+      editedRef.current = false;
+      staleRef.current = false;
+      pendingRunRef.current = false;
+      setStatus(NEED_MSG);
+      return;
     }
     if (editedRef.current && modeRef.current !== "view") {
       // 편집 중 — 도면만 바꾸고 시뮬은 나중에. 화면엔 그 사실을 적는다
@@ -610,18 +661,25 @@ export default function SimMap({
     send({ type: "scale", v: scale });
   }, [scale]);
   useEffect(() => { speedRef.current = speed; send({ type: "speed", v: speed }); }, [speed]);
-  useEffect(() => {
-    if (!autoplay || !ready || autoplayedRef.current || runningRef.current) return;
-    autoplayedRef.current = true;
+  useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
+  const changeMode = (k: EditMode) => {
+    modeRef.current = k; draftRef.current = []; ulPickRef.current = [];
+    setMode(k); setDraftN(0); setMeasure(null); setUlPicks(0);
+    if (k === "view" && staleRef.current) setRebuildTick((n) => n + 1);
+  };
+  /** 편집을 끝내고 돌린다. 편집 중 바뀐 도면이 있으면 격자를 다시 만든 뒤 시작한다 */
+  const startSim = () => {
+    if (!buildable(venueRef.current)) { setStatus(NEED_MSG); return; }
+    const wasStale = staleRef.current;
+    if (modeRef.current !== "view") changeMode("view");
+    if (wasStale || !readyRef.current) {
+      pendingRunRef.current = true;
+      setStatus("격자·거리장을 만든 뒤 바로 시작합니다…");
+      return;
+    }
     runningRef.current = true;
     setRunning(true);
     send({ type: "run" });
-  }, [autoplay, ready]);
-  useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
-  const changeMode = (k: EditMode) => {
-    modeRef.current = k; draftRef.current = [];
-    setMode(k); setDraftN(0); setMeasure(null);
-    if (k === "view" && staleRef.current) setRebuildTick((n) => n + 1);
   };
 
   // ── 편집 ──────────────────────────────────────────────────────────
@@ -748,7 +806,23 @@ export default function SimMap({
     const m = toM(e), fc0 = fcRef.current, proj = projRef.current;
     if (!m || !fc0 || !proj) return;
     const md = modeRef.current;
-    if (md === "booth") {
+    if (md === "gate") {
+      const n = fc0.features.filter((f) => f.properties?.kind === "gate").length + 1;
+      commit(addGate(fc0, proj, m, `출입구 ${n}`));
+    } else if (md === "ulScale" || md === "ulMove") {
+      const pts = [...ulPickRef.current, m];
+      const p = ulRef.current;
+      if (md === "ulMove" && p && pts.length === 2) {
+        // 첫 점(밑그림 위) 이 둘째 점(지도 위 제자리)에 오도록 평행이동 — 축척·각도는 그대로
+        const [u, v] = mToUl(p, pts[0][0], pts[0][1]);
+        const at = ulToM(p, u, v);
+        placeUl({ ...p, cx: p.cx + pts[1][0] - at[0], cy: p.cy + pts[1][1] - at[1] });
+        changeMode("select");
+        return;
+      }
+      ulPickRef.current = pts.slice(-2);
+      setUlPicks(ulPickRef.current.length);
+    } else if (md === "booth") {
       const n = fc0.features.filter((f) => f.properties?.kind === "booth").length + 1;
       const sn = snapRef.current ? snapToRow(fc0, proj, m) : { at: m, rotation: 0, neighbor: null, via: null };
       commit(addBooth(fc0, proj, sn.at, { name: newBooth.name.trim() || `${newBooth.cat} ${n}`, cat: newBooth.cat, servers: newBooth.servers, serviceSec: newBooth.serviceSec, rotation: sn.rotation }));
@@ -800,11 +874,100 @@ export default function SimMap({
     // 시뮬을 돌린 뒤 저장하면 그 요약이 진단서 근거 3 으로 간다. 워커의 Summary 는 좌표뿐이라 이름은 여기서 붙인다
     const sv = venueRef.current;
     const card = sum && sv ? simCardFrom(sum, (x, y) => nearestName(sv, x, y), { inflowPerHour: inflow, scale, k: ppa }) : null;
-    const v: Venue = { width: 900, height: 620, mPerPx: null, items: [], geo: fc0, ...(card ? { sim: card } : {}) };
+    const geo: FC = ulRef.current ? { ...fc0, underlay: ulRef.current } : fc0;
+    const v: Venue = { width: 900, height: 620, mPerPx: null, items: [], geo, ...(card ? { sim: card } : {}) };
     (form.elements.namedItem("venue") as HTMLInputElement).value = JSON.stringify(v);
+    (form.elements.namedItem("underlay") as HTMLInputElement).value = ulRef.current ? (ulDataRef.current ?? "") : "";
     form.requestSubmit();
   };
   useEffect(() => { showRef.current = show; }, [show]);
+
+  // ── 배치도 밑그림 ────────────────────────────────────────────────
+  // PDF 배치도는 그림이라 도면으로 자동 변환하지 않는다(축척·좌표가 없고, 통로 폭을 1m 틀리면 밀도가 크게 바뀐다).
+  // 지도 위에 깔고 축척·자리를 맞춘 뒤 담당자가 따라 그린다 (2026-09-13 사용자 결정 A안)
+  const placeUl = (p: UnderlayPlace) => { ulRef.current = p; setUl(p); setDirty(true); };
+  const showImage = (url: string, place: UnderlayPlace | null) => {
+    const img = new Image();
+    img.onload = () => {
+      // 저장용은 JPEG 로 줄인다 — PNG 로 그린 A4 한 쪽은 수 MB 라 서버 액션 한도(11MB)를 위협한다
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext("2d");
+      if (g) { g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0); ulDataRef.current = c.toDataURL("image/jpeg", 0.82); }
+      ulImgRef.current = img;
+      if (place) { ulRef.current = place; setUl(place); return; }
+      // 처음 깔 때는 화면 가운데에 화면 폭의 80% 로 — 축척은 담당자가 두 점과 거리로 맞춘다
+      const map = mapRef.current, el = mapEl.current, proj = projRef.current;
+      let cx = 0, cy = 0, mPerPx = 0.1;
+      if (map && el && proj) {
+        const r = el.getBoundingClientRect();
+        const toMpt = (x: number, y: number) => { const ll = map.unproject([x, y]); return proj.toM([ll.lng, ll.lat]) as [number, number]; };
+        [cx, cy] = toMpt(r.width / 2, r.height / 2);
+        mPerPx = (distM(toMpt(0, r.height / 2), toMpt(r.width, r.height / 2)) * 0.8) / img.naturalWidth;
+      }
+      placeUl({ cx, cy, mPerPx, rotDeg: 0, opacity: 0.5, w: img.naturalWidth, h: img.naturalHeight });
+      setUlMsg(null);
+    };
+    img.onerror = () => setUlMsg("밑그림을 그리지 못했습니다");
+    img.src = url;
+  };
+  const renderPdfPage = async (page: number) => {
+    const pdf = ulPdfRef.current;
+    if (!pdf) return;
+    setUlMsg(`${page}쪽 그리는 중…`);
+    try {
+      const { renderPageAsImage } = await import("unpdf");
+      const url = await renderPageAsImage(pdf, page, { scale: 2, toDataURL: true });
+      setUlPdf({ n: pdf.numPages, page });
+      showImage(url, null);
+    } catch {
+      setUlMsg("PDF 쪽을 그리지 못했습니다 — 배치도 쪽을 PNG·JPG 로 올려 주세요");
+    }
+  };
+  const loadUnderlayFile = async (file: File) => {
+    setUlMsg("밑그림 읽는 중…");
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      try {
+        const { getDocumentProxy, extractText } = await import("unpdf");
+        const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
+        ulPdfRef.current = pdf;
+        // 배치도 쪽을 글자로 찾는다. 못 찾으면 마지막 쪽(배치도는 대개 뒤에 붙는다)
+        const { text } = await extractText(pdf, { mergePages: false });
+        const hit = text.findIndex((t) => /배치도|배치\s*계획|평면도/.test(t));
+        await renderPdfPage(hit >= 0 ? hit + 1 : pdf.numPages);
+      } catch {
+        setUlMsg("PDF 를 읽지 못했습니다 — 배치도 쪽을 PNG·JPG 로 올려 주세요");
+      }
+      return;
+    }
+    ulPdfRef.current = null;
+    setUlPdf(null);
+    const reader = new FileReader();
+    reader.onload = () => showImage(String(reader.result), null);
+    reader.onerror = () => setUlMsg("그림을 읽지 못했습니다");
+    reader.readAsDataURL(file);
+  };
+  const applyUlScale = () => {
+    const p = ulRef.current, pts = ulPickRef.current, meters = Number(ulMeters);
+    if (!p || pts.length < 2 || !(meters > 0)) return;
+    const a = mToUl(p, pts[0][0], pts[0][1]), b = mToUl(p, pts[1][0], pts[1][1]);
+    const px = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (px < 1) return;
+    placeUl({ ...p, mPerPx: meters / px });
+    changeMode("select");
+  };
+  const removeUl = () => {
+    ulImgRef.current = null; ulRef.current = null; ulDataRef.current = null; ulPdfRef.current = null;
+    setUl(null); setUlPdf(null); setUlMsg(null); setDirty(true);
+    if (modeRef.current === "ulScale" || modeRef.current === "ulMove") changeMode("select");
+  };
+  // 저장해 둔 밑그림을 다시 연다
+  useEffect(() => {
+    const { initialUnderlay: url, initialGeo: g } = initRef.current;
+    if (url && g?.underlay) showImage(url, g.underlay);
+    // 한 번만 — 서버가 준 초기값이다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── 루프: 스텝은 타이머, 그리기는 rAF ────────────────────────────
   useEffect(() => {
@@ -828,7 +991,22 @@ export default function SimMap({
       const sh = showRef.current;
       const o = toScreen(0, 0), u = toScreen(1, 0);
       const pxPerM = Math.hypot(u[0] - o[0], u[1] - o[1]);
+      // 밑그림은 도면 아래에 — 그림의 세 모서리를 화면으로 보내 아핀 변환 하나로 그린다(지도 회전도 따라간다)
+      const ulImg = ulImgRef.current, ulp = ulRef.current;
+      if (ulImg && ulp) {
+        const p0 = toScreen(...ulToM(ulp, 0, 0)), px = toScreen(...ulToM(ulp, ulp.w, 0)), py = toScreen(...ulToM(ulp, 0, ulp.h));
+        ctx.save();
+        ctx.globalAlpha = ulp.opacity;
+        ctx.setTransform((px[0] - p0[0]) / ulp.w, (px[1] - p0[1]) / ulp.w, (py[0] - p0[0]) / ulp.h, (py[1] - p0[1]) / ulp.h, p0[0], p0[1]);
+        ctx.drawImage(ulImg, 0, 0, ulp.w, ulp.h);
+        ctx.restore();
+      }
       if (venue) drawVenue(ctx, venue, toScreen, pxPerM, planRef.current);
+      for (const [x, y] of ulPickRef.current) {
+        const [sx, sy] = toScreen(x, y), d = 7 * devicePixelRatio;
+        ctx.strokeStyle = "#C62A20"; ctx.lineWidth = 2 * devicePixelRatio;
+        ctx.beginPath(); ctx.moveTo(sx - d, sy); ctx.lineTo(sx + d, sy); ctx.moveTo(sx, sy - d); ctx.lineTo(sx, sy + d); ctx.stroke();
+      }
       handleRef.current = drawEdit(ctx, toScreen, pxPerM, {
         fc: fcRef.current, proj, selectedId: selectedRef.current, drag: dragRef.current,
         draft: draftRef.current, hover: hoverRef.current, mode: modeRef.current, snap: snapRef.current,
@@ -967,12 +1145,46 @@ export default function SimMap({
   return (
     <div className="sim-layout">
       <aside className="sim-panel">
+        <h3>배치도 밑그림</h3>
+        <p className="sim-small">기획서 PDF 나 배치도 그림을 깔고 그 위에 따라 그립니다. 그림을 도면으로 자동 변환하지는 않습니다.</p>
+        <input type="file" className="sim-file" accept="application/pdf,image/png,image/jpeg" onChange={(e) => { const f = e.target.files?.[0]; if (f) void loadUnderlayFile(f); }} />
+        {ulMsg && <p className="sim-small">{ulMsg}</p>}
+        {ulPdf && ulPdf.n > 1 && (
+          <label className="sim-row"><span>PDF 쪽</span>
+            <select value={ulPdf.page} onChange={(e) => void renderPdfPage(Number(e.target.value))}>
+              {Array.from({ length: ulPdf.n }, (_, i) => <option key={i} value={i + 1}>{i + 1}쪽</option>)}
+            </select>
+          </label>
+        )}
+        {ul && (
+          <>
+            <div className="sim-two">
+              <button type="button" className={"sim-mode" + (mode === "ulScale" ? " is-on" : "")} onClick={() => changeMode("ulScale")}>축척 맞추기</button>
+              <button type="button" className={"sim-mode" + (mode === "ulMove" ? " is-on" : "")} onClick={() => changeMode("ulMove")}>옮기기</button>
+            </div>
+            {mode === "ulScale" && <p className="sim-small">밑그림에서 길이를 아는 두 점(축척 막대 양 끝 등)을 누르고 실제 거리를 적습니다. 찍은 점 {ulPicks}개.</p>}
+            {mode === "ulScale" && ulPicks >= 2 && (
+              <div className="sim-two">
+                <label className="sim-row"><span>실제 거리(m)</span><input type="number" min={0.5} step={0.5} value={ulMeters} onChange={(e) => setUlMeters(e.target.value)} /></label>
+                <button type="button" className="btn sim-primary" onClick={applyUlScale}>적용</button>
+              </div>
+            )}
+            {mode === "ulMove" && <p className="sim-small">밑그림의 한 점(예: 주출입구)을 누르고, 그 점이 가야 할 지도 위 자리를 누릅니다. 위성 배경에서 하면 정확합니다.</p>}
+            <label className="sim-row"><span>각도(°)</span><input type="number" step={0.5} value={ul.rotDeg} onChange={(e) => placeUl({ ...ul, rotDeg: Number(e.target.value) || 0 })} /></label>
+            <label className="sim-row"><span>투명도 <b className="num">{Math.round(ul.opacity * 100)}%</b></span><input type="range" min={0.1} max={1} step={0.05} value={ul.opacity} onChange={(e) => placeUl({ ...ul, opacity: Number(e.target.value) })} /></label>
+            <p className="sim-small">밑그림 1px = <span className="num">{ul.mPerPx.toFixed(3)}</span> m</p>
+            <button type="button" className="btn" onClick={removeUl}>밑그림 치우기</button>
+          </>
+        )}
+
         <h3>편집</h3>
+        {fc && fc.features.length === 0 && <p className="sim-small">빈 도면입니다. 출입구·통로·부스를 그린 뒤 시뮬레이션을 시작합니다.</p>}
         <div className="sim-modes">
-          {(Object.keys(MODE_LABEL) as EditMode[]).map((k) => (
+          {EDIT_MODES.map((k) => (
             <button key={k} type="button" className={"sim-mode" + (mode === k ? " is-on" : "")} onClick={() => changeMode(k)}>{MODE_LABEL[k]}</button>
           ))}
         </div>
+        {mode === "gate" && <p className="sim-small">지도를 누르면 폭 6m 출입구가 섭니다. 선택·옮기기에서 돌리고 옮기며, 유입 몫은 아래 유입 시나리오에서 고칩니다.</p>}
         {(mode === "select" || mode === "booth") && (
           <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄·통로에 맞추기 (각도·3.5m 간격, 첫 부스는 도로 연석에)</span></label>
         )}
@@ -1118,7 +1330,7 @@ export default function SimMap({
 
       <div className="sim-map-col">
         <div className="sim-toolbar">
-          <button type="button" className="btn" disabled={running || !ready || !!stressMsg} onClick={() => { runningRef.current = true; setRunning(true); send({ type: "run" }); }}>재생</button>
+          <button type="button" className="btn sim-start" disabled={running || !!stressMsg} onClick={startSim}>시뮬레이션 시작</button>
           <button type="button" className="btn" disabled={!running} onClick={() => { runningRef.current = false; setRunning(false); send({ type: "pause" }); }}>멈춤</button>
           <button type="button" className="btn" onClick={() => setWhatif({ ...whatif })}>처음부터</button>
           <label className="sim-inline"><span>배속</span>
@@ -1144,6 +1356,8 @@ export default function SimMap({
         <form ref={geoFormRef} action={saveAction} className="sim-hidden-form">
           <input type="hidden" name="venue" value="" readOnly />
           <input type="hidden" name="entryId" value={entryId ?? ""} readOnly />
+          <input type="hidden" name="plan" value={planQuery} readOnly />
+          <input type="hidden" name="underlay" value="" readOnly />
         </form>
         <p className="sim-status num">{status}</p>
       </div>

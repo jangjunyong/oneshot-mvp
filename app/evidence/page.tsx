@@ -7,7 +7,8 @@
 import Link from "next/link";
 import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
-import { checkQueryString, DEMOS, parseCheckQuery } from "@/lib/checkquery";
+import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { PlanGate } from "@/app/_components/plan-gate";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
 import { measured, Num } from "@/app/_components/num";
@@ -92,10 +93,11 @@ function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly Da
 
 export default async function EvidencePage({ searchParams }: PageProps<"/evidence">) {
   const params = await searchParams;
-  const { query: q0, isDemo, demo, errors } = parseCheckQuery(params);
+  const { query: q0, empty, errors } = parseCheckQuery(params);
+  if (empty) return <PlanGate title="실측 근거" active={null} />;
   const region = q0.sido && q0.sigungu ? resolveRegion(q0.sido, q0.sigungu) : null;
   const q = region ? { ...q0, sido: region.sido, sigungu: region.name } : q0;
-  const qs = checkQueryString(q, isDemo);
+  const qs = checkQueryString(q);
   const code = region?.code ?? null;
   const rows = code ? loadDaily(code) : [];
   const man = manifest();
@@ -143,7 +145,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
         <nav>
           <Link href="/">기획안 넣기</Link>
           <Link href={`/check${qs}`}>판정</Link>
-          <Link href="/venue">시뮬레이션</Link>
+          <Link href={`/venue${qs}`}>시뮬레이션</Link>
         </nav>
       </header>
 
@@ -155,12 +157,6 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
         </h1>
         <p className="lede">KT 이동통신으로 센 시군구 일별 외지인. 평소(전후 4주) 대비 배수가 판정의 분모입니다.</p>
 
-        {isDemo && demo && (
-          <p className="alert" data-level="근거없음">
-            <strong>견본</strong>입니다. {q.sido} {q.sigungu}의 {q.history.map((h) => h.year).join("·")} {q.name} 기간을 봅니다. 기간 출처:{" "}
-            {q.history.map((h) => `${h.year} ${h.source ?? "—"}`).join(" / ")}. {DEMOS[demo].why}.
-          </p>
-        )}
         {errors.map((e) => (
           <p key={e} className="alert" data-level="심각" role="alert">
             {e}

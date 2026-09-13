@@ -145,6 +145,24 @@ export function addBooth(fc: FC, proj: Projection, at: [number, number], b: NewB
   return { ...fc, features: [...fc.features, f] };
 }
 
+/**
+ * 점(m)을 중심으로 출입구를 놓는다 — 폭 6m·깊이 2m. 빈 도면(군포 밖 기획안)은 출입구가 없으면 사람이 들어올 곳이 없어
+ * 시뮬을 만들 수 없다. 유입 몫은 1 로 두고, 엔진이 출입구 전체 합으로 나눈다(lib/sim/geo.js)
+ */
+export function addGate(fc: FC, proj: Projection, at: [number, number], name: string, rotation = 0): FC {
+  const w = 6, h = 2, id = nextId(fc, "g");
+  const a = (rotation * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  const corners: [number, number][] = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+  const ring = corners.map(([x, y]): [number, number] => [at[0] + x * c - y * s, at[1] + x * s + y * c]);
+  ring.push(ring[0]);
+  const f: Feature = {
+    type: "Feature",
+    properties: { kind: "gate", id, name, share: 1, source: "담당자 배치 (편집기)" },
+    geometry: { type: "Polygon", coordinates: [ring.map((m) => proj.toLngLat(m))] },
+  };
+  return { ...fc, features: [...fc.features, f] };
+}
+
 /** 꺾은선(m) 통로. 두 점 미만이면 그대로 */
 export function addCorridor(fc: FC, proj: Projection, pts: [number, number][], width: number, name = ""): FC {
   if (pts.length < 2) return fc;

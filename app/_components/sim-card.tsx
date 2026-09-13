@@ -1,7 +1,7 @@
 // 시뮬레이션 요약 카드 — 판정 결과에 먼저 보이는 "어디가 막히는가" (2026-09-12 M7a, 사용자 지시 7).
 // 값은 scripts/sim-precompute.mjs 가 고정 설정(SIM_CARD_SETTINGS)으로 미리 돌린 data/sim/gunpo_base.json 에서 온다.
 // 서버 렌더, 자바스크립트 0. 밀도 숫자는 출처(엔진·설정)를 단 셀로만 나간다 — 판정 화면의 "출처 셀 밖 명 수 0건" 규율.
-// 도면은 군포 한 곳뿐이라 다른 축제의 판정에서는 "군포 실도면 예시"라고 밝힌다.
+// 미리 돌린 도면은 군포 한 곳뿐이라 군포 기획안의 판정에만 낸다 — 다른 축제에 군포 결과를 예시로 붙이지 않는다 (2026-09-13).
 
 import Link from "next/link";
 import base from "@/data/sim/gunpo_base.json";
@@ -19,14 +19,14 @@ function Dens({ v }: { v: number }) {
   );
 }
 
-export function SimCardBlock({ isGunpo }: { isGunpo: boolean }) {
+export function SimCardBlock({ venueHref }: { venueHref: string }) {
   const over = card.peak.density > DENSITY_CAP;
   return (
     <section className="sim-card" aria-labelledby="sim-card-h">
-      <h2 id="sim-card-h">시뮬레이션 요약{!isGunpo && " — 군포 실도면 예시"}</h2>
+      <h2 id="sim-card-h">시뮬레이션 요약</h2>
       {over ? (
         <p className="alert" data-label="근거 없음">
-          미리 돌린 결과가 물리 상한을 넘어 카드를 내지 않습니다. <Link href="/venue">시뮬레이션 화면에서 직접 돌려 주세요 →</Link>
+          미리 돌린 결과가 물리 상한을 넘어 카드를 내지 않습니다. <Link href={venueHref}>시뮬레이션 화면에서 직접 돌려 주세요 →</Link>
         </p>
       ) : (
         <>
@@ -41,7 +41,7 @@ export function SimCardBlock({ isGunpo }: { isGunpo: boolean }) {
           </p>
           <p className="note">
             가정: 시간당 유입 {S.inflowPerHour.map((n) => n.toLocaleString("ko-KR")).join("→")}(출처 없음) · 점 하나 = {S.personsPerAgent} · 등급 경계 3·5는 행안부 가이드라인(2024.9).{" "}
-            <Link href="/venue">직접 돌리기 →</Link>
+            <Link href={venueHref}>직접 돌리기 →</Link>
           </p>
         </>
       )}

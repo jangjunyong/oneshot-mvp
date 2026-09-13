@@ -80,6 +80,22 @@ async function 폼을낸다(경로, 값) {
 /** 붙여넣기 화면(/)의 추출 액션 */
 const 붙여넣는다 = (planText) => 폼을낸다("/", { planText });
 
+// 2026-09-13 — 화면에 견본이 없다. 기획서를 넣었을 때 추출이 만드는 것과 같은 판정 주소로 잰다
+// (값은 lib/checkquery.ts GUNPO_2027·HWACHEON_2027 = 예비 데모 기획서 PDF 의 숫자)
+const 군포 = "name=군포철쭉축제&sido=경기&sigungu=군포시&n=600000&basis=period&counting=personDays&budget=100000&pop=24.9&start=2027-04-17&end=2027-04-25&h1s=2024-04-20&h1e=2024-04-28&h2s=2025-04-19&h2e=2025-04-27&h3s=2026-04-18&h3e=2026-04-26";
+const 화천 = "name=화천산천어축제&sido=강원&sigungu=화천군&n=1860000&basis=period&counting=personDays&pop=2.3&start=2027-01-09&end=2027-01-31&h1s=2024-01-06&h1e=2024-01-28&h2s=2025-01-11&h2e=2025-02-02&h3s=2026-01-10&h3e=2026-02-01";
+
+test("기획서를 안 넣으면 판정·실측 근거·시뮬레이션·보고서가 견본 없이 '기획서를 넣으면'만 낸다", async () => {
+  for (const path of ["/check", "/evidence", "/venue", "/check?demo=hwacheon", "/venue?entry=demo"]) {
+    const h = (await (await fetch(BASE + path)).text()).replace(/<!--\s*-->/g, "");
+    assert.match(h, /기획서를 넣으면 이 화면이 열립니다/, `${path}: 안내가 없다`);
+    assert.doesNotMatch(h, /견본|시연용 예시|군포철쭉축제|예상 방문객 주의/, `${path}: 견본이 떴다`);
+  }
+  const 보고서 = await (await fetch(BASE + "/report/check")).text();
+  assert.match(보고서, /기획서를 먼저 넣어 주세요/);
+  assert.doesNotMatch(보고서, /견본/);
+});
+
 test("첫 화면 — PDF 입력과 붙여넣기만 있고, 견본 버튼·데이터 설명·한도 문구·옛 진단 이력은 없다", async () => {
   const 홈 = (await (await fetch(BASE + "/")).text()).replace(/<!--\s*-->/g, "");
   assert.match(홈, /type="file"[^>]*accept="application\/pdf"/, "PDF 입력이 없다");
@@ -91,16 +107,12 @@ test("첫 화면 — PDF 입력과 붙여넣기만 있고, 견본 버튼·데이
   assert.doesNotMatch(본문, /\d[\d,]*\s*명/, "첫 화면에 명 수가 있다");
 });
 
-test("견본 진단서와 견본 도면은 링크 없이도 선다 (옛 보조 경로의 잔존 확인)", async () => {
+test("옛 보조 진단서 경로(나침반 밖)는 링크로 열어도 서버 오류 없이 선다", async () => {
   const 진단서 = await (await fetch(BASE + "/report?entry=demo")).text();
-  assert.match(진단서, /시연용 예시/, "진단서에 예시 표시가 없다");
   assert.match(진단서, /결재용 아님/, "꼬리말에 견본 표시가 없다");
   const 없는것 = await fetch(`${BASE}/report?entry=999999`);
   assert.ok(없는것.status < 500, `없는 진단에서 서버 오류 (${없는것.status})`);
   assert.match(await 없는것.text(), /진단서를 만들 수 없습니다/);
-  const 도면 = await fetch(BASE + "/venue?entry=demo");
-  assert.equal(도면.status, 200);
-  assert.match(await 도면.text(), /시연용 예시/, "도면에 예시 표시가 없다");
 });
 
 test("기획서를 붙여넣으면 확인 화면 없이 판정(/check)으로 가고, 초안 주석은 판정 블록을 바꾸지 않는다", async () => {
@@ -132,11 +144,18 @@ test("기획서를 붙여넣으면 확인 화면 없이 판정(/check)으로 가
   assert.equal(블록(판정페이지), 블록(없이), "draft 주석이 판정 블록을 바꿨다");
 });
 
-test("시뮬레이션 화면이 뜬다", async () => {
-  const 도면 = await (await fetch(BASE + "/venue")).text();
-  assert.match(도면, /시뮬레이션/, "시뮬레이션 화면이 안 뜬다");
+test("시뮬레이션 — 기획안 주소로 열리고(군포는 미리 그린 도면, 다른 지역은 빈 도면), 탭이 같은 기획안을 물고 간다", async () => {
   // 캔버스는 클라이언트 몫이라 SSR 본문엔 로딩 문구까지만 있으면 된다
-  assert.match(도면, /편집기를 불러오는 중|venue-layout/, "편집기 자리가 없다");
+  for (const qs of [군포, "name=x&sido=전남&sigungu=함평군&n=300000&basis=period&counting=personDays"]) {
+    const res = await fetch(`${BASE}/venue?${qs}`);
+    assert.equal(res.status, 200);
+    const h = (await res.text()).replace(/<!--\s*-->/g, "");
+    assert.match(h, /시뮬레이션을 불러오는 중/, `편집기 자리가 없다: ${qs.slice(0, 40)}`);
+    assert.doesNotMatch(h, /기획서를 넣으면 이 화면이 열립니다/);
+    assert.match(h, /href="\/check\?[^"]*sigungu=/, "판정 탭이 기획안을 잃었다");
+  }
+  const 판정 = (await (await fetch(`${BASE}/check?${군포}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(판정, /href="\/venue\?[^"]*sigungu=/, "시뮬레이션 탭이 기획안을 잃었다");
 });
 
 test("너무 짧은 입력은 모델을 부르지 않고 되돌려보내며, 첫 화면이 오류와 대체 경로를 보인다", async () => {
@@ -160,19 +179,18 @@ function 출처셀걷기(html) {
     .replace(/<!--\s*-->/g, "");
 }
 
-test("판정 견본 — 군포 2027(목표 60만) 은 주의, 명 수는 전부 출처 셀 안에", async () => {
-  const html = await (await fetch(BASE + "/check")).text();
+test("판정 — 군포 2027 기획안(목표 60만) 은 주의, 명 수는 전부 출처 셀 안에", async () => {
+  const html = await (await fetch(`${BASE}/check?${군포}`)).text();
   const 본문 = html.replace(/<!--\s*-->/g, "");
-  assert.match(본문, /견본/, "견본 표시가 없다");
+  assert.doesNotMatch(본문, /견본/, "견본 표시가 남았다");
   assert.match(본문, /예상 방문객 주의/, "최종 판정이 없다");
-  assert.match(본문, /경인일보/, "견본 방문객의 출처가 없다");
   // M7a(2026-09-12): 시뮬 요약 카드가 판정 결과에 먼저 보인다. 밀도 숫자는 출처 셀 안에만
   assert.match(본문, /시뮬레이션 요약/, "시뮬 요약 카드가 없다");
   assert.match(본문, /data-source-api="시뮬레이션\(가정\)"/, "시뮬 밀도 셀에 출처가 없다");
-  // N0(2026-09-11): 619건에 군포시가 없어도 견본은 또래 구간이 서야 한다
-  assert.doesNotMatch(본문, /619건 자료에 없어/, "견본에 인구 없음 경고가 떴다");
-  assert.match(본문, /또래 평균/, "견본에 또래 구간이 없다");
-  assert.match(본문, /인구 출처/, "견본 인구 출처가 없다");
+  // N0(2026-09-11): 619건에 군포시가 없어도 또래 구간이 서야 한다
+  assert.doesNotMatch(본문, /619건 자료에 없어/, "인구 없음 경고가 떴다");
+  assert.match(본문, /또래 평균/, "또래 구간이 없다");
+  assert.match(본문, /인구 출처/, "인구 출처가 없다");
   assert.match(본문, /1\.1~1\.3배/, "내년 구간(평균)이 없다");
   assert.match(본문, /1\.4~1\.6배/, "내년 구간(최대일)이 없다");
   // 안 잰 적중률에 신뢰도 라벨을 붙이지 않는다 (M1)
@@ -204,7 +222,7 @@ test("판정 음성 — 작년 실측 그대로 넣으면 통과, 단위를 빼�
 });
 
 test("실측 근거 — 곡선 3장, 연도별 표, 일별 표가 자바스크립트 없이 나온다", async () => {
-  const html = await (await fetch(BASE + "/evidence")).text();
+  const html = await (await fetch(`${BASE}/evidence?${군포}`)).text();
   assert.equal((html.match(/class="ev-line"/g) ?? []).length, 3, "곡선이 3장이 아니다");
   assert.match(html, /2026-04-18/, "일별 표가 없다");
   assert.match(html, /locgoRegnVisitrDDList/, "출처 API 이름이 없다");
@@ -215,11 +233,11 @@ test("실측 근거 — 곡선 3장, 연도별 표, 일별 표가 자바스크�
 });
 
 test("검증 보고서 두 장 — 판정·구간·보완·근거 표가 자바스크립트 없이 나오고 명 수는 출처 셀 안에", async () => {
-  const html = await (await fetch(BASE + "/report/check")).text();
+  const html = await (await fetch(`${BASE}/report/check?${군포}`)).text();
   const 본문 = html.replace(/<!--\s*-->/g, "");
   assert.equal((html.match(/class="report-page"/g) ?? []).length, 2, "두 장이 아니다");
   assert.match(본문, /기획안 검증 보고서/);
-  assert.match(본문, /견본 · 결재용 아님/, "견본 표시가 종이에 없다");
+  assert.doesNotMatch(본문, /견본/, "견본 표시가 종이에 남았다");
   assert.match(본문, /예상 방문객 주의/, "결론이 없다");
   assert.match(본문, /1\.4~1\.6배/, "내년 구간이 없다");
   assert.match(본문, /이력 범위\(3년\)\. 적중률은 −52주 근사로만 쟀다/, "보고서 구간 줄이 적중률의 한계를 말하지 않는다");
@@ -232,8 +250,8 @@ test("검증 보고서 두 장 — 판정·구간·보완·근거 표가 자바�
   assert.match(깨짐, /보고서를 만들 수 없습니다/);
 });
 
-test("1인당 예산 대조 — 견본에 기획안 1인당·실측 1인당이 나란히, 판정 라벨 항목 3개 이상, 예산 없으면 카드 없음 (M3)", async () => {
-  const html = await (await fetch(BASE + "/check")).text();
+test("1인당 예산 대조 — 군포 기획안에 기획안 1인당·실측 1인당이 나란히, 판정 라벨 항목 3개 이상, 예산 없으면 카드 없음 (M3)", async () => {
+  const html = await (await fetch(`${BASE}/check?${군포}`)).text();
   const 본문 = html.replace(/<!--\s*-->/g, "");
   const 카드 = 본문.match(/<div class="range-card budget-card"[\s\S]*?<\/div>/)?.[0];
   assert.ok(카드, "예산 카드가 없다");
@@ -246,13 +264,13 @@ test("1인당 예산 대조 — 견본에 기획안 1인당·실측 1인당이 �
   assert.doesNotMatch(없음, /budget-card/, "예산 없는데 카드가 떴다");
   assert.match(없음, /예산 미공개/, "예산 미공개 행이 사라졌다");
   // 보고서에도 같은 행
-  const 보고서 = await (await fetch(BASE + "/report/check")).text();
+  const 보고서 = await (await fetch(`${BASE}/report/check?${군포}`)).text();
   assert.match(보고서, /기획안 총예산 ÷/, "보고서 판정표에 예산 행이 없다");
   assert.doesNotMatch(출처셀걷기(보고서), /\d[\d,]*\s*원(?!정)/, "보고서 출처 셀 밖에 원 값이 있다");
 });
 
 test("−52주 근사 백테스트 — 두 화면에 근사·표본 N건·편향 양방향이 다 있고, 한정어 없는 적중률은 없다 (M5)", async () => {
-  for (const path of ["/check", "/report/check"]) {
+  for (const path of [`/check?${군포}`, `/report/check?${군포}`]) {
     const 본문 = (await (await fetch(BASE + path)).text()).replace(/<!--\s*-->/g, "");
     assert.match(본문, /−52주 근사/, `${path}: '−52주 근사' 가 없다`);
     assert.match(본문, /표본 \d+건/, `${path}: '표본 N건' 이 없다`);
@@ -264,51 +282,53 @@ test("−52주 근사 백테스트 — 두 화면에 근사·표본 N건·편향
   }
 });
 
-test("견본 2건 — 화천산천어축제(글로벌축제)는 상한 초과 + 손익분기 회전율, 두 견본 모두 '근거 없음' 아님 (M7)", async () => {
-  const 화천 = (await (await fetch(BASE + "/check?demo=hwacheon")).text()).replace(/<!--\s*-->/g, "");
-  assert.doesNotMatch(화천, /619건 자료에 없어/, "화천 견본에 인구 없음 경고가 떴다");
-  assert.match(화천, /또래 평균/, "화천 견본에 또래 구간이 없다");
-  assert.match(화천, /견본/, "견본 표시가 없다");
-  assert.match(화천, /화천산천어축제/, "화천 견본이 아니다");
-  assert.match(화천, /예상 방문객 상한 초과/, "화천 판정이 없다");
-  assert.match(화천, /손익분기 회전율/, "연인원인데 회전율이 없다");
-  assert.match(화천, /글로벌축제|지정축제/, "지정축제 표기가 없다");
-  assert.doesNotMatch(화천, /예상 방문객 근거 없음/, "화천이 근거 없음이다");
-  assert.doesNotMatch(출처셀걷기(화천), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
-  const 군포 = (await (await fetch(BASE + "/check")).text()).replace(/<!--\s*-->/g, "");
-  assert.doesNotMatch(군포, /예상 방문객 근거 없음/, "군포가 근거 없음이다");
-  assert.match(군포, /demo=hwacheon/, "군포 견본에서 화천 견본으로 가는 링크가 없다");
-  // 근거·보고서도 같은 견본을 물고 간다
-  const 근거 = await (await fetch(BASE + "/evidence?demo=hwacheon")).text();
-  assert.match(근거, /화천/, "실측 근거가 화천 견본을 잃었다");
-  const 보고서 = (await (await fetch(BASE + "/report/check?demo=hwacheon")).text()).replace(/<!--\s*-->/g, "");
-  assert.match(보고서, /화천산천어축제/, "보고서가 화천 견본을 잃었다");
+test("화천산천어축제 기획안(발표치 186만)은 상한 초과 + 손익분기 회전율, 군포·화천 모두 '근거 없음' 아님 (M7)", async () => {
+  const 화천판정 = (await (await fetch(`${BASE}/check?${화천}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.doesNotMatch(화천판정, /619건 자료에 없어/, "화천에 인구 없음 경고가 떴다");
+  assert.match(화천판정, /또래 평균/, "화천에 또래 구간이 없다");
+  assert.match(화천판정, /화천산천어축제/, "화천이 아니다");
+  assert.match(화천판정, /예상 방문객 상한 초과/, "화천 판정이 없다");
+  assert.match(화천판정, /손익분기 회전율/, "연인원인데 회전율이 없다");
+  assert.doesNotMatch(화천판정, /예상 방문객 근거 없음/, "화천이 근거 없음이다");
+  assert.doesNotMatch(화천판정, /시뮬레이션 요약/, "군포 밖 기획안에 군포 시뮬 요약이 붙었다");
+  assert.doesNotMatch(출처셀걷기(화천판정), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
+  const 군포판정 = (await (await fetch(`${BASE}/check?${군포}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.doesNotMatch(군포판정, /예상 방문객 근거 없음/, "군포가 근거 없음이다");
+  // 근거·보고서도 같은 기획안을 물고 간다
+  const 근거 = await (await fetch(`${BASE}/evidence?${화천}`)).text();
+  assert.match(근거, /화천/, "실측 근거가 화천을 잃었다");
+  const 보고서 = (await (await fetch(`${BASE}/report/check?${화천}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(보고서, /화천산천어축제/, "보고서가 화천을 잃었다");
   assert.match(보고서, /손익분기 회전율/, "보고서에 회전율이 없다");
 });
 
 
 // 2026-09-12 M3a-2 — 닮은 축제(보조 근거)가 /check 안에 선다. 지도·카드는 열려 있고 핀은 판정 URL 을 보존한 링크다
-test("판정 화면 안의 닮은 축제 — 견본에 지도·카드 3장이 열려 있고, 핀 링크가 theme·acc 를 보존하며, 폼 제출도 보존한다", async () => {
-  const 군포 = (await (await fetch(BASE + "/check")).text()).replace(/<!--\s*-->/g, "");
-  assert.match(군포, /id="twins"/, "닮은 축제 블록이 없다");
-  assert.equal((군포.match(/class="map"/g) || []).length, 1, "지도가 한 장이 아니다");
-  assert.ok((군포.match(/class="twin-card"/g) || []).length >= 3, "닮은 축제 카드가 셋 미만");
-  assert.match(군포, /경보|위험 근거 못 찾음|비교 대상 없음/, "보조 등급이 없다");
+test("판정 화면 안의 닮은 축제 — 지도·카드 3장이 열려 있고, 핀 링크가 theme·acc 를 보존하며, 폼 제출도 보존한다", async () => {
+  const 판정 = (await (await fetch(`${BASE}/check?${군포}&theme=2&acc=4`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(판정, /id="twins"/, "닮은 축제 블록이 없다");
+  assert.equal((판정.match(/class="map"/g) || []).length, 1, "지도가 한 장이 아니다");
+  assert.ok((판정.match(/class="twin-card"/g) || []).length >= 3, "닮은 축제 카드가 셋 미만");
+  assert.match(판정, /경보|위험 근거 못 찾음|비교 대상 없음/, "보조 등급이 없다");
+  // 2026-09-13 사용자 지시 — 지도 핀은 검정선(기둥·원 머리), '이 기획안'은 과녁
+  assert.match(판정, /class="pin-foot"/, "검정선 핀이 아니다");
+  assert.match(판정, /class="map-origin"/, "이 기획안 표식이 없다");
+  assert.doesNotMatch(판정, /pin\.png/, "핀이 그림으로 돌아갔다");
   // 지도·카드는 details 밖, 감당 범위 이하는 details 안
-  const 블록 = 군포.slice(군포.indexOf('id="twins"'));
+  const 블록 = 판정.slice(판정.indexOf('id="twins"'));
   assert.ok(블록.indexOf('class="map"') < 블록.indexOf('class="selfcheck aux-detail"'), "지도가 접힘 안에 들어갔다");
   assert.ok(블록.indexOf("감당 범위") > 블록.indexOf('class="selfcheck aux-detail"'), "감당 범위가 접히지 않았다");
   // 판정이 서면 입력 폼은 접힌다
-  assert.match(군포, /class="check-form-fold"/, "입력 폼이 접히지 않았다");
-  // 핀 링크 — 견본 가정(theme·acc)을 싣고 #twins 로
-  const 핀 = 군포.match(/href="(\/check\?[^"]*pin=[^"#]+#twins)"/)?.[1]?.replace(/&amp;/g, "&");
+  assert.match(판정, /class="check-form-fold"/, "입력 폼이 접히지 않았다");
+  // 핀 링크 — theme·acc 를 싣고 #twins 로
+  const 핀 = 판정.match(/href="(\/check\?[^"]*pin=[^"#]+#twins)"/)?.[1]?.replace(/&amp;/g, "&");
   assert.ok(핀, "핀 링크가 없다");
   assert.match(핀, /theme=\d/, "핀 링크가 테마를 잃었다");
   assert.match(핀, /acc=\d/, "핀 링크가 접근성을 잃었다");
   const 펴짐 = (await (await fetch(BASE + 핀)).text()).replace(/<!--\s*-->/g, "");
   assert.match(펴짐, /class="pin-card"/, "핀을 눌러도 근거 카드가 없다");
   assert.match(펴짐, /핀 선택 해제/);
-  assert.match(펴짐, /견본/, "핀을 눌렀더니 견본이 아니게 됐다");
+  assert.match(펴짐, /군포철쭉축제/, "핀을 눌렀더니 기획안을 잃었다");
   // 담당자 입력에서도: theme·acc 를 URL 로 주면 블록이 서고, 폼에 hidden 으로 실려 판정 버튼에 안 사라진다
   const 기본 = "sido=경기&sigungu=군포시&h1s=2026-04-18&h1e=2026-04-26&n=110184&basis=peakDay&counting=unique&start=2027-04-17&end=2027-04-25";
   const 입력 = (await (await fetch(`${BASE}/check?${기본}&theme=2&acc=4`)).text()).replace(/<!--\s*-->/g, "");
@@ -356,9 +376,9 @@ function 열린글자수(html) {
   }
   return h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().length;
 }
-// 실측(2026-09-12): / 522 · /check 3,499 · /venue 105 — 상한은 그 1.1배 안팎
-const 글자상한 = { "/": 250, "/check": 3600, "/venue": 450 };
-test("열린 글자 수 — 첫 화면·판정(군포 견본)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
+// 실측(2026-09-12): / 522 · /check 3,499 · /venue 105 — 상한은 그 1.1배 안팎. 2026-09-13 견본이 사라져 판정·시뮬은 기획안 주소로 잰다
+const 글자상한 = { "/": 250, [`/check?${군포}&theme=2&acc=4`]: 3600, [`/venue?${군포}`]: 450 };
+test("열린 글자 수 — 첫 화면·판정(군포 기획안)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
   const 잰값 = {};
   for (const path of Object.keys(글자상한)) 잰값[path] = 열린글자수(await (await fetch(BASE + path)).text());
   console.log("열린 글자 수", JSON.stringify(잰값));
