@@ -13,22 +13,22 @@
   "minutes": 15
  },
  "builtAt": "2026-09-13",
- "elapsedMs": 29868,
+ "elapsedMs": 40414,
  "card": {
-  "at": "2026-09-13T17:39:34.786Z",
+  "at": "2026-09-13T18:41:40.188Z",
   "simSec": 900,
   "inflowPerHour": "3000,6000",
   "scale": 1,
   "k": 1,
   "peak": {
    "density": 3,
-   "where": "체험 29 근처 1m"
+   "where": "공원 철쭉푸드 8 근처 1m"
   },
   "hotspots": [
    {
-    "where": "체험 29 근처 1m",
+    "where": "공원 철쭉푸드 8 근처 1m",
     "peak": 3,
-    "sec": 0.2
+    "sec": 3.2
    }
   ],
   "secAbove5": 0,
