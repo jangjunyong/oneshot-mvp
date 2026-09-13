@@ -9,6 +9,7 @@ import Link from "next/link";
 import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { SKIP_REASON } from "@/lib/history";
 import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
@@ -384,7 +385,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
           )}
           {hist.skipped.map((s) => (
             <p key={s.period.start} className="num">
-              {s.period.year} {period(s.period)}: 자료 밖이라 뺐습니다 ({s.reason}).
+              {s.period.year} {period(s.period)}: 이력에서 뺐습니다 ({SKIP_REASON[s.reason]}).
             </p>
           ))}
         </section>

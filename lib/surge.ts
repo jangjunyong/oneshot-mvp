@@ -89,12 +89,16 @@ export interface SurgeOk {
     festivalDaysPresent: number;
     windowDays: number;
     windowDaysPresent: number;
+    /** 축제 전 창에 있는 날 수 (최대 weeks×7) */
+    windowBeforePresent: number;
+    /** 축제 후 창에 있는 날 수 (최대 weeks×7) */
+    windowAfterPresent: number;
   };
 }
 
 export type SurgeFail = {
   ok: false;
-  reason: "no-festival-days" | "insufficient-window" | "bad-range";
+  reason: "no-festival-days" | "insufficient-window" | "one-sided-window" | "bad-range";
   coverage: SurgeOk["coverage"];
 };
 
@@ -128,7 +132,7 @@ export function computeSurge(input: SurgeInput): SurgeResult {
   const t0 = toTime(input.start);
   const t1 = toTime(input.end);
   const festivalDays = Math.round((t1 - t0) / DAY) + 1;
-  const empty = { festivalDays: Math.max(0, festivalDays), festivalDaysPresent: 0, windowDays: 0, windowDaysPresent: 0 };
+  const empty = { festivalDays: Math.max(0, festivalDays), festivalDaysPresent: 0, windowDays: 0, windowDaysPresent: 0, windowBeforePresent: 0, windowAfterPresent: 0 };
   if (!(t1 >= t0) || Number.isNaN(t0) || Number.isNaN(t1)) {
     return { ok: false, reason: "bad-range", coverage: empty };
   }
@@ -139,11 +143,13 @@ export function computeSurge(input: SurgeInput): SurgeResult {
   // 창: 축제 전 weeks 주 + 축제 후 weeks 주 (축제일 제외)
   const win: DailyRow[] = [];
   const windowDays = weeks * 7 * 2;
+  let before = 0;
+  let after = 0;
   for (let k = 1; k <= weeks * 7; k++) {
     const a = byYmd.get(toYmd(t0 - k * DAY));
     const b = byYmd.get(toYmd(t1 + k * DAY));
-    if (a) win.push(a);
-    if (b) win.push(b);
+    if (a) { win.push(a); before++; }
+    if (b) { win.push(b); after++; }
   }
   const fest: DailyRow[] = [];
   for (let t = t0; t <= t1; t += DAY) {
@@ -155,10 +161,16 @@ export function computeSurge(input: SurgeInput): SurgeResult {
     festivalDaysPresent: fest.length,
     windowDays,
     windowDaysPresent: win.length,
+    windowBeforePresent: before,
+    windowAfterPresent: after,
   };
   if (fest.length === 0) return { ok: false, reason: "no-festival-days", coverage };
   // 창이 반도 안 차면 중앙값이 "평소"를 대표하지 못한다.
   if (win.length < Math.ceil(windowDays / 2)) return { ok: false, reason: "insufficient-window", coverage };
+  // 합이 반을 넘어도 한쪽이 반도 안 차면 안 된다 — 자료 끝에 걸린 축제는 앞 4주만으로 "평소"를 재고,
+  // 그 배수가 부푼다(보령 2024·2025 를 같은 식으로 재면 최대일 +27%·+13%, 2026-09-11 검증 S1 #6). 619건은 전부 양쪽이 찬다
+  const half = Math.ceil((weeks * 7) / 2);
+  if (before < half || after < half) return { ok: false, reason: "one-sided-window", coverage };
 
   const baseline = median(win.map((r) => r.out))!;
   const baselineWeekend = median(win.filter((r) => [0, 6].includes(dowOf(r.ymd))).map((r) => r.out));

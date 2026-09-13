@@ -8,6 +8,7 @@ import Link from "next/link";
 import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
+import { SKIP_REASON } from "@/lib/history";
 import { PlanGate } from "@/app/_components/plan-gate";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
@@ -243,7 +244,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
 
         {hist.skipped.map((s) => (
           <p key={s.period.start} className="note">
-            {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 자료 밖이라 뺐다 ({s.reason}).
+            {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 이력에서 뺐다 ({SKIP_REASON[s.reason]}).
           </p>
         ))}
         <p className="note">

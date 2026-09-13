@@ -19,7 +19,7 @@ export interface Period {
 
 export interface HistorySkip {
   period: Period;
-  reason: "bad-range" | "no-festival-days" | "insufficient-window";
+  reason: "bad-range" | "no-festival-days" | "insufficient-window" | "one-sided-window";
 }
 
 export interface History {
@@ -32,6 +32,7 @@ export const SKIP_REASON: Record<HistorySkip["reason"], string> = {
   "bad-range": "날짜 순서가 맞지 않음",
   "no-festival-days": "그 기간의 일별 자료가 없음",
   "insufficient-window": "앞뒤 4주 자료가 절반도 없음",
+  "one-sided-window": "자료 끝에 걸려 앞이나 뒤 4주 자료가 절반도 없음 — 한쪽만으로 재면 배수가 부푼다",
 };
 
 /** 한 해. 산출이 안 서면 null */

@@ -35,6 +35,8 @@ test("군포 2025 (4.19~27): 평균 1.16 · 최대일 1.52 · 베이스라인 72
     festivalDaysPresent: 9,
     windowDays: 56,
     windowDaysPresent: 56,
+    windowBeforePresent: 28,
+    windowAfterPresent: 28,
   });
 });
 
@@ -91,6 +93,21 @@ test("자료가 없으면 ok:false 와 이유", () => {
   const bad = computeSurge({ rows, start: "20250427", end: "20250419" });
   assert.equal(bad.ok, false);
   if (!bad.ok) assert.equal(bad.reason, "bad-range");
+});
+
+// 2026-09-11 검증 S1 #6 — 자료 끝에 걸린 축제는 앞 4주만으로 평소를 재 배수가 부푼다. 합이 반을 넘어도 한쪽이 반 미만이면 뺀다
+test("앞 창만 차고 뒤 창이 반도 안 차면 one-sided-window (자료 끝에 걸린 축제)", () => {
+  const cut = rows.filter((r) => r.ymd <= "20250430");
+  const r = computeSurge({ rows: cut, start: "20250419", end: "20250427" });
+  assert.equal(r.ok, false);
+  if (!r.ok) {
+    assert.equal(r.reason, "one-sided-window");
+    assert.equal(r.coverage.windowBeforePresent, 28);
+    assert.equal(r.coverage.windowAfterPresent, 3);
+  }
+  const full = computeSurge({ rows, start: "20250419", end: "20250427" });
+  assert.equal(full.ok, true, "양쪽이 찬 창은 그대로 선다");
+  if (full.ok) assert.deepEqual([full.coverage.windowBeforePresent, full.coverage.windowAfterPresent], [28, 28]);
 });
 
 test("전후 창이 반도 안 차면 insufficient-window", () => {

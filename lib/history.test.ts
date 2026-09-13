@@ -50,6 +50,22 @@ test("자료 밖 기간은 이유와 함께 빠진다 — 짐작해서 채우지
   );
 });
 
+test("자료 끝에 걸려 뒤 4주가 반도 없는 해는 이력에서 빠지고, 이유가 한글로 남는다 (S1 #6)", async () => {
+  const { SKIP_REASON } = await import("@/lib/history");
+  const cut = rows.filter((r) => r.ymd <= "20250430");
+  const h = historyOf(
+    cut,
+    [
+      { year: "2024", start: "20240420", end: "20240428" },
+      { year: "2025", start: "20250419", end: "20250427" },
+    ],
+    "x",
+  );
+  assert.deepEqual(h.years.map((y) => y.year), ["2024"]);
+  assert.deepEqual(h.skipped.map((s) => s.reason), ["one-sided-window"]);
+  assert.match(SKIP_REASON["one-sided-window"], /부푼다/);
+});
+
 test("날짜 형식", () => {
   assert.equal(ymdCompact("2025-04-19"), "20250419");
   assert.equal(ymdDashed("20250419"), "2025-04-19");

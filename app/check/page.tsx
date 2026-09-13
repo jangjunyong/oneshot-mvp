@@ -510,7 +510,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                 )}
                 {hist.skipped.map((s) => (
                   <p key={s.period.start} className="note">
-                    {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 자료 밖이라 뺐다 ({SKIP_REASON[s.reason]}). 이 시군구 자료{" "}
+                    {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 이력에서 뺐다 ({SKIP_REASON[s.reason]}). 이 시군구 자료{" "}
                     {dataRange ? `${DATE(dataRange.from)}~${DATE(dataRange.to)}` : "없음"}.
                   </p>
                 ))}
