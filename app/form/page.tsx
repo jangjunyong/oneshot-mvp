@@ -80,8 +80,17 @@ export default function FormPage() {
           </tbody>
         </table>
 
+        <h2>5. 행사장 배치도 (뒤에 붙임)</h2>
+        <table className="report-table form-table">
+          <tbody>
+            <Line label="축척" hint="축척 막대 또는 길이를 아는 치수 두 곳 — 시뮬레이션에서 배치도를 밑그림으로 깔 때 이것으로 맞춥니다" wide />
+            <Line label="기준점" hint="북쪽 표시와 역 출구·교차로 같은 기준점 하나" wide />
+            <Line label="통로·출입구" hint="주 통로 폭(m), 출입구 위치와 폭" wide />
+          </tbody>
+        </table>
+
         <footer className="report-foot">
-          <span>기획안 팩트체크 · 양식 v1 (2026-09)</span>
+          <span>기획안 팩트체크 · 양식 v2 (2026-09)</span>
           <span>채운 PDF 는 첫 화면에 올립니다. 숫자는 문서에서 옮겨 적기만 하고 판정에는 모델을 쓰지 않습니다.</span>
         </footer>
       </section>
