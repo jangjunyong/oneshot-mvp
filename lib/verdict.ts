@@ -340,10 +340,14 @@ export function checkVisitors(
     const hist = history.map((h) => (basis === "peakDay" ? h.multPeak : h.multMean));
     historyMult = Math.max(...hist);
     confidence = history.length >= 2 ? "high" : "low";
-    if (history.length === 1 && peer) {
-      // 1년뿐이면 또래 상위 5% 와 자기 이력 중 큰 쪽 — 한 해가 특별히 나빴을 가능성을 봐준다
-      historyMult = Math.max(historyMult, basis === "peakDay" ? peer.peakP95 : peer.meanP95);
-      base.caveats.push(`이력이 1년뿐이라 ${peer.label} 상위 5% 배수와 비교했다. 신뢰도 낮음.`);
+    if (history.length === 1) {
+      // 1년뿐이어도 분모는 이 축제 자기 실측만 쓴다 (2026-09-14 사용자 결정 B). 또래 상위 5% 를 섞으면 "이 축제 실측"
+      // 이름표 아래 남의 값이 들어가고(검증 S1 #4, 보령 1.85 → 2.14) 판정이 느슨해진다. 또래 값은 참고로만 적는다
+      const peerP95 = peer ? (basis === "peakDay" ? peer.peakP95 : peer.meanP95) : null;
+      base.caveats.push(
+        `이력이 1년뿐이라 그 한 해의 배수만으로 판정했다. 신뢰도 낮음.` +
+          (peerP95 !== null ? ` 참고: ${peer!.label} 상위 5% 배수는 ${peerP95.toFixed(2)}배다(판정에는 안 씀).` : ""),
+      );
     }
   } else if (peer) {
     // 첫 회: 베이스라인이 없으니 요구 배수는 못 재고, 담당자가 낸 값을 배수로 환산할 근거가 없다.

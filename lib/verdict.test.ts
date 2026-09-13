@@ -113,6 +113,20 @@ test("이력이 없으면 1·2단계 계산 불가, 또래만 있으면 신뢰�
   assert.equal(stage(peer.verdict, "cap").result, "계산 불가");
 });
 
+// 2026-09-11 검증 S1 #4 · 2026-09-14 사용자 결정 B — 이력이 1년이면 또래 상위 5% 를 분모에 섞지 않는다.
+// 섞으면 "이 축제 실측" 이름표 아래 남의 값이 들어가고(보령 1.85 → 2.14) 판정이 느슨해졌다
+test("이력 1년 + 또래 상위 5% 가 더 커도 3단계 분모는 자기 실측이고, 또래는 참고 단서로만 남는다 (S1 #4)", () => {
+  const one = history.filter((y) => y.year === "2026");
+  const peer = { n: 80, peakP95: 3.0, meanP95: 2.2, peakMedian: 1.3, meanMedian: 1.05, label: "인구 20~50만" };
+  const { verdict, evidence } = checkVisitors({ n: 110184, basis: "peakDay", counting: "unique" }, one, peer);
+  near(verdict.historyMult, one[0].multPeak, 1e-9, "분모가 자기 실측이 아니다");
+  assert.equal(verdict.confidence, "low");
+  const cell = evidence.find((m) => m.key === "historyMult")!;
+  assert.equal(cell.origin, "measured");
+  assert.equal(cell.value, one[0].multPeak, "이 축제 실측 셀에 또래 값이 들어갔다");
+  assert.ok(verdict.caveats.some((c) => c.includes("참고") && c.includes("3.00배") && c.includes("판정에는 안 씀")), verdict.caveats.join(" | "));
+});
+
 test("과소: 이력의 절반이면 과소", () => {
   const { verdict } = checkVisitors({ n: 50000, basis: "peakDay", counting: "unique" }, history);
   assert.equal(verdict.label, "과소");
