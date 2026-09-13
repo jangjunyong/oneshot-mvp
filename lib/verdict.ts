@@ -258,32 +258,38 @@ export function checkVisitors(
   if (last) {
     let denomKey = "";
     let denomVal: number | null = null;
+    // 순증이 0 이하면 실측 셀로 싣지 않는다 (2026-09-14 S1 #8 A안). 음수 "−7,407명"이 KT 출처를 달고 인쇄되면
+    // 담당자는 "축제가 사람을 뺐다"로 읽는다. 619건 중 170건이 이렇고 대부분은 요일 기준의 한계라 진짜 축제다 — 셀만 빼고 2단계는 계산 불가로 둔다
     if (basis === "peakDay" && last.baselineWeekend !== null) {
       denomVal = last.peakOut - last.baselineWeekend;
       denomKey = "peakIncrement";
-      evidence.push({
-        key: "peakIncrement",
-        label: `${last.year} 최대일 외지인 − 평소 주말 외지인(전후 4주 토·일 중앙값)`,
-        value: denomVal,
-        unit: "명",
-        origin: "measured",
-        api: KT_API,
-        period: fmtYmd(last.peakYmd),
-        date: last.fetchedAt,
-      });
+      if (denomVal > 0) {
+        evidence.push({
+          key: "peakIncrement",
+          label: `${last.year} 최대일 외지인 − 평소 주말 외지인(전후 4주 토·일 중앙값)`,
+          value: denomVal,
+          unit: "명",
+          origin: "measured",
+          api: KT_API,
+          period: fmtYmd(last.peakYmd),
+          date: last.fetchedAt,
+        });
+      }
     } else if (basis === "period" && last.visitors !== null) {
       denomVal = last.visitors;
       denomKey = "periodVisitors";
-      evidence.push({
-        key: "periodVisitors",
-        label: `${last.year} 축제가 끌어온 연인원(같은 요일 순증 합)`,
-        value: last.visitors,
-        unit: "명",
-        origin: "measured",
-        api: KT_API,
-        period: `${fmtYmd(last.start)}~${fmtYmd(last.end)}`,
-        date: last.fetchedAt,
-      });
+      if (denomVal > 0) {
+        evidence.push({
+          key: "periodVisitors",
+          label: `${last.year} 축제가 끌어온 연인원(같은 요일 순증 합)`,
+          value: last.visitors,
+          unit: "명",
+          origin: "measured",
+          api: KT_API,
+          period: `${fmtYmd(last.start)}~${fmtYmd(last.end)}`,
+          date: last.fetchedAt,
+        });
+      }
     }
     const th = THRESHOLDS.increment[basis];
     if (denomVal !== null && denomVal > 0) {
@@ -303,7 +309,7 @@ export function checkVisitors(
         title: "순증분",
         ratio: null,
         result: "계산 불가",
-        threshold: "작년 순증이 0 이하거나 계산되지 않았다",
+        threshold: denomVal !== null && denomVal <= 0 ? "작년 축제 기간이 같은 요일 평소보다 적어 순증을 재지 못했다" : "작년 순증이 계산되지 않았다",
         slots: { numerator: "claim", denominator: denomKey },
       });
     }

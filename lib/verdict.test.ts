@@ -127,6 +127,19 @@ test("이력 1년 + 또래 상위 5% 가 더 커도 3단계 분모는 자기 실
   assert.ok(verdict.caveats.some((c) => c.includes("참고") && c.includes("3.00배") && c.includes("판정에는 안 씀")), verdict.caveats.join(" | "));
 });
 
+// 2026-09-14 S1 #8 A안 — 음수 순증을 KT 실측 셀로 인쇄하지 않는다 (군포 2025-11-03~07 을 넣으면 −7,407 이 나왔다)
+test("작년 순증이 0 이하면 순증 셀을 싣지 않고 2단계는 계산 불가, 사유는 '평소보다 적어'", () => {
+  const neg = [...history.slice(0, 2), { ...history[2], visitors: -7407, peakOut: history[2].baselineWeekend! - 10 }];
+  for (const basis of ["period", "peakDay"] as const) {
+    const { verdict, evidence } = checkVisitors({ n: 600000, basis, counting: "personDays" }, neg);
+    assert.ok(!evidence.some((m) => m.key === "periodVisitors" || m.key === "peakIncrement"), `${basis}: 음수 순증 셀이 실렸다`);
+    assert.ok(!evidence.some((m) => m.unit === "명" && m.value <= 0), `${basis}: 0 이하 명 수 셀`);
+    const s = stage(verdict, "increment");
+    assert.equal(s.result, "계산 불가");
+    assert.match(s.threshold, /평소보다 적어/);
+  }
+});
+
 test("과소: 이력의 절반이면 과소", () => {
   const { verdict } = checkVisitors({ n: 50000, basis: "peakDay", counting: "unique" }, history);
   assert.equal(verdict.label, "과소");
