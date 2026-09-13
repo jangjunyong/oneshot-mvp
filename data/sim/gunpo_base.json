@@ -12,10 +12,10 @@
   "dwellSecMean": 300,
   "minutes": 15
  },
- "builtAt": "2026-09-12",
- "elapsedMs": 9766,
+ "builtAt": "2026-09-13",
+ "elapsedMs": 29868,
  "card": {
-  "at": "2026-09-12T03:38:06.317Z",
+  "at": "2026-09-13T17:39:34.786Z",
   "simSec": 900,
   "inflowPerHour": "3000,6000",
   "scale": 1,

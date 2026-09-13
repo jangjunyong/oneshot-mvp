@@ -21,6 +21,11 @@ export interface Summary {
   limit: { secAbove5: number; at: { x: number; y: number } | null };
 }
 
+/** 칸 밀도(명/㎡) — 걸을 수 있는 면적이 칸 절반 미만이면 3×3 이웃과 합쳐 잰다. out 에 채워 돌려준다 */
+export function binDensity(
+  counts: Float32Array, areas: Float32Array, dW: number, dH: number, binArea: number, minArea: number, out: Float32Array,
+): Float32Array;
+
 export interface Scenario {
   inflowPerHour: number[]; inflowScale?: number; personsPerAgent?: number;
   visitsPerPerson?: number; dwellSecMean?: number; seed?: number;
