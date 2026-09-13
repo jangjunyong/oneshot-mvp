@@ -294,6 +294,8 @@ export interface Draft extends Extraction {
 
 interface DraftRow extends Draft {
   createdAt: string;
+  /** 접속자 키(lib/clientkey.ts) — IP 원문이 아니라 소금 친 해시 앞 16자 */
+  clientKey: string | null;
 }
 
 const gd = globalThis as unknown as {
@@ -301,48 +303,53 @@ const gd = globalThis as unknown as {
 };
 gd.__oneshotDrafts ??= [];
 
-const draftReady = makeReady(
-  "drafts",
-  (q) => q`
+const draftReady = makeReady("drafts", async (q) => {
+  await q`
     CREATE TABLE IF NOT EXISTS drafts (
       id         BIGSERIAL PRIMARY KEY,
       payload    JSONB NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
-  `,
-);
+  `;
+  // 접속자별 하루 한도(2026-09-14, 검증 S1 #11). 이미 있는 테이블에도 붙도록 따로 연다 — 옛 행은 null
+  await q`ALTER TABLE drafts ADD COLUMN IF NOT EXISTS client_key TEXT`;
+});
 
 const isToday = (iso: string) =>
   new Date(iso).toDateString() === new Date().toDateString();
 
 /**
- * 오늘 만들어진 초안 수 = 오늘 모델을 부른 횟수.
+ * 오늘 만들어진 초안 수 = 오늘 모델을 부른 횟수. clientKey 를 주면 그 접속자 몫만 센다.
  *
  * 실패하면 던진다. 부르는 쪽은 이것을 "한도 초과"로 처리해야 한다 —
  * 셀 수 없을 때 통과시키면 상한이 상한이 아니게 된다.
  */
-export async function countExtractsToday(): Promise<number> {
-  if (!sql) return gd.__oneshotDrafts!.filter((d) => isToday(d.createdAt)).length;
+export async function countExtractsToday(clientKey: string | null = null): Promise<number> {
+  if (!sql) {
+    return gd.__oneshotDrafts!.filter((d) => isToday(d.createdAt) && (clientKey === null || d.clientKey === clientKey)).length;
+  }
   await draftReady();
-  const rows = await sql`
-    SELECT count(*)::int AS n FROM drafts WHERE created_at >= current_date
-  `;
+  const rows =
+    clientKey === null
+      ? await sql`SELECT count(*)::int AS n FROM drafts WHERE created_at >= current_date`
+      : await sql`SELECT count(*)::int AS n FROM drafts WHERE created_at >= current_date AND client_key = ${clientKey}`;
   return rows[0]?.n as number;
 }
 
-export async function saveDraft(e: Extraction): Promise<string> {
+export async function saveDraft(e: Extraction, clientKey: string | null = null): Promise<string> {
   if (!sql) {
     const id = String(gd.__oneshotDrafts!.length + 1);
     gd.__oneshotDrafts!.unshift({
       ...e,
       id,
       createdAt: new Date().toISOString(),
+      clientKey,
     });
     return id;
   }
   await draftReady();
   const rows = await sql`
-    INSERT INTO drafts (payload) VALUES (${JSON.stringify(e)}) RETURNING id
+    INSERT INTO drafts (payload, client_key) VALUES (${JSON.stringify(e)}, ${clientKey}) RETURNING id
   `;
   return String(rows[0].id);
 }

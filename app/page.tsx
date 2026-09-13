@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { 추출 } from "@/app/actions";
 import { MAX_PLAN_TEXT } from "@/lib/types";
+import { SubmitButton } from "@/app/_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </label>
 
           <p className="intake-actions">
-            <button type="submit">읽어서 판정하기</button>
+            <SubmitButton pendingText="읽는 중…">읽어서 판정하기</SubmitButton>
           </p>
 
           <details className="intake-paste">

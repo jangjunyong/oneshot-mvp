@@ -13,6 +13,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  countExtractsToday,
   deleteEntry,
   getEntry,
   getVenue,
@@ -20,9 +21,23 @@ import {
   list,
   onceOrRetry,
   save,
+  saveDraft,
   saveVenue,
 } from "@/lib/store";
 import { emptyVenue } from "@/lib/venue";
+
+// 2026-09-14 검증 S1 #11 — 하루 추출 한도는 전체와 접속자별 둘로 센다
+test("추출 초안은 접속자 키별로도 센다 — 한 접속자의 호출이 다른 접속자 몫을 먹지 않는다", async () => {
+  const draft = { sido: "경기", sigungu: "군포시", month: 4, populationManMyeong: null, themeCode: null, accessibility: null, evidence: {}, missing: [], source: "llm" as const, facts: undefined };
+  const before = { all: await countExtractsToday(), a: await countExtractsToday("aaaa"), b: await countExtractsToday("bbbb") };
+  await saveDraft(draft, "aaaa");
+  await saveDraft(draft, "aaaa");
+  await saveDraft(draft, "bbbb");
+  await saveDraft(draft);
+  assert.equal(await countExtractsToday(), before.all + 4, "전체 수");
+  assert.equal(await countExtractsToday("aaaa"), before.a + 2, "a 접속자 수");
+  assert.equal(await countExtractsToday("bbbb"), before.b + 1, "b 접속자 수");
+});
 
 assert.equal(
   Boolean(process.env.DATABASE_URL),

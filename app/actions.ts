@@ -13,12 +13,14 @@
 // 애초에 그 변수들이 보이지 않는다.
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clientKey } from "@/lib/clientkey";
 import { countExtractsToday, deleteEntry, save, saveDraft } from "@/lib/store";
 import { extractPlan, hasModelKey } from "@/lib/extract";
 import { extractPdfText } from "@/lib/pdf";
 import { validatePlanInput } from "@/lib/match";
-import { DAILY_EXTRACT_LIMIT, type Extraction } from "@/lib/types";
+import { DAILY_EXTRACT_LIMIT, DAILY_EXTRACT_PER_CLIENT, type Extraction } from "@/lib/types";
 import { checkUrlFromExtraction } from "@/lib/checkquery";
 
 // "use server" 파일의 export 는 전부 async 여야 한다. 이건 내부용이라 안 낸다.
@@ -52,16 +54,25 @@ export async function 추출(formData: FormData) {
     오류로("기획서 내용을 붙여넣어 주세요 — 너무 짧습니다");
   }
 
-  // 한도를 셀 수 없으면 통과시키지 않는다. 상한이 상한이 아니게 된다.
-  let 오늘호출: number;
+  // 한도는 접속자별(하루 DAILY_EXTRACT_PER_CLIENT)과 전체(비용 방어선) 둘이다 — 전체 하나뿐이면 한 사람이 모두의 몫을 쓴다
+  // (2026-09-14 사용자 결정 C, 검증 S1 #11). 셀 수 없으면 통과시키지 않는다. 상한이 상한이 아니게 된다.
+  const 접속자 = clientKey(await headers());
+  let 오늘전체: number;
+  let 오늘내것: number;
   try {
-    오늘호출 = await countExtractsToday();
+    [오늘전체, 오늘내것] = await Promise.all([countExtractsToday(), countExtractsToday(접속자)]);
   } catch {
-    오늘호출 = DAILY_EXTRACT_LIMIT;
+    오늘전체 = DAILY_EXTRACT_LIMIT;
+    오늘내것 = DAILY_EXTRACT_PER_CLIENT;
   }
-  if (hasModelKey() && 오늘호출 >= DAILY_EXTRACT_LIMIT) {
+  if (hasModelKey() && 오늘내것 >= DAILY_EXTRACT_PER_CLIENT) {
     오류로(
-      `오늘 자동 추출 한도(${DAILY_EXTRACT_LIMIT}건)를 다 썼습니다. 항목을 직접 넣어 주세요`,
+      `이 접속에서 오늘 자동 추출 한도(${DAILY_EXTRACT_PER_CLIENT}건)를 다 썼습니다. 내일 다시 올리거나 항목을 직접 넣어 주세요`,
+    );
+  }
+  if (hasModelKey() && 오늘전체 >= DAILY_EXTRACT_LIMIT) {
+    오류로(
+      `오늘 전체 자동 추출 한도(${DAILY_EXTRACT_LIMIT}건)를 다 썼습니다. 항목을 직접 넣어 주세요`,
     );
   }
 
@@ -71,7 +82,7 @@ export async function 추출(formData: FormData) {
   let extracted: Extraction;
   try {
     extracted = await extractPlan(planText);
-    id = await saveDraft(extracted);
+    id = await saveDraft(extracted, 접속자);
   } catch (e) {
     // extractFailureMessage 가 이미 완결된 한 문장을 준다(다음 행동까지
     // 포함). 여기서 덧붙이면 "…직접 넣어 주세요 — 항목을 직접 넣어 주세요"
