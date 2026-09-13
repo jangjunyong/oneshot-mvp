@@ -10,6 +10,7 @@ import { dailyRange, loadDaily, manifest, resolveRegion } from "@/lib/kto/daily"
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { SKIP_REASON } from "@/lib/history";
+import { festivalSignal, signalNote } from "@/lib/signal";
 import { checkBudget } from "@/lib/budget";
 import {
   adviseVisitors,
@@ -354,6 +355,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                   <th>배수 최대일</th>
                   <th>축제일 최대 전체 체류</th>
                   <th>축제 연인원 산출</th>
+                  <th>축제 신호</th>
                 </tr>
               </thead>
               <tbody>
@@ -377,7 +379,19 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     <td>
                       <Num m={measured(`${y.year}-t`, "축제일 최대 전체 체류", y.maxDayTotal, "명", KT_API, DATE(y.maxDayTotalYmd), y.fetchedAt)} />
                     </td>
-                    <td>{y.visitors === null ? "—" : <Num m={measured(`${y.year}-v`, "Σ 같은 요일 순증", y.visitors, "명", KT_API, period(y), y.fetchedAt)} />}</td>
+                    <td>{y.visitors === null || y.visitors <= 0 ? "—" : <Num m={measured(`${y.year}-v`, "Σ 같은 요일 순증", y.visitors, "명", KT_API, period(y), y.fetchedAt)} />}</td>
+                    <td>
+                      {(() => {
+                        const s = festivalSignal(rows, y.start, y.end);
+                        return s ? (
+                          <>
+                            {s.tier} <span className="report-cell-label">{signalNote(s)}</span>
+                          </>
+                        ) : (
+                          "—"
+                        );
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

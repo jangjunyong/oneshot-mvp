@@ -9,6 +9,7 @@ import { loadDaily, manifest, resolveRegion } from "@/lib/kto/daily";
 import { historyOf, ymdDashed } from "@/lib/history";
 import { checkQueryString, parseCheckQuery } from "@/lib/checkquery";
 import { SKIP_REASON } from "@/lib/history";
+import { festivalSignal, signalNote } from "@/lib/signal";
 import { PlanGate } from "@/app/_components/plan-gate";
 import { computeSurge, type DailyRow } from "@/lib/surge";
 import { DOW_KO, KT_API, type HistoryYear } from "@/lib/verdict";
@@ -34,6 +35,7 @@ const WEEKS = 4;
 /** 한 해의 창(전후 4주) 일별 외지인을 곡선으로. 축척은 여러 해가 같이 쓴다 */
 function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly DailyRow[]; yMax: number; fetchedAt: string }) {
   const by = new Map(rows.map((r) => [r.ymd, r]));
+  const signal = festivalSignal(rows, y.start, y.end);
   const t0 = toTime(y.start) - WEEKS * 7 * DAY;
   const t1 = toTime(y.end) + WEEKS * 7 * DAY;
   const n = Math.round((t1 - t0) / DAY) + 1;
@@ -87,6 +89,7 @@ function Curve({ y, rows, yMax, fetchedAt }: { y: HistoryYear; rows: readonly Da
       <figcaption className="note">
         {y.year} · 음영이 축제 기간, 점선이 평소(전후 4주 외지인 중앙값), 점이 최대일. 외지인 체류(명/일), 조회 {fetchedAt}.
         {missing > 0 && ` 창 안에 빠진 날 ${missing}일.`}
+        {signal && ` 축제 신호 ${signal.tier} (${signalNote(signal)}).`}
       </figcaption>
     </figure>
   );

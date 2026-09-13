@@ -40,6 +40,7 @@ import { Num } from "@/app/_components/num";
 import { DataUsage } from "@/app/_components/data-usage";
 import { DraftNote } from "@/app/_components/draft-note";
 import { SimCardBlock } from "@/app/_components/sim-card";
+import { festivalSignal, signalNote } from "@/lib/signal";
 import { PlanGate } from "@/app/_components/plan-gate";
 import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
@@ -110,6 +111,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
+  const signals = new Map(hist.years.map((y) => [y.year, festivalSignal(rows, y.start, y.end)]));
   // 619건에 없는 시군구(299곳 중 121곳)는 담당자가 적은 인구로 또래를 고른다. 없으면 또래 없음 — 이웃 시도로 대신하지 않는다
   // 인구 우선순위(2026-09-12 M5a-1): 담당자 입력(pop) → 행안부 주민등록 표(lib/region) → null. 619건 인구는 또래 분포에만 쓴다
   const popMois = code ? populationOfCode(code) : null;
@@ -490,6 +492,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         <th>기간</th>
                         <th>평균</th>
                         <th>최대일</th>
+                        <th>축제 신호</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -503,11 +506,27 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <td className="num">
                             {y.multPeak.toFixed(2)}배 <span className="note">({DATE(y.peakYmd).slice(5)} {DOW_KO[new Date(Date.UTC(+y.peakYmd.slice(0, 4), +y.peakYmd.slice(4, 6) - 1, +y.peakYmd.slice(6, 8))).getUTCDay()]})</span>
                           </td>
+                          <td>
+                            {signals.get(y.year) ? (
+                              <>
+                                <span className="chip" data-signal={signals.get(y.year)!.tier}>{signals.get(y.year)!.tier}</span>
+                                <span className="note check-cell-label"> {signalNote(signals.get(y.year)!)}</span>
+                              </>
+                            ) : (
+                              <span className="note">—</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 )}
+                {/* 축제 신호는 표시만 한다 — 판정에 안 쓰고 이력에서도 안 뺀다 (S1 #8 A안, lib/signal.ts) */}
+                {hist.years.filter((y) => signals.get(y.year)?.tier === "구분 안 됨").map((y) => (
+                  <p key={`flat-${y.year}`} className="alert" data-level="주의">
+                    {y.year} {DATE(y.start).slice(5)}~{DATE(y.end).slice(5)} 의 외지인 증가가 평소 흔들림과 구분되지 않는다. 날짜를 확인해 달라 — 작은 축제는 시군구 전체에 묻혀 이렇게 나오기도 한다.
+                  </p>
+                ))}
                 {hist.skipped.map((s) => (
                   <p key={s.period.start} className="note">
                     {s.period.year} {DATE(s.period.start)}~{DATE(s.period.end)}: 이력에서 뺐다 ({SKIP_REASON[s.reason]}). 이 시군구 자료{" "}

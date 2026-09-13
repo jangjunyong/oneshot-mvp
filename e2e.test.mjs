@@ -208,6 +208,21 @@ test("판정 — 군포 2027 기획안(목표 60만) 은 주의, 명 수는 전�
   assert.doesNotMatch(출처셀걷기(html), /\d[\d,]*\s*명/, "출처 셀 밖에 명 수가 있다");
 });
 
+// 2026-09-14 S1 #8 A안 — 이력 연도마다 축제 신호를 보이고, 평소와 구분 안 되는 기간엔 날짜 확인 경고. 판정은 그대로다
+test("축제 신호 — 군포 실제 회차는 뚜렷함, 축제 없던 11월을 이력으로 넣으면 '구분되지 않는다' 경고가 뜨고 판정 블록은 선다", async () => {
+  const 실제 = (await (await fetch(`${BASE}/check?${군포}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(실제, /<th>축제 신호<\/th>/, "이력 표에 축제 신호 열이 없다");
+  assert.ok((실제.match(/data-signal="뚜렷함"/g) ?? []).length >= 3, "군포 3개 회차가 뚜렷함이 아니다");
+  assert.doesNotMatch(실제, /평소 흔들림과 구분되지 않는다/, "실제 회차에 경고가 떴다");
+  const 가짜 = (await (await fetch(`${BASE}/check?name=x&sido=경기&sigungu=군포시&n=600000&basis=period&counting=personDays&start=2027-04-17&end=2027-04-25&h1s=2025-11-03&h1e=2025-11-07`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(가짜, /data-signal="구분 안 됨"/, "축제 없던 기간이 구분 안 됨이 아니다");
+  assert.match(가짜, /평소 흔들림과 구분되지 않는다/, "날짜 확인 경고가 없다");
+  assert.match(가짜, /id="verdict"/, "경고 때문에 판정이 사라졌다 — 표시만 해야 한다");
+  assert.doesNotMatch(출처셀걷기(가짜), /−\d[\d,]*\s*명/, "음수 명 수가 출처 셀 밖에 있다");
+  const 보고서 = (await (await fetch(`${BASE}/report/check?${군포}`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(보고서, /<th>축제 신호<\/th>/, "보고서 근거 1 에 축제 신호 열이 없다");
+});
+
 test("판정 음성 — 작년 실측 그대로 넣으면 통과, 단위를 빼면 단위 미상", async () => {
   const 기본 = "sido=경기&sigungu=군포시&h1s=2024-04-20&h1e=2024-04-28&h2s=2025-04-19&h2e=2025-04-27&h3s=2026-04-18&h3e=2026-04-26&start=2027-04-17&end=2027-04-25";
   const 통과 = (await (await fetch(`${BASE}/check?${기본}&n=110184&basis=peakDay&counting=unique`)).text()).replace(/<!--\s*-->/g, "");
