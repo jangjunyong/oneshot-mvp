@@ -40,8 +40,8 @@ URL_GUNPO = (SITE + "/check?name=%EA%B5%B0%ED%8F%AC%EC%B2%A0%EC%AD%89%EC%B6%95%E
              "&n=600000&basis=period&counting=personDays&budget=100000&start=2027-04-17&end=2027-04-25"
              "&h1s=2024-04-20&h1e=2024-04-28&h2s=2025-04-19&h2e=2025-04-27&h3s=2026-04-18&h3e=2026-04-26&theme=2&acc=4")
 URL_HWACHEON = (SITE + "/check?name=%ED%99%94%EC%B2%9C%EC%82%B0%EC%B2%9C%EC%96%B4%EC%B6%95%EC%A0%9C&sido=%EA%B0%95%EC%9B%90&sigungu=%ED%99%94%EC%B2%9C%EA%B5%B0"
-                "&n=1860000&basis=period&counting=personDays&start=2027-01-09&end=2027-01-31"
-                "&h1s=2025-01-11&h1e=2025-02-02&h2s=2026-01-10&h2e=2026-02-01")
+                "&n=1860000&basis=period&counting=personDays&pop=2.3&start=2027-01-09&end=2027-01-31"
+                "&h1s=2024-01-06&h1e=2024-01-28&h2s=2025-01-11&h2e=2025-02-02&h3s=2026-01-10&h3e=2026-02-01")
 
 # ── 숫자 (docs/기능설명서.md 와 같은 값) ────────────────
 N_FEST = "619건"
