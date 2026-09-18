@@ -1,0 +1,10 @@
+saved 기능설명서_기획안팩트체크_작성본.pptx / slides 12
+slides=12 (expect 12)
+placeholders=18
+old_api_hits=0 (expect 0)
+hashtags_ok=True
+guide_boxes=0 (expect 0)
+slide10(API명)_empty_rows=0 (expect 0)
+slide11(데이터명)_empty_rows=0 (expect 0)
+urls=2 (expect >=2)
+service_name_ok=True
