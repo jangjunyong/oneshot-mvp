@@ -260,3 +260,13 @@ test("D1-13 보조 등급 알림에 data-level 경보 색이 없고 '참고' 칩
     assert.ok(src.includes('<span className="chip">참고</span> {levelLabel(g.level)}'), `${f}: '참고' 칩 문장이 없다`);
   }
 });
+
+// 2026-09-18 D1-15 — 첫 판정 문단부터 개발 용어를 쓰지 않는다: "같은 자(尺)"는 "같은 기준", 임계 근거는 "n=1 캘리브레이션"이 아니라 사람 말
+test("D1-15 화면·판정 엔진 문자열에 '같은 자'·'캘리브레이션' 이 없다", () => {
+  const files = [...allTsx("app"), "lib/verdict.ts", "lib/judgeguide.ts"];
+  for (const f of files) {
+    const body = read(f).replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.ok(!/같은 자(?![료리기])/.test(body), `${f}: '같은 자' 가 남았다`);
+    assert.ok(!body.includes("캘리브레이션"), `${f}: '캘리브레이션' 이 남았다`);
+  }
+});

@@ -300,7 +300,7 @@ export function checkVisitors(
         title: "순증분",
         ratio,
         result: incrementCaution ? "주의 신호" : "신호 없음",
-        threshold: `≥${th.toFixed(1)} 주의 신호 (정한 값, 군포 2025 n=1 캘리브레이션)`,
+        threshold: `≥${th.toFixed(1)} 주의 신호 (정한 값 · 군포 2025 한 건으로 맞춤)`,
         slots: { numerator: "claim", denominator: denomKey },
       });
     } else {
@@ -474,7 +474,7 @@ export function explainVisitors(v: VisitorVerdict): Segment[] {
   const mult = v.stages.find((s) => s.id === "multiple");
   if (mult?.ratio !== null && mult?.ratio !== undefined && v.requiredMult !== null && v.historyMult !== null) {
     seg.push(
-      { t: "같은 자(평소 대비 배수)로 재면 기획안은 평소의 " },
+      { t: "같은 기준(평소 대비 배수)으로 재면 기획안은 평소의 " },
       { ratio: v.requiredMult, digits: 2 },
       { t: "배를 요구한다. 이 축제 이력상 " },
       { t: v.basis === "peakDay" ? "최대일" : "평균" },

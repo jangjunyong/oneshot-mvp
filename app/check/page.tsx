@@ -270,7 +270,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         <tr>
                           <th>검사</th>
                           <th>담당자 값</th>
-                          <th>같은 자의 실측</th>
+                          <th>같은 기준의 실측</th>
                           <th>비</th>
                           <th>결과</th>
                           <th>임계(정한 값)</th>

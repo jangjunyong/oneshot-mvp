@@ -171,13 +171,13 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
         </section>
 
         <section>
-          <h2>판정표 — 담당자 값을 같은 자의 실측으로 잰 결과</h2>
+          <h2>판정표 — 담당자 값을 같은 기준의 실측으로 잰 결과</h2>
           <table className="report-table">
             <thead>
               <tr>
                 <th>항목</th>
                 <th>담당자 값</th>
-                <th>같은 자의 실측</th>
+                <th>같은 기준의 실측</th>
                 <th>비</th>
                 <th>판정</th>
                 <th>임계(정한 값)</th>
