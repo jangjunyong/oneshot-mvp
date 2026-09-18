@@ -179,13 +179,13 @@ export const MAX_PLAN_TEXT = 8000;
  * 아는 사람은 누구나 누를 수 있다. 유료 모델로 바꿔 끼우는 순간
  * 이 숫자가 하루 손실 금액의 상한이 된다.
  */
-export const DAILY_EXTRACT_LIMIT = 45;
+export const DAILY_EXTRACT_LIMIT = 300; // 2026-09-18 사용자 결정: 심사 기간 비용은 감수, 심사단이 막히지 않게
 
 /**
  * 접속자 한 명(lib/clientkey.ts)의 하루 추출 상한 (2026-09-14 사용자 결정, 검증 S1 #11).
  * 전체 45건 하나뿐이면 방문자 한 명이 그날 모두의 몫을 태운다. 전체 상한은 올리지 않는다 — 무료 모델의 하루 50건 벽이 그대로라서.
  */
-export const DAILY_EXTRACT_PER_CLIENT = 10;
+export const DAILY_EXTRACT_PER_CLIENT = 60; // 2026-09-18: 기관 NAT 뒤 심사위원 여럿이 한 IP 로 올 수 있다
 
 /** 추출값이 어디서 왔는지. 화면에 그대로 표시해 사람이 구분하게 한다 */
 export type ExtractSource = "llm" | "sample" | "tourapi";

@@ -616,7 +616,7 @@ export default function SimMap({
     fcRef.current = fc;
     runningRef.current = false;
     setRunning(false);
-    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 워커에서 몇 초)");
+    setStatus("격자·거리장 만드는 중… (목적지 120여 개, 워커에서 몇 초). 끝나면 위쪽 [시뮬레이션 시작]을 누릅니다.");
     send({ type: "pause" });
     frameRef.current = null;
     densRef.current = null;

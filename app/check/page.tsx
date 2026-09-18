@@ -210,10 +210,10 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
         {판정가능 ? (
           <details className="check-form-fold">
             <summary>입력 고치기 — 축제·지역·예상 방문객·기간·지난 회차</summary>
-            <CheckForm q={q} populationSource={popSource} twin={twin} />
+            <CheckForm q={q} populationSource={popSource} twin={twin} draftId={draftId} />
           </details>
         ) : (
-          <CheckForm q={q} populationSource={popSource} twin={twin} />
+          <CheckForm q={q} populationSource={popSource} twin={twin} draftId={draftId} />
         )}
 
         {판정가능 && (
@@ -594,13 +594,15 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   );
 }
 
-function CheckForm({ q, populationSource, twin }: { q: CheckQuery; populationSource: string | null; twin: TwinParams }) {
+function CheckForm({ q, populationSource, twin, draftId }: { q: CheckQuery; populationSource: string | null; twin: TwinParams; draftId: string | null }) {
   const d = (s: string) => (s ? ymdDashed(s) : "");
   return (
     <form action="/check" method="get" className="check-form">
       {/* GET 폼은 쿼리를 통째로 갈아 끼운다 — 닮은 축제의 테마·접근성이 판정 버튼 한 번에 사라지지 않게 실어 보낸다 */}
       {twin.theme !== null && <input type="hidden" name="theme" value={twin.theme} />}
       {twin.acc !== null && <input type="hidden" name="acc" value={twin.acc} />}
+      {/* 2026-09-18: 기획서 인용(draft)은 주석 키 — 입력을 고쳐 판정을 눌러도 "옮겨 적은 값" 블록이 사라지지 않게 실어 보낸다 */}
+      {draftId && <input type="hidden" name="draft" value={draftId} />}
       <p>
         <label htmlFor="name">축제 이름</label>
         <input id="name" name="name" defaultValue={q.name} placeholder="예) 군포철쭉축제" />

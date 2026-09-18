@@ -8,7 +8,7 @@ import type { Venue } from "@/lib/venue";
 
 const SimMap = dynamic(() => import("@/app/venue/sim-map"), {
   ssr: false,
-  loading: () => <p className="note">행사장 시뮬레이션을 불러오는 중…</p>,
+  loading: () => <p className="note">행사장 시뮬레이션을 불러오는 중… 열리면 배치를 고친 뒤 위쪽 [시뮬레이션 시작]을 누릅니다.</p>,
 });
 
 export function SimShell(props: {
