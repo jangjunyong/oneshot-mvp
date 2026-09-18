@@ -251,3 +251,12 @@ test("D0-B 또래 띠·닮은 축제 블록의 렌더 문자열에 '이 기획�
   assert.ok(!read("app/_components/twins-block.tsx").includes('href="/venue"'), "닮은 축제 블록의 시뮬 링크가 쿼리 없는 /venue 다");
   assert.ok(read("app/check/page.tsx").includes("venueHref={`/venue${qs}`}"), "/check 가 TwinsBlock 에 판정 쿼리 링크를 안 넘긴다");
 });
+
+// 2026-09-18 D1-13 — 닮은 축제 블록·옛 진단서의 보조 등급은 경보 색 없이 "참고" 칩. 판정 화면에 결론이 둘로 보이지 않게 (등급 문장은 유지)
+test("D1-13 보조 등급 알림에 data-level 경보 색이 없고 '참고' 칩으로 선다", () => {
+  for (const f of ["app/_components/twins-block.tsx", "app/report/page.tsx"]) {
+    const src = read(f);
+    assert.ok(!src.includes("data-level={g.level}"), `${f}: 보조 등급이 아직 경보 색(data-level)을 쓴다`);
+    assert.ok(src.includes('<span className="chip">참고</span> {levelLabel(g.level)}'), `${f}: '참고' 칩 문장이 없다`);
+  }
+});

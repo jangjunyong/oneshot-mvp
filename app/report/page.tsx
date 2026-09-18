@@ -176,7 +176,9 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
       ) : (
         <>
           <section className="report-verdict">
-            <p className="alert" data-level={g.level}>{levelLabel(g.level)}</p>
+            <p className="note twins-grade">
+              <span className="chip">참고</span> {levelLabel(g.level)}
+            </p>
             <p className="headline">{g.headline}</p>
           </section>
 

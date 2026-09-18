@@ -133,7 +133,10 @@ function TwinsBody(p: TwinsBlockProps) {
       </div>
 
       <div className="twin-detail">
-        <p className="alert" data-level={g.level}>{levelLabel(g.level)}</p>
+        {/* 2026-09-18 D1: 보조 등급은 경보 색을 벗고 "참고" 칩으로 — 판정(#verdict)과 결론이 둘로 보이지 않게. 문장은 그대로 */}
+        <p className="note twins-grade">
+          <span className="chip">참고</span> {levelLabel(g.level)}
+        </p>
         <p className="headline">{g.headline}</p>
         {또래 && g.medianSurge !== null && (
           <p className="basis num">
