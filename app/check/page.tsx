@@ -6,6 +6,7 @@
 // 모델 호출 0회.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { dailyRange, loadDaily, manifest, resolveRegion, sigunguNamesOf } from "@/lib/kto/daily";
 import { historyOf, SKIP_REASON } from "@/lib/history";
 import {
@@ -112,6 +113,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const man = manifest();
   const fetchedAt = man.builtAt ? man.builtAt.slice(0, 10) : "";
   const hist = historyOf(rows, q.history, fetchedAt);
+  // 첫 회(지난 회차 실측 0년): 3단 표는 전부 "계산 불가"라 접고, 또래 구간을 판정 문단 바로 아래에 세운다 (2026-09-18 D1-14)
+  const 첫회 = hist.years.length === 0;
   const signals = new Map(hist.years.map((y) => [y.year, festivalSignal(rows, y.start, y.end, SIGNAL_CALENDAR)]));
   // 619건에 없는 시군구(299곳 중 121곳)는 담당자가 적은 인구로 또래를 고른다. 없으면 또래 없음 — 이웃 시도로 대신하지 않는다
   // 인구 우선순위(2026-09-12 M5a-1): 담당자 입력(pop) → 행안부 주민등록 표(lib/region) → null. 619건 인구는 또래 분포에만 쓴다
@@ -233,6 +236,26 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       <Sentence seg={explainVisitors(visitors.verdict)} by={by} />
                     </p>
 
+                    {첫회 && range?.peerMean && (
+                      <div className="range-card first-edition" data-years={0}>
+                        <p className="note">
+                          이 축제의 지난 회차 실측이 없어 3단 검사는 계산하지 않는다. 대신 같은 인구 구간 축제들이 실제로 겪은 배수를 낸다.
+                        </p>
+                        <p className="range-line range-peer">
+                          <span>또래 평균</span>
+                          <span className="num">{bandText(range.peerMean)}</span>
+                        </p>
+                        <p className="range-line range-peer">
+                          <span>또래 최대일</span>
+                          <span className="num">{bandText(range.peerPeak)}</span>
+                        </p>
+                        <p className="note">
+                          {range.peerLabel} {peer?.n}곳의 중앙값~상위 5%(619건 재계산).{popSource && ` 인구 출처: ${popSource}.`} 배수는
+                          평소(전후 4주 외지인 중앙값) 대비이고 명 수로 바꾸지 않는다.
+                        </p>
+                      </div>
+                    )}
+
                     <DataUsage
                       by={by}
                       historyYears={hist.years.length}
@@ -241,6 +264,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                       competition={{ status: 경쟁상태, count: 경쟁.length }}
                     />
 
+                    <Fold when={첫회} summary="3단 검사 — 지난 회차 실측이 없어 전부 계산 불가">
                     <table className="report-table check-table">
                       <thead>
                         <tr>
@@ -301,6 +325,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                         )}
                       </tbody>
                     </table>
+                    </Fold>
                   </>
                 ) : (
                   <p className="note">예상 방문객을 적으면 3단 검사를 돌린다.</p>
@@ -433,7 +458,8 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                   </>
                 )}
                 <h2>내년 배수 구간</h2>
-                {range && (
+                {첫회 && range?.peerMean && <p className="note">자기 이력이 없어 또래 구간만 낸다 — 판정 문단 바로 아래에 있다.</p>}
+                {range && !(첫회 && range.peerMean) && (
                   <div className="range-card" data-years={range.years.length}>
                     {range.mean ? (
                       <>
@@ -637,5 +663,16 @@ function CheckForm({ q, populationSource, twin }: { q: CheckQuery; populationSou
         <button type="submit">판정</button>
       </p>
     </form>
+  );
+}
+
+/** 조건이 참일 때만 details 로 접는다 — 첫 회 축제의 "계산 불가" 3단 표 (2026-09-18 D1-14) */
+function Fold({ when, summary, children }: { when: boolean; summary: string; children: ReactNode }) {
+  if (!when) return <>{children}</>;
+  return (
+    <details className="selfcheck">
+      <summary>{summary}</summary>
+      {children}
+    </details>
   );
 }

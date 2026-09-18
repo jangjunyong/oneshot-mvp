@@ -241,6 +241,12 @@ test("판정 음성 — 작년 실측 그대로 넣으면 통과, 단위를 빼�
   const 첫회 = (await (await fetch(`${BASE}/check?sido=강원&sigungu=횡성군&n=30000&basis=peakDay&counting=unique`)).text()).replace(/<!--\s*-->/g, "");
   assert.match(첫회, /근거 없음|신뢰도 낮음/, "이력 없는 축제에 확신을 냈다");
   assert.match(첫회, /또래/, "또래 구간이 없다");
+  // 2026-09-18 D1-14: 첫 회는 또래 구간이 판정 문단 바로 아래(3단 표 앞·#verdict-end 앞)에 서고, 계산 불가 3단 표는 접힌다
+  const 또래위치 = 첫회.indexOf('class="range-card first-edition"');
+  const 표위치 = 첫회.indexOf("3단 검사 — 지난 회차 실측이 없어 전부 계산 불가");
+  const 끝 = 첫회.indexOf('id="verdict-end"');
+  assert.ok(또래위치 > 0 && 표위치 > 또래위치 && 끝 > 표위치, `첫 회 배치가 틀렸다: 또래 ${또래위치} · 표 ${표위치} · 끝 ${끝}`);
+  assert.match(첫회.slice(표위치 - 200, 표위치), /<details[^>]*><summary>/, "계산 불가 3단 표가 접혀 있지 않다");
 });
 
 test("실측 근거 — 곡선 3장, 연도별 표, 일별 표가 자바스크립트 없이 나온다", async () => {
