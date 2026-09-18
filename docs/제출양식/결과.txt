@@ -1,6 +1,6 @@
 saved 기능설명서_기획안팩트체크_작성본.pptx / slides 12
 slides=12 (expect 12)
-placeholders=18
+placeholders=0
 old_api_hits=0 (expect 0)
 hashtags_ok=True
 guide_boxes=0 (expect 0)

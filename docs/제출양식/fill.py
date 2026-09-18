@@ -31,9 +31,14 @@ TEAM = "장준용 (숭실대학교 AI소프트웨어학부)"
 SITE = "https://oneshot-mvp.vercel.app"
 CALL_COUNT_KT = ""      # data.go.kr 마이페이지의 호출건수. 예: "8,921건". 모르면 "" (문장이 빠진다)
 CALL_COUNT_FEST = ""
+C = "캡처_2026-09-18/crop/"
 IMAGES = {
-    # "flow1": ["캡처/f1_1.png", "캡처/f1_2.png", "캡처/f1_3.png", "캡처/f1_4.png"], ... "flow4"
-    # "hero": "캡처/hero.png", "detail": "캡처/detail.png"
+    "flow1": [C + "f1_1_home.png", C + "f1_2_underlay.png", C + "f1_3_venue.png", C + "f1_4_panel.png"],
+    "flow2": [C + "f2_1_verdict.png", C + "f2_2_stages.png", C + "f2_3_range.png", C + "f2_4_first.png"],
+    "flow3": [C + "f3_1_other.png", C + "f3_2_budget.png", C + "f3_3_attrib.png", C + "f3_4_report.png"],
+    "flow4": [C + "f4_1_datause.png", C + "f4_2_evidence.png", C + "f4_3_twins.png", C + "f4_4_history.png"],
+    "hero": C + "hero_wide.png",
+    "detail": C + "detail_montage.png",
 }
 
 URL_GUNPO = (SITE + "/check?name=%EA%B5%B0%ED%8F%AC%EC%B2%A0%EC%AD%89%EC%B6%95%EC%A0%9C&sido=%EA%B2%BD%EA%B8%B0&sigungu=%EA%B5%B0%ED%8F%AC%EC%8B%9C"
@@ -85,6 +90,39 @@ def set_cell(cell, text, pt=None):
                 run.font.size = Pt(pt)
 
 
+def link_urls(cell):
+    """셀 문단 안의 https:// 주소마다 하이퍼링크를 건다 (pdf 로 내보내면 클릭 가능). 문단 텍스트를 URL 기준으로 쪼개 run 을 다시 만든다."""
+    import re as _re
+    from pptx.text.text import _Run
+    for para in cell.text_frame.paragraphs:
+        runs = list(para.runs)
+        if not runs:
+            continue
+        full = "".join(r.text for r in runs)
+        if "https://" not in full:
+            continue
+        proto = runs[0]
+        for r in runs[1:]:
+            r._r.getparent().remove(r._r)
+        parts = [x for x in _re.split(r"(https://\S+)", full) if x != ""]
+        proto.text = parts[0]
+        if parts[0].startswith("https://"):
+            proto.hyperlink.address = parts[0]
+        last = proto._r
+        for part in parts[1:]:
+            el = copy.deepcopy(proto._r)
+            last.addnext(el)
+            last = el
+            ru = _Run(el, para)
+            ru.text = part
+            if part.startswith("https://"):
+                ru.hyperlink.address = part
+            else:
+                # 복제한 run 의 링크는 지운다
+                for h in el.findall(".//{http://schemas.openxmlformats.org/drawingml/2006/main}hlinkClick"):
+                    h.getparent().remove(h)
+
+
 def table(slide, rows=None, cols=None, idx=0):
     ts = [sh for sh in slide.shapes if sh.has_table]
     if rows is not None:
@@ -132,6 +170,9 @@ def put_picture(slide, shape, row_idx, col_idx, path):
         ratio = (height - 2 * m) / pic.height
         pic.height = int(pic.height * ratio)
         pic.width = int(pic.width * ratio)
+    # 칸 가운데에 놓는다 (세로로 긴 그림이 왼쪽에 붙지 않게)
+    pic.left = int(left + (width - pic.width) / 2)
+    pic.top = int(top + (height - pic.height) / 2)
     return pic
 
 
@@ -157,11 +198,13 @@ set_cell(
 set_cell(
     t.cell(3, 1),
     "축제 기획서(PDF)를 올리면 예상 방문객·개최 기간·예산을 옮겨 적고, 그 축제가 지난 회차에 실제로 겪은 한국관광공사 KT "
-    "시군구 일별 실측(외지인 배수·순증)과 같은 자로 재서 통과/주의/과대/과소/상한 초과/근거 없음을 판정합니다. "
+    "시군구 일별 실측(외지인 배수·순증)과 같은 기준으로 재서 통과/주의/과대/과소/상한 초과/근거 없음을 판정합니다. "
     "내년 배수 구간, 1인당 예산 대조, 같은 시기 경쟁 축제 귀속 경고, 결재 첨부용 검증 보고서 A4 2장을 내고, "
-    "행사장 도면 위 보행 시뮬레이션으로 쏠림이 어디서 막히는지를 미리 봅니다. 판정·시뮬에 생성형 모델을 쓰지 않습니다.",
+    "행사장 도면 위 보행 시뮬레이션으로 쏠림이 어디서 막히는지를 미리 봅니다. 판정·시뮬에 생성형 모델을 쓰지 않습니다.\n"
+    "심사용 경로: 시연 안내 " + SITE + "/judge-guide.pdf · 예비 데모 기획서 " + SITE + "/sample-plan.pdf (첫 화면에 올리면 판정이 열립니다)",
     12,
 )
+link_urls(t.cell(3, 1))
 set_cell(t.cell(4, 1), "과제번호 9번 — 축제 흥행 예보 서비스 (#축제/행사 기획 #사전 수요 예측 #보완 피드백 제공 #데이터 기반)", 12)
 set_cell(
     t.cell(5, 1),
@@ -249,8 +292,8 @@ flow = [
      "기획서 PDF 한 장으로 판정 화면이 열리고, 같은 기획안으로 행사장 도면에 들어가 배치를 고치고 보행자를 흘립니다.",
      ["① 첫 화면에 기획서 PDF 를 올리고 [읽어서 판정하기]",
       "② 판정 화면 상단 [시뮬레이션] 탭 → 배치도 밑그림 깔기(축척 두 점 + 거리)",
-      "③ 출입구·부스·통로를 놓고 [시뮬레이션 시작] → 최대 밀도·병목 상위·대기열",
-      "④ [배수 올려 가며 재생]으로 이 배치가 버티는 상한 배수를 찾는다"], "flow1"),
+      "③ 출입구·부스·통로를 놓고 [시뮬레이션 시작] → 도면 위 보행자 흐름과 밀도",
+      "④ 오른쪽 패널: 시각·장내 인원·최대 밀도 등급, 병목 상위·대기열·출입구별 입장. [배수 올려 가며 재생]으로 상한 배수"], "flow1"),
     ("#사전 수요 예측", "예상 방문객 3단 판정과 내년 배수 구간",
      "기획안의 숫자를 이 축제 자신의 지난 회차 실측과 같은 자로 세 번 재고, 내년 배수 구간과 흥행 가능성의 위치를 냅니다.",
      ["① 판정 화면 맨 위 라벨(통과/주의/과대/과소/상한 초과/근거 없음)과 한 문단 판정문",
@@ -281,6 +324,8 @@ for i, (h, f, d, steps, key) in enumerate(flow):
         sl = blank
     drop_guides(sl)
     t3 = table(sl, 3, 2)
+    for r_, lab in enumerate(["해시태그", "연계기능", "기능설명"]):
+        set_cell(t3.cell(r_, 0), "%s%d" % (lab, i + 1))
     set_cell(t3.cell(0, 1), h, 12)
     set_cell(t3.cell(1, 1), f, 12)
     set_cell(t3.cell(2, 1), d, 11)
@@ -332,7 +377,7 @@ apis = [
      "개발 기간 안에 전수 호출해 " + N_ROWS + "을 빌드 전에 적재하고 판정은 그 적재본으로 냅니다." + kt_calls),
     ("한국관광공사 TourAPI 4.0 국문 관광정보 서비스 — 축제 검색 (searchFestival2)",
      "판정 화면에서 실시간 호출. 작년 축제 기간 반경 50km 안에 등록된 다른 축제를 찾아 \"이 배수는 개최 시군구 배수이고 이 축제 몫만이 "
-     "아니다\"라는 귀속 경고를 냅니다(군포 2026: 36건). 호출이 실패해도 판정은 그대로 서고 실패 사실을 표시합니다." + fest_calls),
+     "아니다\"라는 귀속 경고를 냅니다(군포 2026 기준 등록 행사 36건, 실시간 값). 호출이 실패해도 판정은 그대로 서고 실패 사실을 표시합니다." + fest_calls),
 ]
 fill_pairs(t, apis, 11)
 
@@ -367,13 +412,20 @@ set_cell(
     t.cell(0, 1),
     "첫째, 발표치가 아니라 실측이 판정합니다. 자(尺)는 이 축제 자신이 지난 회차에 겪은 공사 KT 일별 실측 배수이고, 기획안의 숫자를 그 자로 "
     "세 번 잽니다. 예상 방문객 수를 새로 만들어 내지 않으므로 틀릴 수 있는 예측기가 되지 않습니다.\n"
-    "둘째, 공사 데이터를 한 번 부르는 것이 아니라 전수로 적재했습니다(시군구 " + N_SGG + " × " + N_DAYS + " = " + N_ROWS + "). 데이터랩 축제 목록 " + N_FEST + "의 "
+    "둘째, 공사 데이터를 한 번 부르는 것이 아니라 전수로 적재했습니다(시군구 " + N_SGG + " × 최장 " + N_DAYS + ", 시군구마다 시작일이 달라 합계 " + N_ROWS + "). 데이터랩 축제 목록 " + N_FEST + "의 "
     "배수도 같은 자료로 전부 다시 계산해, 또래 비교와 자기검증(" + LOO + ")이 같은 정의 위에 섭니다.\n"
     "셋째, 출력이 결재 문서입니다. 판정문 + 보완 문장 + 검증 보고서 A4 2장. 담당자가 예산 심의에서 \"왜 이 숫자인가\"에 댈 근거입니다.\n"
     "넷째, 화면이 자기 한계를 먼저 말합니다. 명·원 숫자는 출처 셀로만 나가고(e2e 가 셉니다), 임계값은 정한 값이라고 적으며, 내년 구간의 "
-    "적중률은 −52주 근사(" + BT + ")로만 쟀다고 카드가 말합니다. 판정·시뮬에 생성형 모델을 쓰지 않아 같은 입력에 늘 같은 답입니다.",
+    "적중률은 −52주 근사(" + BT + ")로만 쟀다고 카드가 말합니다. 판정·시뮬에 생성형 모델을 쓰지 않아 같은 입력에 늘 같은 답입니다.\n"
+    "완성 판정 화면(클릭) — 군포철쭉축제 2027 → 주의: " + URL_GUNPO + "\n"
+    "화천산천어축제 2027 → 상한 초과: " + URL_HWACHEON,
     10,
 )
+link_urls(t.cell(0, 1))
+for para in t.cell(0, 1).text_frame.paragraphs:
+    if "https://" in "".join(r.text for r in para.runs):
+        for r in para.runs:
+            r.font.size = Pt(7.5)
 set_cell(
     t.cell(1, 1),
     "1) 공사 소비·내비게이션 검색·SNS 지수(AreaTarResDemService) 연동 — 활용신청 진행 중. 예산 항목별(먹거리·주차·홍보) 근거를 같은 판정문 안에 늘립니다.\n"
@@ -383,7 +435,8 @@ set_cell(
     "결과보고서 → 내년 기획안으로 이어지는 흐름 그대로입니다.\n"
     "4) 안전관리계획 서식 연동 — 행정안전부 「지역축제장 안전관리 매뉴얼」의 \"최대 수용인원\"·\"관람객 동선\" 칸에 판정표와 도면 시뮬레이션 결과를 "
     "그대로 붙여, 매뉴얼에 없는 통로 폭·밀집도 산출 근거의 빈칸을 채웁니다.\n"
-    "5) 배치도 자동 인식 — 지금은 배치도를 밑그림으로 깔고 따라 그립니다. 실물 배치도로 정확도를 잰 뒤 모델 초안 생성을 붙입니다.",
+    "5) 배치도 자동 인식 — 지금은 배치도를 밑그림으로 깔고 따라 그립니다. 실물 배치도로 정확도를 잰 뒤 모델 초안 생성을 붙입니다.\n"
+    "운영: 정적 사이트 + 서버리스(Vercel)라 고정비가 없고, 공사 데이터는 월 1회 프리페치(개발계정 1,000회/일 안)로 갱신합니다. 운영계정 전환 시 실시간 호출 한도 문제도 사라집니다.",
     10,
 )
 
