@@ -1,15 +1,13 @@
-# /clear 뒤 붙여넣을 프롬프트 (2026-09-14 새벽 기준)
+# /clear 뒤 붙여넣을 프롬프트 (2026-09-18 저녁 기준)
 
 아래 블록을 그대로 붙여 넣는다.
 
 ---
 
-`대회/관광데이터/서비스/docs/HANDOFF.md` 맨 위 절 "(2026-09-14 새벽) 세션 요약"을 먼저 읽어라. 그다음 `docs/DECISIONS.md` 맨 위 2026-09-14 절들과 `docs/축제신호_기준_2026-09-14.md` 를 읽는다. 운영 주소는 **https://oneshot-mvp.vercel.app** 하나다(Vercel 배포별 해시 주소는 옛 커밋 고정 — 사용자가 "반영 안 됐다"고 하면 주소부터 받는다).
+`대회/관광데이터/서비스/docs/HANDOFF.md` 맨 위 절 "(2026-09-18 저녁) 제출 3일 전"을 먼저 읽고, `docs/verdict_2026-09-18_재검증.md` 의 "남은 일(수상 기여도 순)"을 읽어라. 운영 주소는 **https://oneshot-mvp.vercel.app** 하나다(Vercel 배포별 해시 주소는 옛 커밋 고정). 답변은 **한국어로만** 한다.
 
-아래를 **묻지 말고 순서대로** 진행하고, 판단이 사용자 기대와 어긋날 수 있으면 작업 전에 이유를 한 줄로 먼저 말한다(겪는 일 → 왜 → 대안 → 추천).
+**마감 2026-09-21(월) 16:00.** 일정을 날짜로 쪼개 제안하지 말고, 재검증 목록의 수상 기여도 순으로 **묻지 말고 계속** 진행한다. 판단이 사용자 기대와 어긋날 수 있으면 작업 전에 한 줄로(겪는 일 → 왜 → 대안 → 추천).
 
-1. **밀도 두 번째 원인 잡기** — 1차 수정(c050fcf, 조각 칸 분모)으로 9.00 은 사라졌지만 110분 진단에서 **94.91분 7.33명/㎡, 최소 간격 0.000m(실제 겹침)** 이 남았다(HANDOFF 맨 위 절 "밀도" 참고: dArea 3㎡ 칸, 공원 철쭉푸드 7 앞, 셀 경계 x=1.00·2.00 에 붙은 사람 여럿). systematic-debugging 으로: `대회/관광데이터/시뮬_데모/_diag_density.mjs` 가 칸 안 전원 좌표·겹친 쌍·직전 스텝 궤적을 찍게 고쳐 원인 위치(벽 클램프? serve/queue 자리?)를 코드에서 확정 → 실패 테스트 먼저 → 수정 → 110분 진단 끝까지 7.22 이하 확인(약 12분, 백그라운드).
-2. **배포본 확인** — 크롬(Claude in Chrome)으로 `https://oneshot-mvp.vercel.app/` 에 `public/군포 철쭉축제 기획서.pdf` 를 올려 판정 → 시뮬레이션 탭 → 시뮬레이션 시작, 몇십 분 돌려 최대 밀도가 물리 상한 안인지 본다. 확장 탭이 숨으면 스크린샷이 멈추니 `javascript_tool` 로 값을 읽는다.
-3. 결과를 HANDOFF 맨 위 절 "남은 것"에 적고 커밋·push.
+제출 파일은 `docs/제출양식/기능설명서_기획안팩트체크_안전본.pdf`(현재 이미지 자리표시자). 최종본은 `docs/제출양식/fill.py` 의 `IMAGES` 에 캡처 경로를 채워 `python fill.py` → PowerPoint COM 으로 pdf(`SaveAs(path, 32)`, LibreOffice 금지) → `결과.txt` 검사 → 콘텐츠랩 재제출은 사용자가 직접. 옛 기록은 `docs/archive/`, 8/30 옛 제출본은 `docs/제출양식/_old_2026-08-30/`.
 
-지키는 것: 사이트에 견본을 되살리지 않는다 · 첫 화면에 문구·버튼을 넣지 않는다 · 지도 핀은 검정선 · 시뮬은 편집이 먼저(자동 재생 금지) · PDF 배치도는 밑그림으로만 · 축제 신호는 표시만(판정·이력 제외에 쓰지 않음) · 판정 경로 LLM 0회·결정론(CHECK_KEYS 확장 금지) · 출처 없는 숫자 금지(명·원은 `<Num>` 셀로만) · "안전" 단언 금지 · 새 의존성 0 · `lib/sim/sim.js` 를 고치면 `시뮬_데모/sim.js` 에 바이트 동일 복사하고 `gunpotest`·`overlap_test`·`fd_test` 를 돌린다 · 마디마다 `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e` 통과 → 커밋 → push → 배포 확인. 문서 숫자는 `scripts/spec-numbers.mjs`·`scripts/judge-guide.mjs` 로 생성.
+지키는 것: 사이트에 견본을 되살리지 않는다 · 첫 화면에 문구·버튼을 넣지 않는다 · 지도 핀은 검정선 · 시뮬은 편집이 먼저(자동 재생 금지) · PDF 배치도는 밑그림으로만 · 축제 신호는 표시만 · 판정 경로 LLM 0회·결정론(CHECK_KEYS 확장 금지) · 출처 없는 숫자 금지(명·원은 `<Num>` 셀로만) · "안전" 단언 금지 · 새 의존성 0 · `lib/grade.ts`·`lib/verdict.ts` 임계값 불변 · `lib/sim/sim.js` 를 고치면 `시뮬_데모/sim.js` 에 바이트 동일 복사하고 `gunpotest`·`overlap_test`·`fd_test` 를 돌린다 · 마디마다 `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e` 통과 → 커밋 → push → 배포 확인. 문서 숫자는 `scripts/spec-numbers.mjs`·`scripts/judge-guide.mjs` 로 생성(유닛 수가 바뀌면 `docs/기능설명서.md` 의 "유닛 N" 도). 크롬 확장 탭이 가려지면 시뮬·스크린샷이 멈춘다 — `javascript_tool` 은 45초 안에 끝나는 짧은 읽기만.
