@@ -1,4 +1,4 @@
-// 심사위원 시연 안내를 만든다 — docs/심사위원_시연안내.md (+ 같은 내용의 HTML 을 임시로 써서 헤드리스 크롬으로 public/심사위원_안내.pdf).
+// 심사위원 시연 안내를 만든다 — docs/심사위원_시연안내.md (+ 같은 내용의 HTML 을 임시로 써서 헤드리스 크롬으로 public/judge-guide.pdf).
 // 실행: node --experimental-strip-types --no-warnings --import ./test-loader.mjs scripts/judge-guide.mjs [--pdf]
 // 숫자는 전부 lib/judgeguide.ts 가 자료에서 만든다. 이 파일은 쓰기만 한다.
 import { writeFileSync, mkdtempSync } from "node:fs";
@@ -38,7 +38,7 @@ p,li{margin:.2em 0} ol,ul{padding-left:1.3em} b{font-weight:600} pre{font-size:8
   const dir = mkdtempSync(path.join(os.tmpdir(), "judge-"));
   const htmlPath = path.join(dir, "guide.html");
   writeFileSync(htmlPath, page);
-  const out = path.resolve("public/심사위원_안내.pdf");
+  const out = path.resolve("public/judge-guide.pdf");
   const chrome = process.env.CHROME || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
   execFileSync(chrome, ["--headless=new", "--disable-gpu", "--no-pdf-header-footer", `--print-to-pdf=${out}`, `file:///${htmlPath.replace(/\\/g, "/")}`], { stdio: "ignore" });
   console.log("wrote", out);

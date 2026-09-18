@@ -5,7 +5,7 @@
 // 시뮬레이션의 "배치도 밑그림"에 이 PDF 를 올리면 2쪽(배치도)을 찾아 깔고, 축척 막대로 축척을 맞출 수 있다. 손글씨 숫자 0.
 // 1쪽에는 "배치도"라는 낱말을 쓰지 않는다 — 편집기가 그 낱말로 배치도 쪽을 찾는다.
 // 실행: node --experimental-strip-types --no-warnings --import ./test-loader.mjs scripts/sample-plan.mjs
-//   → public/군포 철쭉축제 기획서.pdf (헤드리스 크롬)
+//   → public/sample-plan.pdf (헤드리스 크롬)
 
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -126,7 +126,7 @@ ${svg}
 const dir = mkdtempSync(path.join(os.tmpdir(), "sample-plan-"));
 const htmlPath = path.join(dir, "plan.html");
 writeFileSync(htmlPath, html);
-const out = path.resolve("public/군포 철쭉축제 기획서.pdf");
+const out = path.resolve("public/sample-plan.pdf");
 const chrome = process.env.CHROME || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 execFileSync(chrome, ["--headless=new", "--disable-gpu", "--no-pdf-header-footer", `--print-to-pdf=${out}`, `file:///${htmlPath.replace(/\\/g, "/")}`], { stdio: "ignore" });
 console.log("wrote", out, `booths ${kinds.booth} gates ${kinds.gate} · 50m bar ${bar50.toFixed(1)} units`);

@@ -158,6 +158,13 @@ test("시뮬레이션 — 기획안 주소로 열리고(군포는 미리 그린 
   assert.match(판정, /href="\/venue\?[^"]*sigungu=/, "시뮬레이션 탭이 기획안을 잃었다");
 });
 
+test("닮은 축제 블록 끝의 시뮬레이션 링크가 기획안 쿼리를 싣는다 (2026-09-18 D0-B — 빈 /venue 로 떨어지던 막다른 링크)", async () => {
+  const h = (await (await fetch(`${BASE}/check?${군포}&theme=2&acc=4`)).text()).replace(/<!--\s*-->/g, "");
+  assert.match(h, /이 쏠림에 대비하기/, "닮은 축제 블록이 서지 않았다");
+  assert.match(h, /href="\/venue\?[^"]*sigungu=[^"]*"[^>]*>이 쏠림에 대비하기/, "블록 끝 시뮬 링크가 기획안을 잃었다");
+  assert.doesNotMatch(h, /href="\/venue"/, "쿼리 없는 /venue 링크가 남았다");
+});
+
 test("너무 짧은 입력은 모델을 부르지 않고 되돌려보내며, 첫 화면이 오류와 대체 경로를 보인다", async () => {
   const res = await 붙여넣는다("축제");
   assert.ok(res.status < 500, `서버 오류로 끝났다 (${res.status})`);

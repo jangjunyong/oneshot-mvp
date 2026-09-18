@@ -41,6 +41,8 @@ export interface TwinsBlockProps {
   pinHrefBase: string;
   pinHrefSuffix: string;
   vworldKey: string | null;
+  /** 블록 끝 시뮬레이션 링크 — 판정 쿼리를 실어야 한다. 빈 `/venue` 는 기획서 안내 화면으로 떨어진다 (2026-09-18 D0-B) */
+  venueHref: string;
 }
 
 export function TwinsBlock(p: TwinsBlockProps) {
@@ -133,10 +135,10 @@ function TwinsBody(p: TwinsBlockProps) {
       <div className="twin-detail">
         <p className="alert" data-level={g.level}>{levelLabel(g.level)}</p>
         <p className="headline">{g.headline}</p>
-        {또래 && (
+        {또래 && g.medianSurge !== null && (
           <p className="basis num">
-            배수는 축제 기간에 그 시군구를 찾은 외지인이 평소의 몇 배였나입니다. 인구 {또래.label} 지역의 축제 {또래.n}곳 중{" "}
-            <strong>상위 {또래.topPercent}%</strong>, 그 중앙값은 {또래.median.toFixed(2)}배.
+            닮은 3곳의 중앙값 {g.medianSurge.toFixed(2)}배는 인구 {또래.label} 지역의 축제 {또래.n}곳 중{" "}
+            <strong>상위 {또래.topPercent}%</strong>, 또래 중앙값은 {또래.median.toFixed(2)}배. 배수는 축제 기간에 그 시군구를 찾은 외지인이 평소의 몇 배였나입니다.
           </p>
         )}
 
@@ -249,7 +251,7 @@ function TwinsBody(p: TwinsBlockProps) {
         </details>
 
         <p>
-          <Link href="/venue">이 쏠림에 대비하기 · 시뮬레이션 →</Link>
+          <Link href={p.venueHref}>이 쏠림에 대비하기 · 시뮬레이션 →</Link>
         </p>
       </div>
     </div>

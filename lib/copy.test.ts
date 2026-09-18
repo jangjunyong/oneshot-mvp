@@ -241,3 +241,13 @@ test("M3a-2 닮은 축제 블록: theme·acc·pin 은 CHECK_KEYS 밖, #verdict �
   assert.ok(check.includes('name="theme"') && check.includes('name="acc"'), "폼에 theme·acc hidden 이 없다");
   assert.ok(check.includes('<details className="check-form-fold">'), "판정이 서도 입력 폼이 접히지 않는다");
 });
+
+// 2026-09-18 D0-B — 또래 띠의 굵은 표식은 닮은 3곳 중앙값이지 기획안 값이 아니다. 렌더 문자열에서 "이 기획안" 주어 금지 (주석 제외)
+test("D0-B 또래 띠·닮은 축제 블록의 렌더 문자열에 '이 기획안' 이 없고, 블록 끝 시뮬 링크는 판정 쿼리를 싣는다", () => {
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  for (const f of ["app/peer-strip.tsx", "app/_components/twins-block.tsx"]) {
+    assert.ok(!strip(read(f)).includes("이 기획안"), `${f} 렌더 문자열에 '이 기획안' 이 남았다 — 값은 닮은 3곳 중앙값이다`);
+  }
+  assert.ok(!read("app/_components/twins-block.tsx").includes('href="/venue"'), "닮은 축제 블록의 시뮬 링크가 쿼리 없는 /venue 다");
+  assert.ok(read("app/check/page.tsx").includes("venueHref={`/venue${qs}`}"), "/check 가 TwinsBlock 에 판정 쿼리 링크를 안 넘긴다");
+});

@@ -1,6 +1,6 @@
 // 또래 분포 띠 — "같은 규모 지역 중 상위 5%"를 그림으로.
 //
-// 숫자 하나보다 분포를 보는 편이 빠르다. 또래가 어디 몰려 있고 이 기획안이
+// 숫자 하나보다 분포를 보는 편이 빠르다. 또래가 어디 몰려 있고 닮은 3곳의 중앙값이
 // 어디 서 있는지, 등급 컷을 넘었는지가 한눈에 들어온다.
 //
 // 지도(TwinMap) 아래 왼쪽 열의 빈 자리에 앉는다 — 그 열은 지도 높이에서
@@ -26,7 +26,7 @@ export function PeerStrip({
   peer: PeerContext;
   /** 또래 배수 전부(오름차순) */
   surges: number[];
-  /** 이 기획안의 배수 */
+  /** 닮은 3곳 중앙값의 배수 — 기획안 값이 아니다 (2026-09-18 D0-B 오표기 정정) */
   surge: number;
 }) {
   if (surges.length === 0) return null;
@@ -48,7 +48,7 @@ export function PeerStrip({
 
   return (
     <figure className="peer-strip">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`같은 규모 축제 ${peer.n}곳의 배수 분포에서 이 기획안의 위치`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`같은 규모 축제 ${peer.n}곳의 배수 분포에서 닮은 3곳 중앙값의 위치`}>
         {/* 등급 컷 — 어디를 넘으면 경보인지가 그림에 있어야 한다 */}
         {cut(GRADE_CUT.caution, "주의 1.5")}
         {cut(GRADE_CUT.severe, "심각 2.0")}
@@ -80,22 +80,22 @@ export function PeerStrip({
           또래 중앙 {peer.median.toFixed(2)}
         </text>
 
-        {/* 이 기획안 — 유일하게 굵고 붉다 */}
+        {/* 닮은 3곳 중앙값 — 유일하게 굵다 */}
         <g className="peer-me">
           <line x1={x(surge)} y1={BASE - 26} x2={x(surge)} y2={BASE} />
           <circle cx={x(surge)} cy={BASE - 29} r={3} />
         </g>
         <text
-          x={Math.min(Math.max(x(surge), 26), W - 26)}
+          x={Math.min(Math.max(x(surge), 52), W - 52)}
           y={BASE - 34}
           className="peer-melabel"
           textAnchor="middle"
         >
-          이 기획안 {surge.toFixed(2)}
+          닮은 3곳 중앙값 {surge.toFixed(2)}
         </text>
       </svg>
       <figcaption>
-        눈금 하나 = 축제 한 곳. 인구 {peer.label} 지역 {peer.n}곳 중 이 기획안은 상위 <strong>{peer.topPercent}%</strong>.
+        눈금 하나 = 축제 한 곳. 인구 {peer.label} 지역 {peer.n}곳 중 닮은 3곳 중앙값은 상위 <strong>{peer.topPercent}%</strong>.
       </figcaption>
     </figure>
   );

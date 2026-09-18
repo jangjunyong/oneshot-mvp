@@ -559,6 +559,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
               pinHrefBase={`/check${twinQs({ pin: null }) ? twinQs({ pin: null }) + "&" : "?"}pin=`}
               pinHrefSuffix="#twins"
               vworldKey={process.env.VWORLD_KEY ?? process.env.NEXT_PUBLIC_VWORLD_KEY ?? null}
+              venueHref={`/venue${qs}`}
             />
           </>
         )}

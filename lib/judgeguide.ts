@@ -15,7 +15,7 @@ const card = base.card;
 
 export const JUDGE_GUIDE_URL = "https://oneshot-mvp.vercel.app";
 /** 예비 데모 기획서 — scripts/sample-plan.mjs 가 만든다 */
-export const DEMO_PLAN_FILE = "군포 철쭉축제 기획서.pdf";
+export const DEMO_PLAN_FILE = "sample-plan.pdf";
 
 export function judgeGuideMarkdown(): string {
   const g = DEMOS.gunpo.query;
@@ -24,7 +24,7 @@ export function judgeGuideMarkdown(): string {
 
 주소: ${JUDGE_GUIDE_URL} (데스크톱 크롬 권장 · 로그인 없음 · 설치 없음)
 
-기획서를 넣어야 판정·시뮬레이션이 열립니다. 사이트에 견본은 없고, 함께 드린 **${DEMO_PLAN_FILE}** 가 예비 데모 기획서입니다.
+기획서를 넣어야 판정·시뮬레이션이 열립니다. 사이트에 견본은 없고, 함께 드린 **${DEMO_PLAN_FILE}**(군포 철쭉축제 2027 기획서, ${JUDGE_GUIDE_URL}/${DEMO_PLAN_FILE} 에서도 내려받음) 가 예비 데모 기획서입니다.
 
 ## 1. 3분 코스 — 예비 데모 기획서로 판정 보기
 
@@ -36,7 +36,7 @@ export function judgeGuideMarkdown(): string {
 
 ## 2. 자기 축제 넣어 보기
 
-- 첫 화면에 **기획서 PDF**를 올리면(지자체 양식 아니어도 됨) 예상 방문객·기간·지역·예산·지난 회차 개최 기간을 문서에서 옮겨 적어 판정 화면으로 갑니다. 잘 읽히는 순서는 양식(${JUDGE_GUIDE_URL}/기획안_양식.pdf)에 있습니다.
+- 첫 화면에 **기획서 PDF**를 올리면(지자체 양식 아니어도 됨) 예상 방문객·기간·지역·예산·지난 회차 개최 기간을 문서에서 옮겨 적어 판정 화면으로 갑니다. 잘 읽히는 순서는 양식(${JUDGE_GUIDE_URL}/plan-form.pdf)에 있습니다.
 - 문서에서 못 찾은 칸은 판정 화면의 **입력 고치기**를 펴서 적고 **판정**을 누릅니다. 지난 회차가 없으면 "근거 없음"과 또래 구간만 냅니다 — 지어내지 않습니다.
 - 지역은 "충청남도 보령", "경기도 군포시"처럼 사람 표기 그대로 됩니다.
 
