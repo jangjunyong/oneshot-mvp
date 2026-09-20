@@ -1148,6 +1148,248 @@ textarea:focus-visible { box-shadow: var(--focus-ring); }
   .table-wrap table { min-width: 34rem; }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   무채 정밀층 (v4, 2026-09-21) — 도면 v4 와 짝이다
+
+   위 Primer 층(:1049~)이 만든 Box·Label·알약·6px 라운드를 여기서
+   도면의 어휘로 되돌린다. DOM·문구·클래스는 한 글자도 안 바뀐다.
+   **등급의 형태 어휘(:965-979)는 건드리지 않는다** — 속성 선택자라
+   여기 기본형보다 특정도가 높다. 여기서는 그 형태가 또렷해지도록
+   바닥(모서리·굵기·자간)만 고친다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 모서리를 전부 0 으로 ──
+   Primer 층이 준 radius 를 걷는다. 점선 왼쪽 막대가 라운드에 잘리던
+   문제(경보 상자)가 원인째 사라진다 */
+.sheet > main,
+.alert,
+.chip,
+.table-wrap,
+.range-card, .budget-card, .check-bridge, .pin-card, .twin-card,
+.data-usage, .evidence-fig,
+.button-link, .dropzone,
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  border-radius: 0;
+}
+
+/* ── 머리글 아래 잉크 한 줄 = 이 장의 시작 ──
+   네 화면 모두 main 의 첫 자식이 h1 이다 (/, /check, /evidence, /venue).
+   .report 는 .sheet > main 구조가 아니라 여기 안 걸린다 */
+.sheet > main > h1:first-child {
+  padding-bottom: var(--s2);
+  border-bottom: var(--rule-part);
+  margin-bottom: var(--s3);
+}
+
+/* ── 절 구분 두 단 — 지금은 한 종류뿐이라 리듬이 평평하다 ── */
+.section { margin-top: var(--s6); padding-top: var(--s3); border-top: var(--rule-hair); }
+h2.section { margin-top: var(--s8); padding-top: var(--s3); border-top: var(--rule-part); }
+
+/* ── 본문 박스 ──
+   첫 화면에서 박스가 내용 높이로 줄어 "빈 곳에 테두리"가 되던 것을 막는다 */
+.sheet > main { min-height: 58vh; border-color: var(--line); }
+.venue-sheet > main { min-height: 0; }
+
+/* ── 코드 = 인라인 모노 ──
+   IBM Plex Mono 를 로드해 두고 .ev-tick 한 군데서만 쓰고 있었다.
+   <code> 가 브라우저 기본 모노로 떨어져 주변 글자와 x-height 가 안 맞았다 */
+code, kbd, samp {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+}
+td code, th code, .data-usage-table code {
+  padding: 0.08em 0.3em;
+  background: rgba(0, 0, 0, 0.055);
+  word-break: break-all;
+}
+
+/* ── 출처 셀 = 값을 감싼 얇은 칩 ──
+   Primer 층의 rgba(140,140,140,.14) 는 그대로 무채(0)다. 모서리만 각지게 */
+span.num[data-num] { border-radius: 0; padding: 0.08em 0.32em; }
+span.num[data-origin="input"] { box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ── 경보 = 왼쪽 막대 + 얇은 바탕. 라운드가 사라져 점선이 끝까지 간다 ── */
+.alert {
+  border: 1px solid var(--line);
+  border-left: 8px solid var(--concrete);
+  background: var(--paper);
+  padding: 0.55rem 0.85rem;
+  line-height: 1.55;
+}
+
+/* ── 칩 = 알약이 아니라 도장 ──
+   2em 라운드 위에서 2px 점선이 뭉개지던 것을 직선으로 편다.
+   굵기도 정리한다 — 지금은 주의·과소·과대가 전부 2px 이라 점선이 제일 굵어 보인다 */
+.chip {
+  padding: 0.06rem 0.42rem;
+  font-size: var(--text-xs);
+  letter-spacing: 0.015em;
+  line-height: 1.6;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip[data-label="과대"]      { border-width: 2px;   border-style: solid; }
+.chip[data-label="주의"],
+.chip[data-label="주의 신호"] { border-width: 1.5px; border-style: dotted; }
+.chip[data-label="과소"]      { border-width: 1.5px; border-style: dashed; }
+.chip[data-label="통과"]      { border-width: 1px;   border-style: solid; }
+.chip[data-label="상한 초과"] { border-width: 1px;   border-style: solid; }
+
+/* ── 표 ──
+   머리 면을 걷고 잉크 한 줄로. 행선은 가장 옅은 단계.
+   숫자는 등폭. "30년차"가 가장 크게 읽히는 자리다 */
+.report-table th,
+.report-table td { padding: 0.45rem 0.7rem; }
+.report-table thead th {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--track-label);
+  color: var(--muted);
+  background: transparent;
+  border-bottom: var(--rule-part);
+  padding-bottom: 0.32rem;
+  vertical-align: bottom;
+}
+.report-table tbody th,
+.report-table tbody td { border-bottom: var(--rule-hair); }
+.report-table tbody tr:last-child > th,
+.report-table tbody tr:last-child > td { border-bottom: 0; }
+.report-table td.num,
+.report-table .num { font-variant-numeric: tabular-nums; }
+.check-table th, .check-table td { padding: 0.5rem 0.65rem; }
+.check-table thead th { border-bottom: var(--rule-part); color: var(--muted); }
+.check-table tbody th { color: var(--ink); font-weight: 500; }
+.check-table .note, .check-cell-label { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
+.check-table tr[data-peak] { background: var(--n1); }
+
+/* ── 오른쪽 레일 ──
+   18~22rem 레일에 5열 표(check/page.tsx:517)가 들어가 '축제 신호' 셀이
+   행마다 7~8줄로 흘렀다. 레일을 넓히고 앞 네 열을 고정해 나머지를 신호에 준다 */
+.check-layout { grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem); gap: var(--s4) var(--s6); }
+.check-side .check-table { table-layout: fixed; }
+.check-side .check-table th:nth-child(1) { width: 3.1rem; }
+.check-side .check-table th:nth-child(2) { width: 6.2rem; }
+.check-side .check-table th:nth-child(3) { width: 3.2rem; }
+.check-side .check-table th:nth-child(4) { width: 5.2rem; }
+.check-side .check-table td { word-break: keep-all; overflow-wrap: anywhere; }
+.check-side .check-table .check-cell-label { display: block; margin-top: 0.18rem; }
+
+/* ── 곡선 라벨이 곡선을 덮는다 (/evidence 세 장) ──
+   '평소' 라벨이 선 위에 그대로 겹쳐 둘 다 안 읽혔다. 흰 할로를 두른다 */
+.ev-tick {
+  paint-order: stroke fill;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  font-size: 9.5px;
+}
+.ev-grid { stroke: var(--line-soft); }
+.ev-base { stroke: var(--line-strong); }
+
+/* ── 첫 화면 입력 ──
+   점선 드롭존은 인터넷 기본값이고, '파일 선택'은 브라우저가 그린 물건이었다.
+   이 제품에서 처음 누르는 것이니 이 제품이 그린다 */
+.intake { max-width: 42rem; }
+.dropzone {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink);
+  background: var(--paper);
+  padding: var(--s3);
+  transition: background 120ms linear, border-color 120ms linear;
+}
+.dropzone:hover { background: var(--n2); border-color: var(--line-strong); border-left-color: var(--ink); }
+.dropzone-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.004em;
+  margin-bottom: 0.25rem;
+}
+.dropzone input[type="file"] {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.dropzone input[type="file"]::file-selector-button {
+  font: inherit;
+  font-weight: 500;
+  padding: 0.35rem 0.95rem;
+  margin-right: 0.7rem;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 120ms linear;
+}
+.dropzone input[type="file"]::file-selector-button:hover { background: var(--n2); }
+
+/* ── 버튼 하나의 규약 ──
+   호버가 검정→투명으로 명도를 통째로 뒤집고 transition 도 없었다.
+   면 밝기 한 칸으로 바꾼다. .btn(도면)과 철학을 맞춘다 */
+button, .button-link {
+  border-radius: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.45;
+  padding: 0.5rem 1.1rem;
+  transition: background 120ms linear, border-color 120ms linear, color 120ms linear;
+}
+button { border: 1px solid var(--ink); background: var(--ink); color: var(--surface); }
+button:hover { background: var(--ink-hover); border-color: var(--ink-hover); color: var(--surface); }
+button:active { background: var(--ink); }
+button:disabled { background: var(--n5); border-color: var(--n5); color: var(--n1); cursor: default; }
+button.note { background: none; border: 0; padding: 0; color: var(--muted); }
+button.note:hover { background: none; color: var(--ink); }
+.button-link { border: 1px solid var(--ink); background: var(--ink); color: var(--surface); }
+.button-link:hover { background: var(--ink-hover); border-color: var(--ink-hover); color: var(--surface); }
+.button-link.button-secondary { background: var(--surface); color: var(--ink); border-color: var(--ink); }
+.button-link.button-secondary:hover { background: var(--n2); color: var(--ink); border-color: var(--ink); }
+.venue-panel button.active, .palette button.active { border-width: 2px; }
+
+/* ── 폼 ── */
+input, select, textarea { border-color: var(--line-strong); padding: 0.4rem 0.6rem; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  border-color: var(--ink);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+form label, .check-form legend, .pin-detail dt, .check-bridge-facts dt, .entry > p:first-child {
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  color: var(--muted);
+}
+
+/* ── 보조 글자 3단 ── */
+.note, .muted { color: var(--concrete); }
+.evidence, .twin-card-meta, .peer-strip figcaption, .twin-map figcaption, .report-cell-label { color: var(--muted); }
+
+/* ── 좁은 화면 (v4) ──
+   .table-wrap 은 tsx 어디에도 없어 죽은 코드다. 표는 맨 <table> 이므로
+   여기서 할 수 있는 것은 (a) 시트를 풀블리드로 열어 폭을 34px 되찾고
+   (b) 표 활자·패딩을 한 단 내리는 것이다. 가로 스크롤은 0 을 유지한다 */
+@media (max-width: 768px) {
+  :root { --text-display: 1.5rem; --text-2xl: 1.375rem; --text-xl: 1.25rem; --text-lg: 1.0625rem; }
+  .sheet > main {
+    margin-left: 0;
+    margin-right: 0;
+    border-left: 0;
+    border-right: 0;
+    padding-left: var(--s2);
+    padding-right: var(--s2);
+    min-height: 0;
+  }
+  .topbar { align-items: flex-start; }
+  .topbar nav { gap: var(--s2); }
+  .report-table, .check-table { font-size: var(--text-xs); }
+  .report-table th, .report-table td,
+  .check-table th, .check-table td { padding: 0.3rem 0.35rem; }
+  .check-table .chip { white-space: normal; }
+  .check-side .check-table { table-layout: auto; }
+  .check-side .check-table th:nth-child(n) { width: auto; }
+  .sheet > main > h1:first-child { padding-bottom: var(--s1); margin-bottom: var(--s2); }
+}
+
 /* ── 인쇄 ──
    보고서는 종이다. 캔버스·박스·칩은 종이에서 잉크만 먹는다 */
 @media print {

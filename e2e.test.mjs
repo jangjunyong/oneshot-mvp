@@ -90,6 +90,11 @@ test("기획서를 안 넣으면 판정·실측 근거·시뮬레이션·보고�
     const h = (await (await fetch(BASE + path)).text()).replace(/<!--\s*-->/g, "");
     assert.match(h, /기획서를 넣으면 이 화면이 열립니다/, `${path}: 안내가 없다`);
     assert.doesNotMatch(h, /견본|시연용 예시|군포철쭉축제|예상 방문객 주의/, `${path}: 견본이 떴다`);
+    // 2026-09-21 사용자 결정 — 빈 화면에만 문서 두 개로 길을 연다(사이트에 견본 데이터를 세우지는 않는다)
+    if (path.startsWith("/check") || path.startsWith("/venue")) {
+      assert.match(h, /plan-form\.pdf/, `${path}: 양식 링크가 없다`);
+      assert.match(h, /judge-guide\.pdf/, `${path}: 안내 링크가 없다`);
+    }
   }
   const 보고서 = await (await fetch(BASE + "/report/check")).text();
   assert.match(보고서, /기획서를 먼저 넣어 주세요/);

@@ -7,7 +7,7 @@
 import base from "@/data/sim/gunpo_base.json";
 import { FESTIVALS } from "@/lib/festivals";
 import { SIM_CARD_SETTINGS } from "@/lib/simcard";
-import { DEMOS } from "@/lib/checkquery";
+import { checkQueryString, DEMOS } from "@/lib/checkquery";
 import { KT_API } from "@/lib/verdict";
 
 const S = SIM_CARD_SETTINGS;
@@ -27,6 +27,10 @@ export function judgeGuideMarkdown(): string {
 기획서를 넣어야 판정·시뮬레이션이 열립니다. 사이트에 견본은 없고, 함께 드린 **${DEMO_PLAN_FILE}**(군포 철쭉축제 2027 기획서, ${JUDGE_GUIDE_URL}/${DEMO_PLAN_FILE} 에서도 내려받음) 가 예비 데모 기획서입니다.
 
 ## 1. 3분 코스 — 예비 데모 기획서로 판정 보기
+
+PDF 를 올리기 어려우면 이 주소가 **같은 판정 화면을 그대로 엽니다**(업로드·로그인 없음):
+${JUDGE_GUIDE_URL}/check?${checkQueryString(g)}
+
 
 1. 첫 화면(**기획안 넣기**)에 **${DEMO_PLAN_FILE}** 를 올리고 **읽어서 판정하기**를 누릅니다. 모델은 문서의 숫자를 옮겨 적기만 하고 판정에는 쓰지 않습니다.
 2. 판정 화면 맨 위에 **예상 방문객 ${"주의"}** 가 뜹니다. 기획안의 ${(g.n ?? 0).toLocaleString("ko-KR")}명(기간 총계·연인원)을 이 축제의 ${g.history.map((x) => x.year).join("·")} 실측 배수와 같은 기준으로 잰 결과입니다.

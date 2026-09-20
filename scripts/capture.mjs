@@ -51,7 +51,7 @@ const 절 = (글자) => ({ kind: "section", text: 글자 });
 const SHOTS = [
   // 대표·상세
   { file: "hero_wide.png", url: `/check?${군포}`, target: ".check-main", width: 1440, clipMax: 900 },
-  { file: "detail_montage.png", url: `/check?${군포}`, target: ".check-table", width: 1280 },
+  { file: "detail_panels.png", url: `/check?${군포}`, target: ".check-table", width: 1280 },
 
   // 흐름 1 — 기획서를 넣는다 → 도면 위에서 본다
   { file: "f1_1_home.png", url: "/", target: "main", width: 1100, clipMax: 720 },
@@ -266,6 +266,8 @@ async function main() {
       for (const s of 목록) if (await 찍는다(s)) 성공++;
       console.log(`\n${성공}/${목록.length} 장 — ${OUT}`);
       if (성공 < 목록.length) process.exitCode = 1;
+      // 상세 이미지 4분할은 방금 찍은 전체 화면 넷을 붙여 만든다 — 손으로 조립하면 다음 회차에 옛 화면이 섞인다
+      if (!ONLY && 성공 === 목록.length) await 합친다();
     }
   } finally {
     ws.close();
@@ -275,6 +277,14 @@ async function main() {
       else server.kill();
     }
   }
+}
+
+/** 상세 이미지(양식 "상세 이미지 3~5장") — page_home·page_check·page_evidence·page_venue 를 한 장으로 */
+async function 합친다() {
+  const { spawnSync } = await import("node:child_process");
+  const py = spawnSync("python", ["scripts/detail-4up.py"], { encoding: "utf8" });
+  console.log((py.stdout || py.stderr || "").trim());
+  if (py.status !== 0) process.exitCode = 1;
 }
 
 main().catch((e) => {
