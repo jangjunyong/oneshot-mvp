@@ -89,9 +89,12 @@ test("기획서를 안 넣으면 판정·실측 근거·시뮬레이션·보고�
   for (const path of ["/check", "/evidence", "/venue", "/check?demo=hwacheon", "/venue?entry=demo"]) {
     const h = (await (await fetch(BASE + path)).text()).replace(/<!--\s*-->/g, "");
     assert.match(h, /기획서를 넣으면 이 화면이 열립니다/, `${path}: 안내가 없다`);
-    assert.doesNotMatch(h, /견본|시연용 예시|군포철쭉축제|예상 방문객 주의/, `${path}: 견본이 떴다`);
-    // 2026-09-21 사용자 결정 — 빈 화면에만 문서 두 개로 길을 연다(사이트에 견본 데이터를 세우지는 않는다)
+    // 빈 화면이 견본 **데이터로 채워지지는** 않는다 — 판정 블록·숫자는 기획서를 넣어야 선다
+    assert.doesNotMatch(h, /예상 방문객 주의|2,147,879/, `${path}: 견본 데이터가 떴다`);
+    // 2026-09-21 사용자 지시 — 막다른 길을 없앤다. 업로드 없이 완성 화면으로 가는 길이 있어야 한다
     if (path.startsWith("/check") || path.startsWith("/venue")) {
+      assert.match(h, /\/check\?[^"]*sigungu=/, `${path}: 완성 판정 화면으로 가는 길이 없다`);
+      assert.match(h, /sample-plan\.pdf/, `${path}: 예비 데모 기획서 경로가 없다`);
       assert.match(h, /plan-form\.pdf/, `${path}: 양식 링크가 없다`);
       assert.match(h, /judge-guide\.pdf/, `${path}: 안내 링크가 없다`);
     }
@@ -101,11 +104,15 @@ test("기획서를 안 넣으면 판정·실측 근거·시뮬레이션·보고�
   assert.doesNotMatch(보고서, /견본/);
 });
 
-test("첫 화면 — PDF 입력과 붙여넣기만 있고, 견본 버튼·데이터 설명·한도 문구·옛 진단 이력은 없다", async () => {
+test("첫 화면 — PDF 입력·붙여넣기와 '올릴 기획서가 없으면' 길이 있고, 옛 조각은 없다", async () => {
   const 홈 = (await (await fetch(BASE + "/")).text()).replace(/<!--\s*-->/g, "");
   assert.match(홈, /type="file"[^>]*accept="application\/pdf"/, "PDF 입력이 없다");
   assert.match(홈, /name="planText"/, "붙여넣기 칸이 없다");
-  for (const gone of ["진단 이력", "직접 입력하기", "manual=1", "시연용 예시", "등록된 축제에서 찾기", 'class="map"', "견본으로 먼저 보기", "데이터 셋", "하루 45건", "스캔본 제외", "demo=hwacheon", 'href="/form"']) {
+  // 2026-09-21 사용자 지시로 09-13 의 "첫 화면엔 입력만" 을 뒤집었다 — 공고문이 기능심사를 규정하고
+  // 심사위원이 URL 만 들고 오면 이 화면이 막다른 길이었다. 업로드·모델·DB 를 안 타는 길이 있어야 한다
+  assert.match(홈, /\/check\?[^"]*sigungu=/, "첫 화면에 완성 판정 화면으로 가는 길이 없다");
+  assert.match(홈, /sample-plan\.pdf/, "첫 화면에 예비 데모 기획서 경로가 없다");
+  for (const gone of ["진단 이력", "직접 입력하기", "manual=1", "시연용 예시", "등록된 축제에서 찾기", 'class="map"', "데이터 셋", "하루 45건", "스캔본 제외", "demo=hwacheon", 'href="/form"']) {
     assert.ok(!홈.includes(gone), `첫 화면에 없어야 할 조각이 있다: ${gone}`);
   }
   const 본문 = 홈.replace(/<[^>]+>/g, " ");
@@ -410,7 +417,8 @@ function 열린글자수(html) {
   return h.replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().length;
 }
 // 실측(2026-09-12): / 522 · /check 3,499 · /venue 105 — 상한은 그 1.1배 안팎. 2026-09-13 견본이 사라져 판정·시뮬은 기획안 주소로 잰다
-const 글자상한 = { "/": 250, [`/check?${군포}&theme=2&acc=4`]: 3600, [`/venue?${군포}`]: 450 };
+// 2026-09-21 사용자 지시로 첫 화면에 "올릴 기획서가 없으면" 한 줄이 늘었다
+const 글자상한 = { "/": 400, [`/check?${군포}&theme=2&acc=4`]: 3600, [`/venue?${군포}`]: 450 };
 test("열린 글자 수 — 첫 화면·판정(군포 기획안)·시뮬레이션이 상한 안이다 (렌더 HTML, 닫힌 details 제외)", async () => {
   const 잰값 = {};
   for (const path of Object.keys(글자상한)) 잰값[path] = 열린글자수(await (await fetch(BASE + path)).text());
