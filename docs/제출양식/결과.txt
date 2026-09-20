@@ -6,5 +6,5 @@ hashtags_ok=True
 guide_boxes=0 (expect 0)
 slide10(API명)_empty_rows=0 (expect 0)
 slide11(데이터명)_empty_rows=0 (expect 0)
-urls=2 (expect >=2)
+urls=3 (expect >=2)
 service_name_ok=True

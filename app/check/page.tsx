@@ -44,6 +44,8 @@ import { SimCardBlock } from "@/app/_components/sim-card";
 import { festivalSignal, signalNote } from "@/lib/signal";
 import { SIGNAL_CALENDAR } from "@/lib/calendar";
 import { PlanGate } from "@/app/_components/plan-gate";
+import { headers } from "next/headers";
+import { clientKey } from "@/lib/clientkey";
 import { getDraft, type Draft } from "@/lib/store";
 import { hasTourKey, searchFestivalsInPeriod } from "@/lib/tourapi";
 import { attributionCaveat, competitorsNear, type Competitor, type CompetitionStatus } from "@/lib/overlap";
@@ -94,7 +96,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   let draft: Draft | null = null;
   if (draftId) {
     try {
-      draft = await getDraft(draftId);
+      draft = await getDraft(draftId, clientKey(await headers()));
     } catch {
       draft = null;
     }

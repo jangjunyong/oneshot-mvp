@@ -354,12 +354,25 @@ export async function saveDraft(e: Extraction, clientKey: string | null = null):
   return String(rows[0].id);
 }
 
-export async function getDraft(id: string): Promise<Draft | null> {
-  if (!sql) return gd.__oneshotDrafts!.find((d) => d.id === id) ?? null;
+/**
+ * 초안 한 건. **올린 접속자만 읽는다.**
+ *
+ * id 는 URL 에 드러나는 연속 정수라 소유자 검사가 없으면 ?draft=1,2,3… 을 훑는 것만으로
+ * 남이 올린 기획서의 원문 인용이 열린다(`DraftNote` 가 문장을 그대로 낸다). 2026-09-20 에 막았다.
+ * 못 읽어도 판정은 그대로 선다 — 초안은 주석일 뿐이다.
+ */
+export async function getDraft(id: string, clientKey: string | null): Promise<Draft | null> {
+  if (!sql) {
+    const row = gd.__oneshotDrafts!.find((d) => d.id === id);
+    return row && row.clientKey === clientKey ? row : null;
+  }
   await draftReady();
   // id 는 URL 에서 온다. 숫자가 아니면 질의에 넣지 않는다.
   if (!/^\d+$/.test(id)) return null;
-  const rows = await sql`SELECT id, payload FROM drafts WHERE id = ${Number(id)}`;
+  const rows = await sql`
+    SELECT id, payload FROM drafts
+    WHERE id = ${Number(id)} AND client_key IS NOT DISTINCT FROM ${clientKey}
+  `;
   if (rows.length === 0) return null;
   return { ...(rows[0].payload as Extraction), id: String(rows[0].id) };
 }

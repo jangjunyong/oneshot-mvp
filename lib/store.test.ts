@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import {
   countExtractsToday,
   deleteEntry,
+  getDraft,
   getEntry,
   getVenue,
   HISTORY_LIMIT,
@@ -37,6 +38,16 @@ test("추출 초안은 접속자 키별로도 센다 — 한 접속자의 호출
   assert.equal(await countExtractsToday(), before.all + 4, "전체 수");
   assert.equal(await countExtractsToday("aaaa"), before.a + 2, "a 접속자 수");
   assert.equal(await countExtractsToday("bbbb"), before.b + 1, "b 접속자 수");
+});
+
+// 2026-09-20 — draft id 는 URL 에 그대로 드러나는 연속 정수다. 소유자 검사가 없으면
+// ?draft=1,2,3… 을 훑는 것만으로 남이 올린 기획서 원문 인용이 열린다(DraftNote 가 문장을 그대로 낸다).
+test("초안은 올린 접속자만 되찾는다 — 남의 draft 번호로는 열리지 않는다", async () => {
+  const draft = { sido: "경기", sigungu: "군포시", month: 4, populationManMyeong: null, themeCode: null, accessibility: null, evidence: {}, missing: [], source: "llm" as const, facts: undefined };
+  const id = await saveDraft(draft, "aaaa");
+  assert.ok(await getDraft(id, "aaaa"), "올린 접속자가 자기 초안을 못 읽는다");
+  assert.equal(await getDraft(id, "bbbb"), null, "다른 접속자가 남의 초안을 읽었다");
+  assert.equal(await getDraft(id, null), null, "키 없는 요청이 남의 초안을 읽었다");
 });
 
 assert.equal(

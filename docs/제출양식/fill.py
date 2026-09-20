@@ -38,7 +38,7 @@ IMAGES = {
     "flow3": [C + "f3_1_other.png", C + "f3_2_budget.png", C + "f3_3_attrib.png", C + "f3_4_report.png"],
     "flow4": [C + "f4_1_datause.png", C + "f4_2_evidence.png", C + "f4_3_twins.png", C + "f4_4_history.png"],
     "hero": C + "hero_wide.png",
-    "detail": C + "detail_montage.png",
+    "detail": C + "detail_4up.png",
 }
 
 URL_GUNPO = (SITE + "/check?name=%EA%B5%B0%ED%8F%AC%EC%B2%A0%EC%AD%89%EC%B6%95%EC%A0%9C&sido=%EA%B2%BD%EA%B8%B0&sigungu=%EA%B5%B0%ED%8F%AC%EC%8B%9C"
@@ -201,7 +201,8 @@ set_cell(
     "시군구 일별 실측(외지인 배수·순증)과 같은 기준으로 재서 통과/주의/과대/과소/상한 초과/근거 없음을 판정합니다. "
     "내년 배수 구간, 1인당 예산 대조, 같은 시기 경쟁 축제 귀속 경고, 결재 첨부용 검증 보고서 A4 2장을 내고, "
     "행사장 도면 위 보행 시뮬레이션으로 쏠림이 어디서 막히는지를 미리 봅니다. 판정·시뮬에 생성형 모델을 쓰지 않습니다.\n"
-    "심사용 경로: 시연 안내 " + SITE + "/judge-guide.pdf · 예비 데모 기획서 " + SITE + "/sample-plan.pdf (첫 화면에 올리면 판정이 열립니다)",
+    "심사용 경로 — 올릴 기획서가 없으면 이 주소가 판정 화면을 바로 엽니다(업로드 불필요):\n" + URL_GUNPO + "\n"
+    "시연 안내 " + SITE + "/judge-guide.pdf · 예비 데모 기획서 " + SITE + "/sample-plan.pdf (첫 화면에 올리면 판정이 열립니다)",
     12,
 )
 link_urls(t.cell(3, 1))
