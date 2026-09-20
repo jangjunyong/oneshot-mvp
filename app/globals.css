@@ -1047,3 +1047,115 @@ a.twin-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; 
 .check-side h2, .data-usage h2, .sim-card h2, .twins h2 { font-size: var(--text-lg); }
 h2.section { font-size: var(--text-xl); }
 
+
+/* ══════════════════════════════════════════════════════════════
+   GitHub(Primer) 결 — 도면 v3 와 짝이다 (2026-09-20)
+
+   위 규칙들은 v2(흰 시트·헤어라인) 를 전제로 쓰였다. 여기서는 그것을
+   GitHub 의 구성물로 다시 말한다 — Box · Label · Flash · inline code.
+   **등급의 형태 어휘(실선·점선·파선·반전)는 건드리지 않는다.**
+   위 §"판정 7종의 형태 어휘" 규칙이 속성 선택자라 여기 기본형보다 세다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 출처 셀 = GitHub 인라인 code ──
+   <Num> 이 그리는 span 에만 건다. td.num(표 칸 정렬용)에는 걸면 안 된다 */
+span.num[data-num] {
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  background: rgba(140, 140, 140, 0.14);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* 담당자가 적어 낸 값은 테두리로 갈린다 — 실측과 섞이면 안 된다 */
+span.num[data-origin="input"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+/* 표 안에서는 칸 자체가 이미 경계다. 칩을 겹치지 않는다 */
+td span.num[data-num],
+th span.num[data-num] { padding: 0; background: transparent; box-shadow: none; }
+
+/* ── 경보 = Primer Flash ──
+   사방 보더 + radius. 왼쪽 굵기·선종(등급의 형태 어휘)은 위 규칙이 덮어쓴다 */
+.alert {
+  border: 1px solid var(--line);
+  border-left: 8px solid var(--concrete);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+}
+
+/* ── 칩 = Primer Label (알약) ── */
+.chip {
+  padding: 0 0.6rem;
+  border-radius: 2em;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* ── 본문 박스 안이므로 표 보더는 한 단계 옅게 ── */
+.table-wrap { border-color: var(--line-soft); }
+
+/* ── 카드류를 Box 로 ── */
+.range-card,
+.budget-card,
+.check-bridge,
+.pin-card,
+.twin-card,
+.data-usage,
+.evidence-fig {
+  border-radius: var(--radius);
+}
+
+/* ── 주 동작 링크(.button-link)를 Primer Button 으로 ── */
+.button-link {
+  padding: 5px 16px;
+  border-radius: var(--radius);
+  border-color: rgba(31, 35, 40, 0.15);
+  line-height: 20px;
+}
+.button-link:hover { background: #2E3237; color: #FFFFFF; border-color: rgba(31, 35, 40, 0.15); }
+
+/* ── 폼 요소 ── */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  border-radius: var(--radius);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible { box-shadow: var(--focus-ring); }
+
+/* ── 입력 드롭존 = Blankslate ── */
+.dropzone {
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* ── 좁은 화면 ── */
+@media (max-width: 768px) {
+  .check-layout,
+  .twin-layout,
+  .venue-layout,
+  .sim-layout { display: block; }
+  .venue-canvas-col,
+  .venue-panel,
+  .sim-map-col,
+  .sim-panel { width: auto; max-width: 100%; }
+  .table-wrap { max-width: 100%; }
+  /* 표는 줄여서 뭉개지 말고 칸 폭을 지킨 채 옆으로 넘긴다 — 숫자 표가 이 제품의 본문이다 */
+  .table-wrap table { min-width: 34rem; }
+}
+
+/* ── 인쇄 ──
+   보고서는 종이다. 캔버스·박스·칩은 종이에서 잉크만 먹는다 */
+@media print {
+  body { background: #FFFFFF; }
+  /* 본문 박스는 화면의 것이다. 종이에서는 테두리·여백이 A4 두 장 배치를 밀어낸다 */
+  .sheet > main { border: 0; border-radius: 0; margin: 0; padding: 0; background: transparent; }
+  .section { border: 0; padding: 0; background: transparent; margin-top: var(--s2); }
+  .table-wrap { border: 0; border-radius: 0; }
+  span.num[data-num] { padding: 0; background: transparent; box-shadow: none; }
+  .alert { border-radius: 0; }
+}

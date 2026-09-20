@@ -1,72 +1,86 @@
 /* ============================================================
-   도면 (Drawing Sheet) — Jacob 개인 디자인 시스템 v2.0
-   2026-08-29 개정: 따뜻한 종이(플라스터) 팔레트를 접고 뉴트럴 흑백으로.
-   레퍼런스는 Vercel 대시보드 — 흰 면, 거의 검은 글자, 옅은 회색 괘선,
-   유채색은 상태 표시에만. 구조 언어(치수선·도면 좌표·표제란)는 유지한다.
+   도면 (Drawing Sheet) — Jacob 개인 디자인 시스템 v3.0
+   2026-09-20 개정: 레퍼런스를 Vercel 대시보드에서 **GitHub(Primer)** 로 옮겼다.
 
-   v1 → v2 변경
-   - 팔레트 전면 교체 (#E9E7E1 종이 → #FAFAFA/#FFFFFF 뉴트럴)
-   - 강조를 색(적선)에서 **대비**로 이전 — 활성은 검정 면, 호버는 옅은 면.
-     색만으로 구분하던 곳을 굵기·채움으로 바꿨다 (흑백 인쇄·색각 대응)
-   - radius 0 → 6px, 그림자 없음 → 1px 링 (Vercel 룩)
-   - `.sheet > main` 을 패딩 규칙에 포함 (v1 누락 버그: main 만 여백 0 이었다)
+   왜 — 이 제품의 화면은 표·숫자·출처 셀이 대부분이다. 밀도가 높은 화면을
+   읽히게 만드는 일에서 GitHub 만큼 오래 다듬은 레퍼런스가 없다. 특히
+   GitHub 의 인라인 <code> 칩은 우리 <Num> 출처 셀과 하는 일이 같다 —
+   "이 값은 기계가 낸 것이고 사람이 손대지 않았다".
 
-   서체 로드(구글 폰트) — 한글 본문이 있는 페이지는 반드시 KR 서체를 포함할 것:
-   https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap
+   v2 → v3 변경
+   - 바탕을 흰 시트에서 **캔버스(#F6F8FA) 위 흰 박스**로. 절(.section)이 곧 Box 다
+   - 상단바를 어두운 헤더(#24292F) + 밑줄 탭으로 (GitHub Header + Underline nav)
+   - radius 6px 유지, 보더·괘선을 Primer 계조로 (값은 무채색으로 옮겼다)
+   - **파랑 링크는 넣지 않았다.** GitHub 의 색을 그대로 가져오면 2026-09-12
+     흑백 규율(사용자 지시 8)을 뒤집는다. 결은 색이 아니라 구조로 낸다 —
+     캔버스 위 박스 · 어두운 헤더 · 밑줄 탭 · 인라인 code 칩 · 표 머리 면
+   - 굵기 600 추가 (GitHub 헤딩). layout.tsx 의 폰트 weight 와 짝이다
+   - 폭 768px·390px 규칙 추가 — "웹·앱 구현 부문"인데 모바일이 범위 밖이었다
+
+   되돌리지 않은 것 (v2 결정 유지)
+   - **등급은 색이 아니라 형태로 구분한다** (실선·점선·파선·굵기).
+     흑백 인쇄·색각 대응이고 e2e D1-13 이 경보색 부활을 막는다.
+   - 출처 없는 숫자는 화면에 없다. <Num> 밖 숫자는 e2e 가 센다.
    ============================================================ */
 
 :root {
-  /* 색 — 뉴트럴 그레이스케일 */
-  --paper:    #FAFAFA;  /* 페이지 바탕 */
-  --surface:  #FFFFFF;  /* 시트·카드 면 */
-  --raised:   #F5F5F5;  /* 호버·비활성 강조 면 */
-  --ink:      #171717;  /* 본문·헤드라인 */
-  --concrete: #666666;  /* 보조 텍스트 */
-  --line:     #EBEBEB;  /* 헤어라인 괘선 */
-  --line-strong: #D4D4D4; /* 강조 괘선 */
+  /* 색 — GitHub Primer (light) */
+  --canvas:   #F6F8FA;  /* 페이지 바탕 */
+  --paper:    #F6F8FA;  /* v1·v2 호환 이름 */
+  --surface:  #FFFFFF;  /* 박스 면 */
+  --raised:   #F6F8FA;  /* 호버·표 머리 면 */
+  --ink:      #1F2328;  /* 본문·헤드라인 */
+  --concrete: #5E6469;  /* 보조 텍스트 (Primer fg.muted) */
+  --line:     #D6D8DA;  /* 보더 (Primer 보더를 무채색으로 옮긴 값) */
+  --line-soft:#E4E8EB;  /* 내부 구분선 */
+  --line-strong: #939699; /* 강조 괘선 */
 
   /* 강조는 색이 아니라 대비다. 이름은 v1 호환으로 남긴다 */
-  --redline:  #171717;
+  --redline:  #1F2328;
 
-  /* 상태 — 유채색은 여기서만 쓴다 (경보·성공·경고) */
-  --severe:    #171717;  /* 2026-09-12 흑백 전환 — 이름은 유지, 값만 무채색. 등급은 형태(data-label)로 구분 */
-  --severe-bg: #EDEDED;
-  --caution:   #444444;
-  --caution-bg:#F5F5F5;
+  /* 상태 — 등급은 무채색이다 (2026-09-12 결정, v3 유지) */
+  --severe:    #1F2328;
+  --severe-bg: #EAEEF2;
+  --caution:   #4A4F53;
+  --caution-bg:#F6F8FA;
 
-  /* 화면에서 유일한 유채색 — "당신의 기획안이 여기 있다"(지도 핀)에만 쓴다. 상태·버튼·링크에는 쓰지 않는다 */
-  --accent:       #2F7BEE;
-  --accent-deep:  #0F4FB8;
-  --accent-light: #7FB2F5;
+  /* 링크는 무채색이다 — 본문과 같은 잉크, 호버에 밑줄 (흑백 규율) */
+  --link:         #1F2328;
 
-  /* 서체 — var(--font-*-loaded) 는 next/font 등에서 주입되면 우선한다 */
-  --font-display: var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif; /* 한글 헤드라인에 라틴 서체(Archivo)를 섞지 않는다 */
-  --font-body:    var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
-  /* 세리프는 아무도 로드하지 않아 바탕체로 떨어졌다 — 본문 서체로 (2026-09-10) */
+  /* 유일한 유채색 — 또래 띠의 "이 기획안" 표식에만. lib/design.test.ts D-1·D-3 이 잰다 */
+  --accent:       #0969DA;
+  --accent-deep:  #0A3069;
+  --accent-light: #54AEFF;
+
+  /* 서체 — var(--font-*-loaded) 는 next/font 에서 주입된다 */
+  --font-display: var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", -apple-system, "Segoe UI", sans-serif;
+  --font-body:    var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", -apple-system, "Segoe UI", sans-serif;
   --font-serif:   var(--font-body-loaded), "Pretendard", "IBM Plex Sans KR", sans-serif;
   /* 모노는 라틴 전용이라 한글이 시스템 폴백으로 떨어진다. 글자 단위 폴백이므로 KR 서체를 사슬에 끼운다 */
   --font-mono:    var(--font-mono-loaded), "IBM Plex Mono", var(--font-body-loaded), "IBM Plex Sans KR", "Pretendard", "Consolas", monospace;
 
-  /* 타입 스케일 (1.333 배수 기반) */
+  /* 타입 스케일 — GitHub 에 맞춰 본문을 14px 로 내리고 밀도를 올린다 */
   --text-xs:   0.75rem;
-  --text-sm:   0.875rem;
-  --text-base: 1.0625rem;
-  --text-lg:   1.333rem;
-  --text-xl:   1.777rem;
-  --text-2xl:  2.369rem;
-  --text-display: clamp(2.1rem, 4.2vw, 3.2rem);
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  2rem;
+  --text-display: clamp(1.9rem, 3.6vw, 2.75rem);
 
-  /* 간격 — 8px 모듈 */
+  /* 간격 — 8px 모듈. 인쇄(A4 2장)가 물고 있어 값은 그대로 둔다 */
   --s1: 0.5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2rem;
   --s6: 3rem;    --s8: 4rem;  --s12: 6rem;
 
-  /* 화면 전용 절 간격. --s* 모듈은 인쇄(A4 2장)가 물고 있어 건드리지 않는다 (2026-09-12) */
-  --gap-section: clamp(3.5rem, 8vw, 7rem);
+  /* 화면 전용 절 간격 — 박스 사이 간격이라 v2보다 좁다 */
+  --gap-section: clamp(1.5rem, 3vw, 2rem);
 
-  --radius: 0;
-  --ring: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --ring: 0 0 0 1px var(--line);
+  --focus-ring: 0 0 0 3px rgba(31, 35, 40, 0.22);
 
-  --sheet-max: 1200px;
+  --sheet-max: 1280px;
   color-scheme: light;
 }
 
@@ -75,66 +89,64 @@
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--text-base);
-  line-height: 1.7;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: var(--ink); color: var(--surface); }
+::selection { background: rgba(31, 35, 40, 0.15); }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--link);
+  outline-offset: -1px;
+  border-radius: var(--radius-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* ---------- 시트(페이지 컨테이너) ---------- */
+/* ---------- 시트(페이지 컨테이너) ----------
+   v2 의 "흰 종이 한 장"에서 "캔버스 위 컨테이너"로. 흰 면은 이제 절(.section)이 갖는다 */
 .sheet {
   max-width: var(--sheet-max);
   margin: 0 auto;
-  background: var(--surface);
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
+  background: transparent;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* main 이 빠져 있으면 본문만 여백 0 이 되어 시트 테두리에 붙는다 (v1 버그) */
 .sheet > section,
 .sheet > main,
 .sheet > header,
 .sheet > footer {
-  padding: var(--s8) clamp(var(--s3), 5vw, var(--s12));
+  padding: var(--s4) clamp(var(--s2), 3vw, var(--s4));
 }
 
 /* ---------- 타이포그래피 ----------
-   2026-09-12 개정: 굵기는 400/500 둘뿐이다. 위계는 크기와 여백으로 세운다.
-   대문자·양수 자간·모노 라벨은 쓰지 않는다 (장식 0). */
-h1, h2, h3 { margin: 0 0 var(--s3); line-height: 1.15; text-wrap: balance; word-break: keep-all; }
+   GitHub 은 헤딩을 600 으로 세운다. 위계는 크기·굵기·아래 헤어라인 셋으로 */
+h1, h2, h3 { margin: 0 0 var(--s2); line-height: 1.25; text-wrap: balance; word-break: keep-all; }
 
 .display {
   font-family: var(--font-display);
-  font-size: clamp(2.6rem, 6vw, 4.6rem);
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  line-height: 1.02;
-  margin-bottom: var(--s3);
+  font-size: var(--text-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: var(--s2);
 }
 
-h1 { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 500; letter-spacing: -0.03em; }
-h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 500; letter-spacing: -0.02em; }
-h3 { font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.01em; }
+h1 { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: var(--text-lg); font-weight: 600; }
 
 .serif-head {
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--text-xl);
   line-height: 1.35;
   letter-spacing: 0;
@@ -142,52 +154,77 @@ h3 { font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.01em; }
 
 .lede {
   font-size: var(--text-lg);
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--concrete);
-  max-width: 30em;
-  margin: 0 0 var(--s4);
+  max-width: 34em;
+  margin: 0 0 var(--s3);
 }
 
-/* 한 음절("다.")이 홀로 다음 줄로 내려가지 않게 — 어절 단위로만 줄을 바꾼다 */
-p { margin: 0 0 var(--s2); max-width: 65ch; word-break: keep-all; text-wrap: pretty; }
+p { margin: 0 0 var(--s2); max-width: 70ch; word-break: keep-all; text-wrap: pretty; }
 .muted { color: var(--concrete); }
 
-a { color: var(--ink); text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
-a:hover { text-decoration-color: var(--ink); }
+/* 링크 — GitHub 은 밑줄 없이 파랑, 호버에 밑줄 */
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
 
-/* 절 사이 — 라벨(SECTION A —)·치수선·눈썹은 2026-09-12 에 걷었다. 절은 여백과 헤어라인으로만 갈린다 */
-.section { margin-top: var(--gap-section); padding-top: var(--s3); border-top: 1px solid var(--line); }
+/* ---------- 본문 = Box ----------
+   GitHub 의 콘텐츠 면(저장소 본문)이 이 제품의 main 이다. 캔버스 위에 흰 박스 하나.
+   절(.section)은 그 박스 안의 구분선이지 또 다른 박스가 아니다 — 박스를 겹치면
+   테두리가 두 번 그려져 오히려 안 읽힌다. */
+.sheet > main {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin: var(--s3) clamp(var(--s2), 3vw, var(--s4)) var(--s8);
+  padding: var(--s4) clamp(var(--s3), 4vw, var(--s6));
+}
+/* 시뮬레이션은 세 패널이 각자 박스다. 바깥 박스를 한 겹 더 두르지 않는다 */
+.venue-sheet > main {
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: var(--s3) clamp(var(--s2), 3vw, var(--s4)) var(--s6);
+}
+
+.section {
+  margin-top: var(--gap-section);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line-soft);
+}
+.section > :first-child { margin-top: 0; }
+.section > :last-child { margin-bottom: 0; }
 
 /* ---------- 버튼 ----------
-   활성/주 동작 = 검정 면. 부 동작 = 흰 면 + 괘선. 호버 = 면 밝기 변화.
-   색이 아니라 채움으로 갈리므로 흑백 인쇄·색각에서도 구분된다. */
+   Primer Button. 주 동작은 검정 면 — 초록을 쓰지 않는다(성공 신호로 읽힌다).
+   부 동작은 흰 면 + 보더, 호버는 면 밝기만 바꾼다 */
 .btn {
   display: inline-block;
   font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: 500;
-  padding: 0.55em 1.1em;
-  border: 1px solid var(--line-strong);
+  line-height: 20px;
+  padding: 5px 16px;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--surface);
+  background: #F6F8FA;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  transition: background 0.1s, border-color 0.1s;
 }
-.btn:hover { background: var(--raised); border-color: var(--ink); }
+.btn:hover { background: #EAEEF2; border-color: var(--line-strong); text-decoration: none; }
+.btn:active { background: #E1E5EA; }
 
-/* 주 동작 — v1 의 .btn-redline 자리. 이름은 호환으로 남긴다 */
 .btn-primary,
 .btn-redline {
   background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
+  border-color: rgba(31, 35, 40, 0.15);
+  color: #FFFFFF;
 }
 .btn-primary:hover,
-.btn-redline:hover { background: #000; border-color: #000; color: var(--surface); }
+.btn-redline:hover { background: #2E3237; border-color: rgba(31, 35, 40, 0.15); color: #FFFFFF; }
 
-/* ---------- 카드 ---------- */
+/* ---------- 카드 = Box 목록 행 ---------- */
 .card-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -195,23 +232,30 @@ a:hover { text-decoration-color: var(--ink); }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
+  background: var(--surface);
 }
 .card {
-  padding: var(--s4);
-  border-right: 1px solid var(--line);
+  padding: var(--s2);
+  border-right: 1px solid var(--line-soft);
   background: var(--surface);
 }
 .card:last-child { border-right: 0; }
-.card h3 { margin-bottom: var(--s1); }
+.card h3 { margin-bottom: var(--s1); font-size: var(--text-base); }
 .card p { font-size: var(--text-sm); color: var(--concrete); margin: 0; }
 
-@media (max-width: 720px) {
-  .card { border-right: 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 768px) {
+  .card { border-right: 0; border-bottom: 1px solid var(--line-soft); }
   .card:last-child { border-bottom: 0; }
 }
 
-/* ---------- 테이블 ---------- */
-.table-wrap { overflow-x: auto; }
+/* ---------- 테이블 ----------
+   GitHub 표: 머리 행은 옅은 면, 행 구분은 헤어라인, 수치는 tabular */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -220,52 +264,76 @@ table {
 }
 th, td {
   text-align: left;
-  padding: var(--s2) var(--s2);
-  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line-soft);
 }
+tr:last-child > td { border-bottom: 0; }
 th {
   font-size: var(--text-sm);
-  font-weight: 400;
-  color: var(--concrete);
-  border-bottom: 1px solid var(--line-strong);
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--raised);
+  border-bottom: 1px solid var(--line);
 }
 
 /* ---------- 상단 바 ----------
-   워드마크(텍스트) + 링크 셋 + 헤어라인. 시트 위에 붙어 따라온다. 표제란(푸터)은 걷었다 */
+   GitHub Header — 어두운 바가 화면 폭을 가득 채우고, 그 안에서만 시트 폭을 지킨다 */
 .topbar {
   position: sticky;
   top: 0;
   z-index: 20;
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s3);
-  padding: var(--s2) clamp(var(--s3), 5vw, var(--s12)) !important;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  padding: 0.75rem clamp(var(--s2), 3vw, var(--s4)) !important;
+  background: #24292F;
+  border-bottom: 1px solid #24292F;
+  /* 캔버스 폭 전체로 번지되 내용은 시트 안에 — 100vw 트릭 */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding-left: max(clamp(var(--s2), 3vw, var(--s4)), calc(50vw - var(--sheet-max) / 2 + var(--s2))) !important;
+  padding-right: max(clamp(var(--s2), 3vw, var(--s4)), calc(50vw - var(--sheet-max) / 2 + var(--s2))) !important;
 }
 .topbar .logo {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--text-base);
   letter-spacing: -0.01em;
   text-decoration: none;
-  color: var(--ink);
+  color: #FFFFFF;
 }
-.topbar nav { display: flex; gap: var(--s3); }
+.topbar nav { display: flex; gap: var(--s2); }
 .topbar nav a {
   font-size: var(--text-sm);
+  font-weight: 500;
   text-decoration: none;
-  color: var(--concrete);
-  padding-bottom: 2px;
-  border-bottom: 1px solid transparent;
+  color: #C6C8CA;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  border-bottom: 2px solid transparent;
 }
-.topbar nav a:hover { color: var(--ink); }
-/* 활성 탭은 색이 아니라 밑줄로 — 흑백에서도 갈린다 */
+.topbar nav a:hover { color: #FFFFFF; background: rgba(255, 255, 255, 0.08); text-decoration: none; }
+/* 활성 탭은 색이 아니라 밑줄로 — 흑백에서도 갈린다 (v2 결정 유지) */
 .topbar nav a[aria-current] {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
+  color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+  border-radius: 0;
 }
 
-/* 시트 본문 — 상단바 아래 첫 절은 넉넉히 띄운다 */
-.sheet > main { padding-top: var(--gap-section); padding-bottom: var(--gap-section); }
+
+
+/* ---------- 좁은 화면 ----------
+   "웹·앱 구현 부문"인데 모바일이 범위 밖이었다 (알려진 약점). 가로 스크롤을 없앤다 */
+@media (max-width: 768px) {
+  :root { --text-display: 1.75rem; --text-2xl: 1.5rem; --text-xl: 1.25rem; }
+  .sheet > section,
+  .sheet > main,
+  .sheet > header,
+  .sheet > footer { padding-left: var(--s2); padding-right: var(--s2); }
+  .topbar { flex-wrap: wrap; gap: var(--s1); align-items: flex-start; }
+  .topbar nav { width: 100%; overflow-x: auto; }
+  .section { padding: var(--s2); }
+  p, .lede { max-width: none; }
+  img, svg, canvas { max-width: 100%; }
+}
