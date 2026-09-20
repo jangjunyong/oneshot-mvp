@@ -31,7 +31,7 @@ TEAM = "장준용 (숭실대학교 AI소프트웨어학부)"
 SITE = "https://oneshot-mvp.vercel.app"
 CALL_COUNT_KT = ""      # data.go.kr 마이페이지의 호출건수. 예: "8,921건". 모르면 "" (문장이 빠진다)
 CALL_COUNT_FEST = ""
-C = "캡처_2026-09-18/crop/"
+C = "캡처/"
 IMAGES = {
     "flow1": [C + "f1_1_home.png", C + "f1_2_underlay.png", C + "f1_3_venue.png", C + "f1_4_panel.png"],
     "flow2": [C + "f2_1_verdict.png", C + "f2_2_stages.png", C + "f2_3_range.png", C + "f2_4_first.png"],
