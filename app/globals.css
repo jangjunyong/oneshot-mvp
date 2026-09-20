@@ -1400,4 +1400,7 @@ form label, .check-form legend, .pin-detail dt, .check-bridge-facts dt, .entry >
   .table-wrap { border: 0; border-radius: 0; }
   span.num[data-num] { padding: 0; background: transparent; box-shadow: none; }
   .alert { border-radius: 0; }
+  /* 종이에서는 면을 쓰지 않는다 — 잉크만 먹는다 (v4) */
+  .alert, .dropzone, .check-table tr[data-peak], .season-table tr[data-plan] { background: transparent !important; }
+  .sheet > main > h1:first-child { border-bottom-width: 1px; padding-bottom: 0.2rem; margin-bottom: 0.3rem; }
 }
