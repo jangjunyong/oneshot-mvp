@@ -44,43 +44,61 @@ const 첫회 =
 /** 절(.section) 을 제목 글자로 고른다 — 클래스가 바뀌어도 살아남는 선택자 */
 const 절 = (글자) => ({ kind: "section", text: 글자 });
 
+/** 흐름도 칸의 가로세로비 — 양식 표의 한 칸이 3.01×2.39in 이다.
+ *  여기에 맞춰 잘라야 네 칸이 같은 크기로 앉는다. 비율이 제각각이면 put_picture 가
+ *  높이에 맞춰 더 줄여 버려서 어떤 칸은 우표만 해지고 어떤 칸은 글자가 뭉개진다. */
+const TILE = 3.01 / 2.39;
+/** 9장 대표 이미지 칸은 10.49 x 3.06in 이라 비율이 다르다 */
+const HERO_TILE = 10.49 / 3.06;
+/** 9장 상세 칸 하나 */
+const DETAIL_TILE = 2.52 / 2.81;
+
 /**
  * 찍을 것. fill.py 의 이름을 그대로 쓴다 (docs/제출양식/fill.py 의 IMG 표).
  * target: css 선택자 | 절("제목 일부") | "page"(전체)
  */
+const SIM_SPEED = `const el = document.querySelector('.sim-toolbar input[type=range]'); if (el) { const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; set.call(el, '60'); el.dispatchEvent(new Event('input', { bubbles: true })); }`;
+
 const SHOTS = [
   // 대표·상세
-  { file: "hero_wide.png", url: `/check?${군포}`, target: ".check-main", width: 1440, clipMax: 900 },
+  { file: "hero_wide.png", url: `/check?${군포}`, target: ".check-layout", width: 1600, tile: "hero" },
   { file: "detail_panels.png", url: `/check?${군포}`, target: ".check-table", width: 1280 },
 
   // 흐름 1 — 기획서를 넣는다 → 도면 위에서 본다
-  { file: "f1_1_home.png", url: "/", target: "main", width: 1100, clipMax: 720 },
-  { file: "f1_2_underlay.png", url: `/venue?${군포}`, target: ".sim-panel", width: 1440, wait: 7000, clipMax: 520 },
-  { file: "f1_3_venue.png", url: `/venue?${군포}`, target: ".sim-map-col", width: 1440, wait: 7000 },
-  { file: "f1_4_panel.png", url: `/venue?${군포}`, target: ".sim-panel:has(.sim-kpi)", width: 1440, wait: 7000, clipMax: 560 },
+  { file: "f1_1_home.png", url: "/", target: "main", width: 400, tile: true },
+  { file: "f1_2_underlay.png", url: `/venue?${군포}`, target: ".sim-panel", width: 400, wait: 7000, tile: true },
+  { file: "f1_3_venue.png", url: `/venue?${군포}`, target: ".sim-map", width: 400, wait: 8000, js: SIM_SPEED, clicks: ["최대 밀도"], run: 60000, tile: true },
+  { file: "f1_4_panel.png", url: `/venue?${군포}`, target: ".sim-kpi", width: 400, wait: 8000, js: SIM_SPEED, run: 60000, tile: true },
 
   // 흐름 2 — 판정
-  { file: "f2_1_verdict.png", url: `/check?${군포}`, target: 절("판정"), width: 1100 },
-  { file: "f2_2_stages.png", url: `/check?${군포}`, target: ".check-table", width: 1100 },
-  { file: "f2_3_range.png", url: `/check?${군포}`, target: ".range-card", width: 1100 },
-  { file: "f2_4_first.png", url: `/check?${첫회}`, target: ".check-main", width: 1100, clipMax: 900 },
+  { file: "f2_1_verdict.png", url: `/check?${군포}`, target: ".alert[data-labeled]", until: ".check-sentence", view: 1280, width: 660, tile: true },
+  { file: "f2_2_stages.png", url: `/check?${군포}`, target: ".check-table", view: 1280, width: 600, tile: true },
+  { file: "f2_3_range.png", url: `/check?${군포}`, target: ".range-card:not(.budget-card):not(.first-edition)", width: 400, tile: true },
+  { file: "f2_4_first.png", url: `/check?${첫회}`, target: ".check-main", width: 400, tile: true },
 
   // 흐름 3 — 다른 축제·예산·귀속·보고서
-  { file: "f3_1_other.png", url: `/check?${화천}`, target: ".check-main", width: 1100, clipMax: 900 },
-  { file: "f3_2_budget.png", url: `/check?${군포}`, target: ".budget-card", width: 1100 },
-  { file: "f3_3_attrib.png", url: `/check?${군포}`, target: ".rival-surge, .attribution", width: 1100, open: true },
-  { file: "f3_4_report.png", url: `/report/check?${군포}`, target: ".report-page", width: 1000 },
+  { file: "f3_1_other.png", url: `/check?${화천}`, target: ".check-main", view: 1280, width: 620, tile: true },
+  { file: "f3_2_budget.png", url: `/check?${군포}`, target: ".budget-card", width: 400, tile: true },
+  { file: "f3_3_attrib.png", url: `/check?${군포}`, target: ".rival-surge, .attribution", view: 1280, width: 560, tile: true },
+  { file: "f3_4_report.png", url: `/report/check?${군포}`, target: ".report-page", view: 1280, width: 600, tile: true },
 
   // 흐름 4 — 근거
-  { file: "f4_1_datause.png", url: `/check?${군포}`, target: ".data-usage", width: 1100 },
-  { file: "f4_2_evidence.png", url: `/evidence?${군포}`, target: ".evidence-fig", width: 1100, clipMax: 900 },
-  { file: "f4_3_twins.png", url: `/check?${군포}`, target: ".twins", width: 1100, clipMax: 900 },
-  { file: "f4_4_history.png", url: `/evidence?${군포}`, target: "table.check-table", width: 1100, open: true, clipMax: 700 },
+  { file: "f4_1_datause.png", url: `/check?${군포}`, target: ".data-usage", view: 1280, width: 720, tile: true },
+  { file: "f4_2_evidence.png", url: `/evidence?${군포}`, target: ".evidence-fig", width: 400, tile: true },
+  { file: "f4_3_twins.png", url: `/check?${군포}`, target: ".twin-map", width: 400, wait: 4000, clicks: ["자연·꽃", "좋음"], focus: 3000, tile: true },
+  { file: "f4_4_history.png", url: `/evidence?${군포}`, target: "table.check-table", view: 1280, width: 780, open: true, tile: true },
+
+  // 9장 상세 이미지 4장 - 양식이 "서비스 주요 화면 이미지 3~5개"를 요구한다.
+  // 칸 하나가 2.52 x 2.81in (비율 0.897) 이라 그 비율로 찍는다
+  { file: "d1_home.png", url: "/", target: "main", width: 430, tile: "detail" },
+  { file: "d2_report.png", url: `/report/check?${군포}`, target: ".report-page", width: 470, tile: "detail" },
+  { file: "d3_evidence.png", url: `/evidence?${군포}`, target: "main", width: 430, tile: "detail" },
+  { file: "d4_venue.png", url: `/venue?${군포}`, target: ".sim-map", width: 430, wait: 8000, js: SIM_SPEED, clicks: ["최대 밀도"], run: 60000, tile: "detail" },
 
   // 전체 화면 (문서 밖 참고용)
   { file: "page_home.png", url: "/", target: "page", width: 1280 },
   { file: "page_check.png", url: `/check?${군포}`, target: "page", width: 1280 },
-  { file: "page_venue.png", url: `/venue?${군포}`, target: "page", width: 1440, wait: 3500 },
+  { file: "page_venue.png", url: `/venue?${군포}`, target: "page", width: 1440, wait: 8000, js: SIM_SPEED, clicks: ["최대 밀도"], run: 60000 },
   { file: "page_evidence.png", url: `/evidence?${군포}`, target: "page", width: 1280 },
   { file: "page_report.png", url: `/report/check?${군포}`, target: "page", width: 1000 },
   { file: "page_mobile.png", url: `/check?${군포}`, target: "page", width: 390 },
@@ -150,6 +168,9 @@ async function main() {
       "--remote-debugging-port=9333",
       "--hide-scrollbars",
       "--disable-gpu",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
       "--no-first-run",
       "--no-default-browser-check",
       "--user-data-dir=" + join(process.env.TEMP || "/tmp", "capture-profile"),
@@ -207,7 +228,35 @@ async function main() {
   }
 
   async function 찍는다(shot) {
-    await 연다(shot.url, shot.width, shot.wait);
+    await 연다(shot.url, shot.view ?? shot.width, shot.wait);
+
+    // 슬라이더처럼 눌러서는 못 바꾸는 것 (React 제어 입력)
+    if (shot.js) {
+      await S("Runtime.evaluate", { expression: shot.js });
+      await 잠깐(600);
+    }
+
+    // 고르기 전에는 내용이 안 서는 화면이 있다 (닮은 축제는 테마·접근성을 골라야 뜬다)
+    for (const 라벨 of shot.clicks ?? []) {
+      const { result } = await S("Runtime.evaluate", {
+        expression: `(() => { const t = ${JSON.stringify(라벨)};
+          const b = [...document.querySelectorAll('button, a, label')].find((x) => x.textContent.trim() === t);
+          if (!b) return 'none'; b.click(); return 'ok'; })()`,
+        returnByValue: true,
+      });
+      if (result.value !== "ok") console.log(`  (${shot.file}: [${라벨}] 를 못 눌렀다)`);
+      await 잠깐(1200);
+    }
+
+    // 시뮬은 돌아가는 그림이어야 한다 — [시뮬레이션 시작]을 누르고 기다린다
+    if (shot.run) {
+      const { result } = await S("Runtime.evaluate", {
+        expression: `(() => { const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === '시뮬레이션 시작'); if (!b || b.disabled) return 'no'; b.click(); return 'ok'; })()`,
+        returnByValue: true,
+      });
+      if (result.value === "ok") await 잠깐(shot.run);
+      else console.log(`  (${shot.file}: [시뮬레이션 시작]을 못 눌렀다 — ${result.value})`);
+    }
 
     // 접힌 것 안은 크기가 0 이라 못 잰다. 기능설명서 그림은 펴 놓고 찍는다
     if (shot.open) {
@@ -217,19 +266,37 @@ async function main() {
       await 잠깐(400);
     }
 
+    // 지도는 화면에 들어와야 그린다 (IntersectionObserver). 필요한 장만 스크롤해 깨운다
+    if (shot.focus && typeof shot.target === "string") {
+      await S("Runtime.evaluate", {
+        expression: `document.querySelector(${JSON.stringify(shot.target)})?.scrollIntoView({ block: "center" })`,
+      });
+      await 잠깐(shot.focus === true ? 2500 : shot.focus);
+    }
+
     let clip = null;
     if (shot.target !== "page") {
-      const b = await 상자(shot.target);
+      let b = await 상자(shot.target);
+      if (b && shot.until) {
+        const 끝 = await 상자(shot.until);
+        if (끝) b = { x: Math.min(b.x, 끝.x), y: b.y, w: Math.max(b.w, 끝.w), h: 끝.y + 끝.h - b.y };
+      }
       if (!b || b.w < 20 || b.h < 20) {
         console.log(`  건너뜀 ${shot.file} — 대상을 못 찾음 (${JSON.stringify(shot.target)})`);
         return false;
       }
       const pad = 12;
+      let w = Math.min(b.w + pad * 2, shot.width);  // view 가 있으면 왼쪽 일부만 잘라 글자 크기를 지킨다
+      let h = Math.min(b.h + pad * 2, shot.clipMax ?? 2400);
+      if (shot.tile) {
+        // 칸 비율로 맞춘다 — 모자라면 아래를 더 담고, 넘치면 아래를 자른다
+        h = Math.round(w / (shot.tile === "hero" ? HERO_TILE : shot.tile === "detail" ? DETAIL_TILE : TILE));
+      }
       clip = {
         x: Math.max(0, b.x - pad),
         y: Math.max(0, b.y - pad),
-        width: Math.min(b.w + pad * 2, shot.width),
-        height: Math.min(b.h + pad * 2, shot.clipMax ?? 2400),
+        width: w,
+        height: h,
         scale: 1,
       };
     } else {
@@ -277,6 +344,26 @@ async function main() {
       else server.kill();
     }
   }
+}
+
+/** 서로 다른 그림인지 — 선택자가 겹치면 두 칸에 같은 사진이 들어간다 (2026-09-21 에 실제로 두 쌍이 그랬다) */
+async function 중복검사() {
+  const { createHash } = await import("node:crypto");
+  const { readFileSync, readdirSync } = await import("node:fs");
+  const 본것 = new Map();
+  const 겹침 = [];
+  for (const f of readdirSync(OUT).filter((x) => x.endsWith(".png")).sort()) {
+    const h = createHash("md5").update(readFileSync(join(OUT, f))).digest("hex");
+    if (본것.has(h)) 겹침.push(본것.get(h) + " == " + f);
+    else 본것.set(h, f);
+  }
+  if (겹침.length === 0) {
+    console.log("중복 없음 — 그림이 전부 서로 다르다");
+    return;
+  }
+  console.log("\n같은 그림이 두 번 찍혔다 (선택자가 겹친다):");
+  for (const x of 겹침) console.log("  " + x);
+  process.exitCode = 1;
 }
 
 /** 상세 이미지(양식 "상세 이미지 3~5장") — page_home·page_check·page_evidence·page_venue 를 한 장으로 */

@@ -18,7 +18,7 @@ PANELS = [
     ("③ 실측 근거 — 연도별 곡선·표", "page_evidence.png"),
     ("④ 시뮬레이션 — 도면 위 보행자", "page_venue.png"),
 ]
-W, CAP, PAD, BODY = 1100, 46, 20, 700
+W, CAP, PAD, BODY = 1000, 44, 16, 1150
 
 font = ImageFont.truetype(FONT, 26)
 cells = []
@@ -37,10 +37,11 @@ for label, name in PANELS:
     d.rectangle([0, 0, W - 1, cell.height - 1], outline=(140, 140, 140), width=2)
     cells.append(cell)
 
+# 가로 한 줄 — 양식의 상세 이미지 칸이 가로로 길어서, 2×2 로 붙이면 높이에 걸려 우표만 해진다
 ch = max(c.height for c in cells)
-out = Image.new("RGB", (W * 2 + PAD * 3, ch * 2 + PAD * 3), "white")
-for c, xy in zip(cells, [(PAD, PAD), (W + PAD * 2, PAD), (PAD, ch + PAD * 2), (W + PAD * 2, ch + PAD * 2)]):
-    out.paste(c, xy)
+out = Image.new("RGB", (W * 4 + PAD * 5, ch + PAD * 2), "white")
+for n, c in enumerate(cells):
+    out.paste(c, (PAD + n * (W + PAD), PAD))
 
 dst = os.path.join(OUT, "detail_4up.png")
 out.save(dst)
