@@ -1390,6 +1390,35 @@ form label, .check-form legend, .pin-detail dt, .check-bridge-facts dt, .entry >
   .sheet > main > h1:first-child { padding-bottom: var(--s1); margin-bottom: var(--s2); }
 }
 
+
+/* ── v4 후속 수정 (2026-09-21, 적대 검증 반영) ───────────────────────────
+   1) 링크가 본문과 같은 잉크라 링크로 안 보였다 — 밑줄로 어포던스를 준다(색은 그대로 무채)
+   2) 자기 이력 표가 table-layout:fixed 라 넘친 글자가 옆 칸 칩 위로 흘렀다
+   3) 좁은 화면에서 본문 표가 한 글자씩 세로로 으깨졌다 — 가로로 넘긴다
+   ─────────────────────────────────────────────────────────────────── */
+main a:not(.btn):not(.button-link):not(.topbar a) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--line-strong);
+}
+main a:not(.btn):not(.button-link):hover { text-decoration-color: var(--ink); }
+
+/* 넘친 글자가 옆 칸을 침범하지 않는다 */
+.check-side .check-table td { overflow: hidden; }
+
+@media (max-width: 768px) {
+  /* 표를 줄여 뭉개지 말고 제 안에서 옆으로 넘긴다 — 부문명이 "웹·앱 구현"이다 */
+  .check-main table.check-table,
+  .check-main table.report-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .check-main table.check-table td,
+  .check-main table.report-table td { white-space: normal; min-width: 7rem; }
+}
+
 /* ── 인쇄 ──
    보고서는 종이다. 캔버스·박스·칩은 종이에서 잉크만 먹는다 */
 @media print {
@@ -1403,4 +1432,10 @@ form label, .check-form legend, .pin-detail dt, .check-bridge-facts dt, .entry >
   /* 종이에서는 면을 쓰지 않는다 — 잉크만 먹는다 (v4) */
   .alert, .dropzone, .check-table tr[data-peak], .season-table tr[data-plan] { background: transparent !important; }
   .sheet > main > h1:first-child { border-bottom-width: 1px; padding-bottom: 0.2rem; margin-bottom: 0.3rem; }
+  /* v4 의 표 여백·머리글이 인쇄 규칙과 명시도가 같고 뒤에 있어 종이에서도 이긴다 — 여기서 되돌린다.
+     A4 두 장은 이 제품의 약속이라 scripts/print-check.mjs 가 매번 쪽수를 센다 */
+  .report-table th, .report-table td { padding: 0.1rem 0.35rem; }
+  .report-table thead th { font-size: 7.5pt; padding-bottom: 0.1rem; }
+  .report-table tbody th, .report-table tbody td { border-bottom: 1px solid var(--line); }
+  main a:not(.btn) { text-decoration: none; }
 }

@@ -1,15 +1,23 @@
 // 기획안 넣기 — 첫 화면 (2026-09-12 A2, 사용자 지시 1·3·7).
 //
 // 여기서 하는 일은 하나다: 기획서를 받아 판정(/check)으로 보낸다. PDF 가 주, 붙여넣기는 접힘.
-// 견본 버튼·데이터 셋 설명·한도 문구는 두지 않는다(2026-09-12 밤 사용자 지시) — 심사위원에게는 문서와 견본 기획서를 따로 준다.
+//
+// 2026-09-21 사용자 지시로 09-12·09-13 의 "첫 화면엔 입력만" 을 뒤집었다 — 공고문이 1차 심사를
+// "서면 및 기능심사"로 규정하고 심사위원이 서비스를 직접 여는데, 올릴 기획서가 없는 사람에게는
+// 이 화면이 막다른 길이었다. 아래 한 줄이 그 길을 연다. 완성된 판정 주소는 모델·DB·인증키를
+// 하나도 타지 않으므로, 잔액이 떨어지거나 키가 만료돼도 그 화면은 선다.
 // 저장 없음. 모델은 서버 액션(추출)에서 숫자를 옮겨 적는 데만 쓴다.
 
 import Link from "next/link";
 import { 추출 } from "@/app/actions";
 import { MAX_PLAN_TEXT } from "@/lib/types";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { checkQueryString, DEMOS } from "@/lib/checkquery";
 
 export const dynamic = "force-dynamic";
+
+/** 업로드·모델·DB 없이 열리는 완성 판정 화면 — 심사위원이 URL 만 들고 왔을 때의 길 */
+const DEMO_CHECK = `/check${checkQueryString(DEMOS.gunpo.query)}`;
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -57,6 +65,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <textarea id="planText" name="planText" rows={8} maxLength={MAX_PLAN_TEXT} />
           </details>
         </form>
+
+        <p className="intake-ways">
+          올릴 기획서가 없으면 <Link href={DEMO_CHECK}>완성된 판정 화면을 그대로 보거나</Link>,{" "}
+          <a href="/sample-plan.pdf">예비 데모 기획서(PDF)</a> 를 내려받아 위에 올려 보십시오.
+        </p>
       </main>
     </div>
   );

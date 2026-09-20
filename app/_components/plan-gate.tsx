@@ -6,6 +6,9 @@
 // 아니라 문서 둘(양식·안내)로 보내므로 09-13 결정("예시가 사이트에 있는 게 싫다")과 어긋나지 않는다.
 
 import Link from "next/link";
+import { checkQueryString, DEMOS } from "@/lib/checkquery";
+
+const DEMO_CHECK = `/check${checkQueryString(DEMOS.gunpo.query)}`;
 
 export function PlanGate({ title, active }: { title: string; active: "/check" | "/venue" | null }) {
   return (
@@ -24,8 +27,8 @@ export function PlanGate({ title, active }: { title: string; active: "/check" | 
           기획서를 넣으면 이 화면이 열립니다. <Link href="/">기획안 넣기 →</Link>
         </p>
         <p className="plan-gate-docs">
-          처음이라면 <a href="/plan-form.pdf">기획안 양식(PDF)</a> 으로 어떤 칸이 필요한지 보고,{" "}
-          <a href="/judge-guide.pdf">이 화면이 무엇을 내는지(3분 안내)</a> 를 펴 보십시오.
+          <Link href={DEMO_CHECK}>완성된 판정 화면 보기</Link> · <a href="/sample-plan.pdf">예비 데모 기획서(PDF)</a> ·{" "}
+          <a href="/plan-form.pdf">기획안 양식</a> · <a href="/judge-guide.pdf">3분 안내</a>
         </p>
       </main>
     </div>
