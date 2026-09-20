@@ -371,13 +371,13 @@ export default async function ReportPage({ searchParams }: PageProps<"/report">)
                       <td className="num">{m.matched}곳</td>
                       <td className="num">
                         {m.loSurge === null
-                          ? "—"
+                          ? "-"
                           : `${m.loSurge.toFixed(2)}~${m.hiSurge!.toFixed(2)}`}
                       </td>
-                      <td className="num">{m.medianSurge?.toFixed(2) ?? "—"}</td>
+                      <td className="num">{m.medianSurge?.toFixed(2) ?? "-"}</td>
                       <td>{m.level}</td>
                       <td className="num">
-                        {m.twinMonths.map((tm) => `${tm}월`).join(" ") || "—"}
+                        {m.twinMonths.map((tm) => `${tm}월`).join(" ") || "-"}
                       </td>
                     </tr>
                   ))}

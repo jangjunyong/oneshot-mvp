@@ -79,14 +79,14 @@ export function SeasonTable({ scan }: { scan: SeasonScan }) {
               <td className="num">{m.matched}곳</td>
               <td className="num">
                 {m.loSurge === null
-                  ? "—"
+                  ? "-"
                   : `${m.loSurge.toFixed(2)}~${m.hiSurge!.toFixed(2)}`}
               </td>
-              <td className="num">{m.medianSurge?.toFixed(2) ?? "—"}</td>
+              <td className="num">{m.medianSurge?.toFixed(2) ?? "-"}</td>
               <td>{m.level}</td>
               <td className="num season-twinmonths">
                 {m.twinMonths.length === 0
-                  ? "—"
+                  ? "-"
                   : m.twinMonths
                       .map((tm) => (tm === m.month ? `${tm}월✓` : `${tm}월`))
                       .join(" ")}

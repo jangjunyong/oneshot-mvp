@@ -210,7 +210,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
                       <Num m={m(y, "baseline", "전후 4주 외지인 중앙값", y.baseline, "명", `${period(y)} 전후 4주`)} />
                     </td>
                     <td>
-                      {y.baselineWeekend === null ? "—" : <Num m={m(y, "bw", "전후 4주 토·일 외지인 중앙값", y.baselineWeekend, "명", `${period(y)} 전후 4주`)} />}
+                      {y.baselineWeekend === null ? "-" : <Num m={m(y, "bw", "전후 4주 토·일 외지인 중앙값", y.baselineWeekend, "명", `${period(y)} 전후 4주`)} />}
                     </td>
                     <td>
                       <Num m={m(y, "peak", "축제 최대일 외지인", y.peakOut, "명", DATE(y.peakYmd))} />{" "}
@@ -224,7 +224,7 @@ export default async function EvidencePage({ searchParams }: PageProps<"/evidenc
                       <Num m={m(y, "total", "축제일 최대 전체 체류(현지인+외지인+외국인)", y.maxDayTotal, "명", DATE(y.maxDayTotalYmd))} />
                     </td>
                     <td>
-                      {y.visitors === null ? "—" : <Num m={m(y, "visitors", "Σ(같은 요일 외지인 순증 + 현지인 순증⁺)", y.visitors, "명")} />}
+                      {y.visitors === null ? "-" : <Num m={m(y, "visitors", "Σ(같은 요일 외지인 순증 + 현지인 순증⁺)", y.visitors, "명")} />}
                     </td>
                   </tr>
                 ))}
@@ -286,8 +286,8 @@ function DailyTable({ y, rows }: { y: HistoryYear; rows: readonly DailyRow[] }) 
             <td>
               <Num m={measured(`d-${d.ymd}-out`, "외지인 체류", d.out, "명", KT_API, DATE(d.ymd), y.fetchedAt)} />
             </td>
-            <td>{d.baseDow === null ? "—" : <Num m={measured(`d-${d.ymd}-base`, "같은 요일 전후 4주 중앙값", d.baseDow, "명", KT_API, `${DATE(y.start)}~${DATE(y.end)} 전후 4주`, y.fetchedAt)} />}</td>
-            <td>{d.deltaOut === null ? "—" : <Num m={measured(`d-${d.ymd}-delta`, "외지인 순증", d.deltaOut, "명", KT_API, DATE(d.ymd), y.fetchedAt)} />}</td>
+            <td>{d.baseDow === null ? "-" : <Num m={measured(`d-${d.ymd}-base`, "같은 요일 전후 4주 중앙값", d.baseDow, "명", KT_API, `${DATE(y.start)}~${DATE(y.end)} 전후 4주`, y.fetchedAt)} />}</td>
+            <td>{d.deltaOut === null ? "-" : <Num m={measured(`d-${d.ymd}-delta`, "외지인 순증", d.deltaOut, "명", KT_API, DATE(d.ymd), y.fetchedAt)} />}</td>
             <td className="num">{d.mult.toFixed(2)}</td>
             <td>
               <Num m={measured(`d-${d.ymd}-loc`, "현지인 체류", d.loc, "명", KT_API, DATE(d.ymd), y.fetchedAt)} />

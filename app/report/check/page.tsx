@@ -134,7 +134,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
   const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
   const cell = (key: string) => {
     const m = by.get(key);
-    return m ? <Num m={m} /> : "—";
+    return m ? <Num m={m} /> : "-";
   };
   const 이름 = q.name || `${q.sido} ${q.sigungu} 축제`;
   const 최종 = visitors?.verdict.label ?? "근거 없음";
@@ -194,7 +194,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     {cell(s.slots.denominator)}
                     {by.get(s.slots.denominator) && <span className="report-cell-label"> {by.get(s.slots.denominator)!.label}</span>}
                   </td>
-                  <td className="num">{s.ratio === null ? "—" : s.ratio.toFixed(2)}</td>
+                  <td className="num">{s.ratio === null ? "-" : s.ratio.toFixed(2)}</td>
                   <td className="report-label">{s.result}</td>
                   <td>
                     {s.threshold}
@@ -230,16 +230,16 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     "미기재"
                   )}
                 </td>
-                <td colSpan={2}>{schedule ? schedule.note : "—"}</td>
+                <td colSpan={2}>{schedule ? schedule.note : "-"}</td>
                 <td className="report-label">{schedule?.label ?? "근거 없음"}</td>
                 <td>이력 최대일 요일 포함 · 주말 포함 · 길이 ≤ 이력 최장 1.5배</td>
               </tr>
               <tr>
                 <td>주차면 · 부스 수</td>
-                <td>—</td>
+                <td>-</td>
                 <td colSpan={2}>공사 데이터에 주차·부스 수요가 없다. 담당자 확인. 부스 통로 밀도는 시뮬레이션으로 본다.</td>
                 <td className="report-label">근거 없음</td>
-                <td>—</td>
+                <td>-</td>
               </tr>
               {budget ? (
                 <tr>
@@ -258,7 +258,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                       budget.verdict.note
                     )}
                   </td>
-                  <td className="num">{budget.verdict.ratio === null ? "—" : budget.verdict.ratio.toFixed(2)}</td>
+                  <td className="num">{budget.verdict.ratio === null ? "-" : budget.verdict.ratio.toFixed(2)}</td>
                   <td className="report-label">
                     {budget.verdict.label}
                     <span className="report-cell-label">방문객 판정 상속</span>
@@ -268,10 +268,10 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
               ) : (
                 <tr>
                   <td>예산</td>
-                  <td>—</td>
+                  <td>-</td>
                   <td colSpan={2}>기획안에 예산이 없다. 예산 미공개.</td>
                   <td className="report-label">근거 없음</td>
-                  <td>—</td>
+                  <td>-</td>
                 </tr>
               )}
             </tbody>
@@ -380,7 +380,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     <td>
                       <Num m={measured(`${y.year}-t`, "축제일 최대 전체 체류", y.maxDayTotal, "명", KT_API, DATE(y.maxDayTotalYmd), y.fetchedAt)} />
                     </td>
-                    <td>{y.visitors === null || y.visitors <= 0 ? "—" : <Num m={measured(`${y.year}-v`, "Σ 같은 요일 순증", y.visitors, "명", KT_API, period(y), y.fetchedAt)} />}</td>
+                    <td>{y.visitors === null || y.visitors <= 0 ? "-" : <Num m={measured(`${y.year}-v`, "Σ 같은 요일 순증", y.visitors, "명", KT_API, period(y), y.fetchedAt)} />}</td>
                     <td>
                       {(() => {
                         const s = festivalSignal(rows, y.start, y.end, SIGNAL_CALENDAR);
@@ -389,7 +389,7 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                             {s.tier} <span className="report-cell-label">{signalNote(s)}</span>
                           </>
                         ) : (
-                          "—"
+                          "-"
                         );
                       })()}
                     </td>
@@ -428,8 +428,8 @@ export default async function CheckReportPage({ searchParams }: PageProps<"/repo
                     <td>
                       {m.origin === "input" ? (m.api === "기획안" ? "담당자 기획안" : m.api) : m.origin === "derived" ? `${m.api} (입력 ÷ 실측)` : `한국관광공사 ${m.api}`}
                     </td>
-                    <td className="num">{m.period || "—"}</td>
-                    <td className="num">{m.date || "—"}</td>
+                    <td className="num">{m.period || "-"}</td>
+                    <td className="num">{m.date || "-"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -467,7 +467,7 @@ export function explainVisitors(v: VisitorVerdict): Segment[] {
       seg.push(
         { t: "연인원으로 적었으므로 한 사람이 평균 " },
         { ratio: v.breakevenTurnover, digits: 2 },
-        { t: "회 이상 잡혀야 이 값이 선다(손익분기 회전율). 회전율은 가정하지 않는다. " },
+        { t: "회 이상 잡혀야 이 값이 선다(손익분기 회전율 = N ÷ (0.80 × 상한)). 회전율은 가정하지 않는다. " },
       );
     }
   }

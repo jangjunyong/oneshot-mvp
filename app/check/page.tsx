@@ -154,7 +154,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
   const 귀속경고 = last ? attributionCaveat(last.year, 경쟁, 경쟁상태) : null;
   const stageNum = (key: string) => {
     const m = by.get(key);
-    return m ? <Num m={m} /> : <span className="note">—</span>;
+    return m ? <Num m={m} /> : <span className="note">-</span>;
   };
 
   // 닮은 축제 블록 입력. 619건은 시 단위뿐이라 자치구("수원시 장안구")는 상위 시로 — 인구도 그 시의 행안부 값으로.
@@ -296,7 +296,16 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                                 <span className="note check-cell-label"> {by.get(s.slots.denominator)!.label}</span>
                               )}
                             </td>
-                            <td className="num">{s.ratio === null ? "—" : s.ratio.toFixed(2)}</td>
+                            <td className="num">
+                              {s.ratio === null ? "-" : s.ratio.toFixed(2)}
+                              {/* 3단계의 비는 앞 두 칸을 나눈 값이 아니라 배수끼리 나눈 값이다. 적어 두지 않으면 암산이 어긋난다 (2026-09-21) */}
+                              {s.id === "multiple" && visitors.verdict.requiredMult !== null && visitors.verdict.historyMult !== null && (
+                                <span className="note">
+                                  {" = "}
+                                  {visitors.verdict.requiredMult.toFixed(2)} ÷ {visitors.verdict.historyMult.toFixed(2)}
+                                </span>
+                              )}
+                            </td>
                             <td>
                               <span className="chip" data-level={LEVEL_OF[s.result as Label]} data-label={s.result}>
                                 {s.result}
@@ -356,7 +365,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                           <span className="note">기간 없음</span>
                         )}
                       </td>
-                      <td>{schedule ? schedule.note : "—"}</td>
+                      <td>{schedule ? schedule.note : "-"}</td>
                       <td>
                         {schedule && (
                           <span className="chip" data-level={LEVEL_OF[schedule.label]} data-label={schedule.label}>
@@ -397,7 +406,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     ].map((v) => (
                       <tr key={v.item}>
                         <th>{v.item}</th>
-                        <td className="note">—</td>
+                        <td className="note">-</td>
                         <td className="note">{v.note}</td>
                         <td>
                           <span className="chip" data-level="근거없음" data-label={v.label}>
@@ -542,7 +551,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                                 <span className="note check-cell-label"> {signalNote(signals.get(y.year)!)}</span>
                               </>
                             ) : (
-                              <span className="note">—</span>
+                              <span className="note">-</span>
                             )}
                           </td>
                         </tr>
