@@ -75,7 +75,7 @@ export function TwinsBlock(p: TwinsBlockProps) {
         <p className="note">
           {p.month === null && "기획 기간을 적으면 개최 월이 정해집니다. "}
           {p.populationManMyeong === null && "지역 인구가 없어 또래를 못 고릅니다. 위 폼의 지역 인구를 적어 주세요. "}
-          {(p.theme === null || p.acc === null) && "테마와 접근성을 고르면 닮은 축제가 섭니다."}
+          {(p.theme === null || p.acc === null) && "테마와 접근성을 고르면 닮은 축제가 나타납니다."}
         </p>
       )}
 

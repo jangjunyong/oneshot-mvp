@@ -56,7 +56,7 @@ export function DraftNote({ draft }: { draft: Draft }) {
         </p>
       )}
       <p className="note">
-        닮은 과거 축제(보조 근거)는 <Link href={`#twins`}>아래 블록 ↓</Link>에서 테마·접근성을 고르면 섭니다
+        닮은 과거 축제(보조 근거)는 <Link href={`#twins`}>아래 블록 ↓</Link>에서 테마·접근성을 고르면 나타납니다
       </p>
     </section>
   );

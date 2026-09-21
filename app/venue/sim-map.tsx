@@ -1184,14 +1184,14 @@ export default function SimMap({
             <button key={k} type="button" className={"sim-mode" + (mode === k ? " is-on" : "")} onClick={() => changeMode(k)}>{MODE_LABEL[k]}</button>
           ))}
         </div>
-        {mode === "gate" && <p className="sim-small">지도를 누르면 폭 6m 출입구가 섭니다. 선택·옮기기에서 돌리고 옮기며, 유입 몫은 아래 유입 시나리오에서 고칩니다.</p>}
+        {mode === "gate" && <p className="sim-small">지도를 누르면 폭 6m 출입구가 놓입니다. 선택·옮기기에서 돌리고 옮기며, 유입 몫은 아래 유입 시나리오에서 고칩니다.</p>}
         {(mode === "select" || mode === "booth") && (
           <label className="sim-check"><input type="checkbox" checked={snapRow} onChange={(e) => setSnapRow(e.target.checked)} /><span>이웃 줄·통로에 맞추기 (각도·3.5m 간격, 첫 부스는 도로 연석에)</span></label>
         )}
         {mode === "select" && <p className="sim-small">부스·출입구·무대를 눌러 고르고 끌어 옮긴다. 고른 것의 <strong>둥근 손잡이</strong>를 끌면 자유롭게 돈다(Shift 면 15° 단위). 네모 손잡이를 끌면 그 방향으로 3.5m 마다 같은 부스가 이어진다. 통로는 눌러 고른 뒤 폭을 바꾼다. Delete 로 지운다.</p>}
         {mode === "booth" && (
           <>
-            <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 선다(국내 조립부스 규격). 이웃 부스가 있으면 그 줄에, 없으면 가장 가까운 도로·산책로 방향으로 연석 바깥에 붙는다. 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>
+            <p className="sim-small">지도를 누르면 그 자리에 3×3m 부스가 놓인다(국내 조립부스 규격). 이웃 부스가 있으면 그 줄에, 없으면 가장 가까운 도로·산책로 방향으로 연석 바깥에 붙는다. 놓은 뒤 선택 모드에서 돌리고 옮긴다.</p>
             <label className="sim-row"><span>이름 (비우면 분류+번호)</span><input value={newBooth.name} onChange={(e) => setNewBooth({ ...newBooth, name: e.target.value })} /></label>
             <label className="sim-row"><span>분류</span>
               <select value={newBooth.cat} onChange={(e) => setNewBooth({ ...newBooth, cat: e.target.value })}>{BOOTH_CATS.map((c) => <option key={c} value={c}>{c}</option>)}</select>

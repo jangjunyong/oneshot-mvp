@@ -512,7 +512,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
                     {!range.peerMean && pop === null && (
                       <p className="alert" data-level="주의">
                         {q.sido} {q.sigungu} 의 인구가 행안부 주민등록 표에 없어(2026-07 개편으로 사라진 구 등) 또래 구간을 못 낸다. 위 폼의
-                        지역 인구(만 명)를 적으면 같은 인구 구간의 또래 구간이 선다.
+                        지역 인구(만 명)를 적으면 같은 인구 구간의 또래 구간이 나온다.
                       </p>
                     )}
                     <p className="note">배수는 평소(전후 4주 외지인 중앙값) 대비이고 명 수로 바꾸지 않는다.</p>
@@ -521,7 +521,7 @@ export default async function CheckPage({ searchParams }: PageProps<"/check">) {
 
                 <h2>자기 이력</h2>
                 {hist.years.length === 0 ? (
-                  <p className="note">이력 기간을 적으면 연도별 배수가 선다.</p>
+                  <p className="note">이력 기간을 적으면 연도별 배수가 나온다.</p>
                 ) : (
                   <table className="report-table check-table">
                     <thead>
